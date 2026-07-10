@@ -23,28 +23,40 @@ async function gorseliBase64eCevir(yol) {
   });
 }
 
-function siradakiProformaNoGetir() {
-  let sayac = localStorage.getItem("proforma_sayac");
-  if (!sayac || isNaN(sayac)) sayac = 1;
-  else sayac = parseInt(sayac, 10);
-
+// YENİ: Akıllı ve Benzersiz Numara Üretici (Veritabanına sorar)
+async function veritabanindanSiradakiNoyuGetir(tur) {
   const yil = new Date().getFullYear();
-  const formatliSayac = sayac.toString().padStart(3, "0");
-  const noMetni = `${yil}/${formatliSayac}`;
-  localStorage.setItem("proforma_sayac", sayac + 1);
-  return noMetni;
-}
+  const aramaFiltresi = tur === 'TEKLİF' ? `${yil}/T-%` : `${yil}/%`;
 
-function siradakiTeklifNoGetir() {
-  let sayac = localStorage.getItem("teklif_sayac");
-  if (!sayac || isNaN(sayac)) sayac = 1;
-  else sayac = parseInt(sayac, 10);
+  try {
+    const { data, error } = await supabase
+      .from('teklifler')
+      .select('teklif_no')
+      .eq('tur', tur)
+      .like('teklif_no', aramaFiltresi);
 
-  const yil = new Date().getFullYear();
-  const formatliSayac = sayac.toString().padStart(3, "0");
-  const noMetni = `${yil}/T-${formatliSayac}`;
-  localStorage.setItem("teklif_sayac", sayac + 1);
-  return noMetni;
+    let maxNo = 0;
+
+    if (data && data.length > 0) {
+      data.forEach(kayit => {
+        // "2026/007" veya "2026/T-012" içindeki sondaki rakamı bulur
+        const numMatch = kayit.teklif_no.match(/\d+$/);
+        if (numMatch) {
+          const num = parseInt(numMatch[0], 10);
+          if (num > maxNo) maxNo = num;
+        }
+      });
+    }
+
+    const siradakiSayi = maxNo + 1;
+    const formatliSayac = siradakiSayi.toString().padStart(3, "0");
+    return tur === 'TEKLİF' ? `${yil}/T-${formatliSayac}` : `${yil}/${formatliSayac}`;
+  } catch (error) {
+    console.error("Numara üretilirken hata oluştu:", error);
+    // Veritabanı çökse bile numara çakışmasını önlemek için rastgele bir sayı atar
+    const rastgele = Math.floor(Math.random() * 900) + 100;
+    return tur === 'TEKLİF' ? `${yil}/T-${rastgele}` : `${yil}/${rastgele}`;
+  }
 }
 
 const birimFormatla = (birim) => {
@@ -69,7 +81,9 @@ const ortakFooter = {
 export async function teklifPdfIndir(teklif, sepet, mevcutNo = null) {
   const logo1 = await gorseliBase64eCevir("/logo1.png");
   const logo2 = await gorseliBase64eCevir("/logo2.png");
-  const belgeNo = mevcutNo || siradakiTeklifNoGetir();
+  
+  // DÜZELTME: Veritabanından sıradaki boş numarayı çeker
+  const belgeNo = mevcutNo || await veritabanindanSiradakiNoyuGetir('TEKLİF');
 
   const urunSatirlari = sepet.flatMap((satir) => {
     const aciklamaEki = satir.ozelAciklama ? ` (${satir.ozelAciklama})` : "";
@@ -176,7 +190,9 @@ export async function teklifPdfIndir(teklif, sepet, mevcutNo = null) {
 export async function proformaPdfIndir(teklif, sepet, mevcutNo = null) {
   const logo1 = await gorseliBase64eCevir("/logo1.png");
   const logo2 = await gorseliBase64eCevir("/logo2.png");
-  const belgeNo = mevcutNo || siradakiProformaNoGetir();
+  
+  // DÜZELTME: Veritabanından sıradaki boş numarayı çeker
+  const belgeNo = mevcutNo || await veritabanindanSiradakiNoyuGetir('PROFORMA');
 
   const tabloGövdesi = [
     [
@@ -199,7 +215,6 @@ export async function proformaPdfIndir(teklif, sepet, mevcutNo = null) {
       { text: satir.urunAciklamasi, fontSize: 9, margin: [5, 5, 0, 5], alignment: 'left' },
       { text: aciklamaMetni, fontSize: 9, alignment: 'center', margin: [0, 5, 0, 5] },
       { text: miktarMetni, fontSize: 9, alignment: 'center', margin: [0, 5, 0, 5] },
-      // YENİ: Fiyat ve Tutar kısımlarına noWrap eklendi (tek satıra kilitlendi)
       { text: birimFiyatMetni, fontSize: 9, alignment: 'center', margin: [0, 5, 0, 5], noWrap: true },
       { text: `% ${satir.kdvOrani}`, fontSize: 9, alignment: 'center', margin: [0, 5, 0, 5], noWrap: true },
       { text: `${paraFormatla(satir.toplamTutar, satir.paraBirimi)}`, fontSize: 9, alignment: 'right', margin: [0, 5, 5, 5], noWrap: true }
@@ -221,7 +236,6 @@ export async function proformaPdfIndir(teklif, sepet, mevcutNo = null) {
   const tarihYazisi = tarihObj.toLocaleDateString("tr-TR");
   const kdvSecilenOran = sepet[0]?.kdvOrani ? `KDV %${sepet[0].kdvOrani}` : "KDV %20";
 
-  // YENİ: Toplamlar kısmı BİRİM FİYAT'tan başlıyor (colSpan: 3 ve colSpan: 2 kurgusu)
   Object.entries(genelToplamlar).forEach(([paraBirimi, tutar]) => {
     const kdvTutar = genelKdvler[paraBirimi] || 0;
     tabloGövdesi.push(
@@ -299,7 +313,6 @@ export async function proformaPdfIndir(teklif, sepet, mevcutNo = null) {
       {
         table: { 
           headerRows: 1, 
-          // YENİ: Sütun genişlikleri özel olarak ayarlandı. Malın cinsi daha geniş, Tutar sütunu daha korunaklı.
           widths: ['20%', '*', '13%', '15%', '11%', '17%'], 
           body: tabloGövdesi 
         },
