@@ -6,19 +6,18 @@ export default function UrunEkleFormu({ urunler, yukleniyor, hata, onEkle }) {
   const [secilenId, setSecilenId] = useState("");
   const [listeAcik, setListeAcik] = useState(false);
   
-  // YENİ: Elle girilecek özel açıklama state'i
   const [ozelAciklama, setOzelAciklama] = useState("");
 
-  const [en, setEn] = useState(100);
-  const [boy, setBoy] = useState(100);
-  const [adet, setAdet] = useState(1);
+  // YENİ: En boy yerine direkt Miktar ve Birim seçtiriyoruz
+  const [miktar, setMiktar] = useState(1);
+  const [secilenBirim, setSecilenBirim] = useState("m²");
+
   const [birimFiyat, setBirimFiyat] = useState("");
   const [paraBirimi, setParaBirimi] = useState("USD");
   const [kdvOrani, setKdvOrani] = useState("20");
 
   const aciklamaBul = (u) => u?.Açıklama || u?.açıklama || u?.aciklama || u?.Aciklama || "İsimsiz Ürün";
   const koduBul = (u) => u?.Kodu || u?.kodu || u?.code || "";
-  const birimBul = (u) => u?.["Ana Birim"] || u?.["ana birim"] || u?.ana_birim || u?.birim || "";
 
   const filtrelenmisUrunler = urunler.filter((urun) => {
     if (arama.length < 3) return false;
@@ -47,32 +46,34 @@ export default function UrunEkleFormu({ urunler, yukleniyor, hata, onEkle }) {
 
     const duzeltilmisUrun = {
       ...secilenUrun,
-      "Ana Birim": birimBul(secilenUrun),
+      "Ana Birim": secilenBirim.toUpperCase(), // Arka plandaki hesaplama şaşmasın diye birimi kilitliyoruz
       aciklama: aciklamaBul(secilenUrun),
       Açıklama: aciklamaBul(secilenUrun)
     };
 
-    const satir = satirHesapla(duzeltilmisUrun, en, boy, adet, Number(birimFiyat), paraBirimi, Number(kdvOrani));
+    // Arka plandaki matematiksel formül bozulmasın diye en=100, boy=100 (yani 1 birim) gönderip 
+    // senin girdiğin miktarla çarptırıyoruz. Sonuç kusursuz çıkacak.
+    const satir = satirHesapla(duzeltilmisUrun, 100, 100, miktar, Number(birimFiyat), paraBirimi, Number(kdvOrani));
 
-    // DEĞİŞİKLİK: PDF'e gitmesi için elle girilen özel açıklamayı satıra ekliyoruz
+    // PDF'e gidecek özel verilerimizi satıra ekliyoruz
     satir.ozelAciklama = ozelAciklama;
-    satir.en = en;
-    satir.boy = boy;
+    satir.miktar = miktar;
+    satir.secilenBirim = secilenBirim;
+    satir.birimFiyat = Number(birimFiyat);
 
     onEkle(satir);
     
-    // Formu temizle
     setBirimFiyat("");
     setArama("");
     setSecilenId("");
-    setOzelAciklama(""); // Açıklama kutusunu sıfırla
+    setOzelAciklama(""); 
   }
 
   if (yukleniyor) {
     return (
       <section className="panel">
         <h2 className="panel__baslik">Ürün Ekleme Ekranı</h2>
-        <p className="bilgi-metni">5700+ Ürün listesi yükleniyor, lütfen bekleyin…</p>
+        <p className="bilgi-metni">Ürün listesi yükleniyor, lütfen bekleyin…</p>
       </section>
     );
   }
@@ -129,7 +130,6 @@ export default function UrunEkleFormu({ urunler, yukleniyor, hata, onEkle }) {
         </div>
       </label>
 
-      {/* YENİ: Elle girilecek serbest Açıklama kutusu */}
       <label className="alan">
         <span>Ürün Açıklaması / Detay (PDF'teki Açıklama Sütununa Yazılır)</span>
         <input
@@ -143,16 +143,17 @@ export default function UrunEkleFormu({ urunler, yukleniyor, hata, onEkle }) {
 
       <div className="olcu-grid">
         <label className="alan">
-          <span>En (cm) [Hesaplama İçin]</span>
-          <input type="number" min="0" step="10" value={en} onChange={(e) => setEn(Number(e.target.value))} />
+          <span>Miktar</span>
+          <input type="number" min="0.01" step="0.01" value={miktar} onChange={(e) => setMiktar(Number(e.target.value))} />
         </label>
+        
         <label className="alan">
-          <span>Boy (cm) [Hesaplama İçin]</span>
-          <input type="number" min="0" step="10" value={boy} onChange={(e) => setBoy(Number(e.target.value))} />
-        </label>
-        <label className="alan">
-          <span>Adet</span>
-          <input type="number" min="1" step="1" value={adet} onChange={(e) => setAdet(Number(e.target.value))} />
+          <span>Birim</span>
+          <select value={secilenBirim} onChange={(e) => setSecilenBirim(e.target.value)}>
+            <option value="ad">Adet (ad)</option>
+            <option value="m²">Metrekare (m²)</option>
+            <option value="mt">Metretül (mt)</option>
+          </select>
         </label>
         
         <label className="alan">
@@ -168,7 +169,7 @@ export default function UrunEkleFormu({ urunler, yukleniyor, hata, onEkle }) {
 
       <label className="alan">
         <span>
-          Birim Fiyat ({birimBul(secilenUrun) === "ADET" ? "adet" : "m²"} başına)
+          Birim Fiyat (1 {secilenBirim} başına)
         </span>
         <div style={{ display: "flex", gap: "8px" }}>
           <input
