@@ -11,8 +11,7 @@ export const useUrunler = () => {
       try {
         setYukleniyor(true);
         
-        // ÇÖZÜM: aciklama_2 silindiği için sadece isim belirterek hata almamak adına
-        // '*' (yıldız) koyuyoruz. Bu sayede tabloda güncel olarak hangi sütunlar varsa sadece onları çeker.
+        // ÇÖZÜM BURASI: Sadece * koyuyoruz ki aciklama_2'yi aramasın!
         const { data, error } = await supabase
           .from('urunler')
           .select('*') 
