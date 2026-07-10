@@ -47,10 +47,10 @@ function siradakiTeklifNoGetir() {
   return noMetni;
 }
 
-const birimBuyukHarfCevir = (birim) => {
+const birimFormatla = (birim) => {
   if (birim === "ad") return "ADET";
-  if (birim === "m²") return "M²";
-  if (birim === "mt") return "MT";
+  if (birim === "m²") return "m²";
+  if (birim === "mt") return "mt";
   return "ADET";
 };
 
@@ -73,8 +73,8 @@ export async function teklifPdfIndir(teklif, sepet, mevcutNo = null) {
 
   const urunSatirlari = sepet.flatMap((satir) => {
     const aciklamaEki = satir.ozelAciklama ? ` (${satir.ozelAciklama})` : "";
-    const birimBuyuk = birimBuyukHarfCevir(satir.secilenBirim);
-    const miktarMetni = `${satir.miktar} ${birimBuyuk}  x  ${paraFormatla(satir.birimFiyat, satir.paraBirimi)}/${satir.secilenBirim || 'ad'}`;
+    const birimMetni = birimFormatla(satir.secilenBirim);
+    const miktarMetni = `${satir.miktar} ${birimMetni}  x  ${paraFormatla(satir.birimFiyat, satir.paraBirimi)}/${satir.secilenBirim || 'ad'}`;
     return [
       { text: satir.urunAciklamasi + aciklamaEki, bold: true, margin: [0, 6, 0, 2] },
       { text: `${miktarMetni}  =  ${paraFormatla(satir.toplamTutar, satir.paraBirimi)} + KDV`, alignment: "right", margin: [0, 0, 0, 4] }
@@ -152,12 +152,9 @@ export async function teklifPdfIndir(teklif, sepet, mevcutNo = null) {
       },
       { text: teklif.musteriAdi, fontSize: 10 },
       { text: teklif.ilgiliKisi, fontSize: 10, margin: [0, 0, 0, 10] },
-      
-      // DÜZELTME: Eğer proje adı boş değilse bu satırı ekle, boşsa hiçbir şey ekleme
       ...(teklif.projeAdi && teklif.projeAdi.trim() !== "" 
         ? [{ text: `Proje Adı: ${teklif.projeAdi}`, bold: true, fontSize: 11, margin: [0, 0, 0, 10] }] 
         : []),
-        
       { text: "İhtiyacınız olan camlara ilişkin fiyat teklifimiz aşağıdaki gibidir:", fontSize: 10, margin: [0, 0, 0, 10] },
       ...urunSatirlari,
       ...genelToplamSatirlari,
@@ -193,8 +190,8 @@ export async function proformaPdfIndir(teklif, sepet, mevcutNo = null) {
   ];
 
   sepet.forEach(satir => {
-    const birimBuyuk = birimBuyukHarfCevir(satir.secilenBirim);
-    const miktarMetni = `${satir.miktar} ${birimBuyuk}`;
+    const birimMetniBicimli = birimFormatla(satir.secilenBirim);
+    const miktarMetni = `${satir.miktar} ${birimMetniBicimli}`;
     const birimFiyatMetni = satir.birimFiyat ? `${paraFormatla(satir.birimFiyat, satir.paraBirimi)} / ${satir.secilenBirim || 'ad'}` : "-";
     const aciklamaMetni = satir.ozelAciklama || "-";
 
@@ -202,9 +199,10 @@ export async function proformaPdfIndir(teklif, sepet, mevcutNo = null) {
       { text: satir.urunAciklamasi, fontSize: 9, margin: [5, 5, 0, 5], alignment: 'left' },
       { text: aciklamaMetni, fontSize: 9, alignment: 'center', margin: [0, 5, 0, 5] },
       { text: miktarMetni, fontSize: 9, alignment: 'center', margin: [0, 5, 0, 5] },
-      { text: birimFiyatMetni, fontSize: 9, alignment: 'center', margin: [0, 5, 0, 5] },
-      { text: `% ${satir.kdvOrani}`, fontSize: 9, alignment: 'center', margin: [0, 5, 0, 5] },
-      { text: `${paraFormatla(satir.toplamTutar, satir.paraBirimi)}`, fontSize: 9, alignment: 'right', margin: [0, 5, 5, 5] }
+      // YENİ: Fiyat ve Tutar kısımlarına noWrap eklendi (tek satıra kilitlendi)
+      { text: birimFiyatMetni, fontSize: 9, alignment: 'center', margin: [0, 5, 0, 5], noWrap: true },
+      { text: `% ${satir.kdvOrani}`, fontSize: 9, alignment: 'center', margin: [0, 5, 0, 5], noWrap: true },
+      { text: `${paraFormatla(satir.toplamTutar, satir.paraBirimi)}`, fontSize: 9, alignment: 'right', margin: [0, 5, 5, 5], noWrap: true }
     ]);
   });
 
@@ -223,12 +221,25 @@ export async function proformaPdfIndir(teklif, sepet, mevcutNo = null) {
   const tarihYazisi = tarihObj.toLocaleDateString("tr-TR");
   const kdvSecilenOran = sepet[0]?.kdvOrani ? `KDV %${sepet[0].kdvOrani}` : "KDV %20";
 
+  // YENİ: Toplamlar kısmı BİRİM FİYAT'tan başlıyor (colSpan: 3 ve colSpan: 2 kurgusu)
   Object.entries(genelToplamlar).forEach(([paraBirimi, tutar]) => {
     const kdvTutar = genelKdvler[paraBirimi] || 0;
     tabloGövdesi.push(
-      [{ text: '', colSpan: 4, border: [false, false, false, false] }, {}, {}, {}, { text: `TOPLAM`, alignment: 'right', bold: true, margin: [0, 3, 5, 3], fillColor: '#f5f5f5' }, { text: paraFormatla(tutar, paraBirimi), alignment: 'right', margin: [0, 3, 5, 3], fillColor: '#f5f5f5' }],
-      [{ text: '', colSpan: 4, border: [false, false, false, false] }, {}, {}, {}, { text: kdvSecilenOran, alignment: 'right', bold: true, margin: [0, 3, 5, 3], fillColor: '#f5f5f5' }, { text: paraFormatla(kdvTutar, paraBirimi), alignment: 'right', margin: [0, 3, 5, 3], fillColor: '#f5f5f5' }],
-      [{ text: '', colSpan: 4, border: [false, false, false, false] }, {}, {}, {}, { text: `GENEL TOPLAM`, alignment: 'right', bold: true, margin: [0, 3, 5, 3], fillColor: '#e0e0e0' }, { text: paraFormatla(tutar + kdvTutar, paraBirimi), alignment: 'right', margin: [0, 3, 5, 3], fillColor: '#e0e0e0' }]
+      [
+        { text: '', colSpan: 3, border: [false, false, false, false] }, {}, {}, 
+        { text: `TOPLAM`, colSpan: 2, alignment: 'right', bold: true, margin: [0, 3, 5, 3], fillColor: '#f5f5f5' }, {}, 
+        { text: paraFormatla(tutar, paraBirimi), alignment: 'right', margin: [0, 3, 5, 3], fillColor: '#f5f5f5', noWrap: true }
+      ],
+      [
+        { text: '', colSpan: 3, border: [false, false, false, false] }, {}, {}, 
+        { text: kdvSecilenOran, colSpan: 2, alignment: 'right', bold: true, margin: [0, 3, 5, 3], fillColor: '#f5f5f5' }, {}, 
+        { text: paraFormatla(kdvTutar, paraBirimi), alignment: 'right', margin: [0, 3, 5, 3], fillColor: '#f5f5f5', noWrap: true }
+      ],
+      [
+        { text: '', colSpan: 3, border: [false, false, false, false] }, {}, {}, 
+        { text: `GENEL TOPLAM`, colSpan: 2, alignment: 'right', bold: true, margin: [0, 3, 5, 3], fillColor: '#e0e0e0' }, {}, 
+        { text: paraFormatla(tutar + kdvTutar, paraBirimi), alignment: 'right', margin: [0, 3, 5, 3], fillColor: '#e0e0e0', noWrap: true }
+      ]
     );
   });
 
@@ -278,7 +289,6 @@ export async function proformaPdfIndir(teklif, sepet, mevcutNo = null) {
     content: [
       {
         columns: [
-          // DÜZELTME: Eğer proje adı varsa yaz, yoksa sağdaki kolon yerinde kalsın diye boş string at
           { text: teklif.projeAdi && teklif.projeAdi.trim() !== "" ? `Proje Adı: ${teklif.projeAdi}` : "", bold: true, fontSize: 10, width: '*' },
           { stack: [{ text: `Tarih: ${tarihYazisi}`, alignment: "right", fontSize: 10 }, { text: `No: ${belgeNo}`, alignment: "right", fontSize: 10 }], width: 'auto' }
         ],
@@ -287,7 +297,12 @@ export async function proformaPdfIndir(teklif, sepet, mevcutNo = null) {
       { text: "PROFORMA FATURA", style: "header", alignment: "center", bold: true, fontSize: 14, margin: [0, 10, 0, 20] },
       { text: dikkatineSatiri, bold: true, fontSize: 10, margin: [0, 0, 0, 10] },
       {
-        table: { headerRows: 1, widths: ['*', 'auto', 'auto', 'auto', 'auto', 'auto'], body: tabloGövdesi },
+        table: { 
+          headerRows: 1, 
+          // YENİ: Sütun genişlikleri özel olarak ayarlandı. Malın cinsi daha geniş, Tutar sütunu daha korunaklı.
+          widths: ['20%', '*', '13%', '15%', '11%', '17%'], 
+          body: tabloGövdesi 
+        },
         layout: { hLineWidth: () => 1, vLineWidth: () => 1, hLineColor: () => '#aaaaaa', vLineColor: () => '#aaaaaa' }
       },
       { text: `YALNIZ: ${yalnizMetni}.`, bold: true, fontSize: 10, margin: [0, 35, 0, 10] },
