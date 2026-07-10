@@ -14,7 +14,6 @@ export default function GecmisTeklifler() {
   async function fetchGecmisTeklifler() {
     try {
       setYukleniyor(true);
-      // Numaraya göre azalan sırada çekiyoruz (En yeni en üstte)
       const { data, error } = await supabase
         .from("teklifler")
         .select("*")
@@ -29,7 +28,6 @@ export default function GecmisTeklifler() {
     }
   }
 
-  // Arama filtresi (Numara, Müşteri Adı veya Proje Adına göre arar)
   const filtrelenmisTeklifler = teklifler.filter((t) => {
     const aramaMetni = arama.toLocaleLowerCase("tr-TR");
     return (
@@ -39,7 +37,6 @@ export default function GecmisTeklifler() {
     );
   });
 
-  // Geçmiş teklifi hafızadan okuyup tekrar PDF üreten sihirli fonksiyon
   function tekrarIndir(t) {
     const teklifBilgisi = {
       musteriAdi: t.musteri_adi,
@@ -76,16 +73,18 @@ export default function GecmisTeklifler() {
       ) : filtrelenmisTeklifler.length === 0 ? (
         <p className="bilgi-metni">Arşivde kayıtlı belge bulunamadı.</p>
       ) : (
-        <div style={{ overflowX: "auto" }}>
-          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "14px" }}>
+        /* ÇÖZÜM BURASI: max-height verdik ve taşıntıyı scroll'a çevirdik */
+        <div style={{ maxHeight: "400px", overflowY: "auto", overflowX: "auto", border: "1px solid #eee", borderRadius: "6px" }}>
+          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "14px", position: "relative" }}>
             <thead>
               <tr style={{ backgroundColor: "#eeeeee", textAlign: "left" }}>
-                <th style={{ padding: "12px", borderBottom: "2px solid #ccc" }}>BELGE NO</th>
-                <th style={{ padding: "12px", borderBottom: "2px solid #ccc" }}>TÜR</th>
-                <th style={{ padding: "12px", borderBottom: "2px solid #ccc" }}>MÜŞTERİ ADI</th>
-                <th style={{ padding: "12px", borderBottom: "2px solid #ccc" }}>PROJE ADI</th>
-                <th style={{ padding: "12px", borderBottom: "2px solid #ccc" }}>TARİH</th>
-                <th style={{ padding: "12px", borderBottom: "2px solid #ccc", textAlign: "center" }}>AKSİYON</th>
+                {/* YENİ: Başlıklar kaydırırken hep üstte kalsın diye sticky yapıldı */}
+                <th style={{ padding: "12px", borderBottom: "2px solid #ccc", position: "sticky", top: 0, backgroundColor: "#eeeeee", zIndex: 1 }}>BELGE NO</th>
+                <th style={{ padding: "12px", borderBottom: "2px solid #ccc", position: "sticky", top: 0, backgroundColor: "#eeeeee", zIndex: 1 }}>TÜR</th>
+                <th style={{ padding: "12px", borderBottom: "2px solid #ccc", position: "sticky", top: 0, backgroundColor: "#eeeeee", zIndex: 1 }}>MÜŞTERİ ADI</th>
+                <th style={{ padding: "12px", borderBottom: "2px solid #ccc", position: "sticky", top: 0, backgroundColor: "#eeeeee", zIndex: 1 }}>PROJE ADI</th>
+                <th style={{ padding: "12px", borderBottom: "2px solid #ccc", position: "sticky", top: 0, backgroundColor: "#eeeeee", zIndex: 1 }}>TARİH</th>
+                <th style={{ padding: "12px", borderBottom: "2px solid #ccc", textAlign: "center", position: "sticky", top: 0, backgroundColor: "#eeeeee", zIndex: 1 }}>AKSİYON</th>
               </tr>
             </thead>
             <tbody>
