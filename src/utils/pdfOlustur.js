@@ -1,7 +1,7 @@
 import pdfMake from "pdfmake/build/pdfmake";
 import pdfFonts from "pdfmake/build/vfs_fonts";
 import { paraFormatla, genelToplamHesapla, genelKdvHesapla, sayiyiYaziyaCevir } from "./hesaplama";
-import { supabase } from "../lib/supabaseClient"; // Supabase bağlantısını ekledik
+import { supabase } from "../lib/supabaseClient";
 
 pdfMake.vfs = pdfFonts?.pdfMake?.vfs || pdfFonts?.vfs || pdfFonts?.default?.pdfMake?.vfs || pdfFonts?.default?.vfs;
 
@@ -15,6 +15,7 @@ async function gorseliBase64eCevir(yol) {
         canvas.height = img.height;
         const ctx = canvas.getContext('2d');
         ctx.drawImage(img, 0, 0);
+        
         const safPng = canvas.toDataURL('image/png');
         resolve(safPng);
       } catch (e) {
@@ -28,7 +29,7 @@ async function gorseliBase64eCevir(yol) {
 
 function siradakiProformaNoGetir() {
   let sayac = localStorage.getItem("proforma_sayac");
-  if (!sayac) sayac = 1;
+  if (!sayac || isNaN(sayac)) sayac = 1;
   else sayac = parseInt(sayac, 10);
 
   const yil = new Date().getFullYear();
@@ -39,10 +40,9 @@ function siradakiProformaNoGetir() {
   return noMetni;
 }
 
-// Düz teklifler için otomatik takip numarası üretici
 function siradakiTeklifNoGetir() {
   let sayac = localStorage.getItem("teklif_sayac");
-  if (!sayac) sayac = 1;
+  if (!sayac || isNaN(sayac)) sayac = 1;
   else sayac = parseInt(sayac, 10);
 
   const yil = new Date().getFullYear();
@@ -77,7 +77,6 @@ export async function teklifPdfIndir(teklif, sepet, mevcutNo = null) {
   const logo1 = await gorseliBase64eCevir("/logo1.png");
   const logo2 = await gorseliBase64eCevir("/logo2.png");
 
-  // Eğer arşivden tekrar indiriliyorsa eski numarasını kullan, ilk defa iniyorsa yeni numara üret
   const belgeNo = mevcutNo || siradakiTeklifNoGetir();
 
   const urunSatirlari = sepet.flatMap((satir) => {
@@ -98,7 +97,9 @@ export async function teklifPdfIndir(teklif, sepet, mevcutNo = null) {
   const genelToplamlar = genelToplamHesapla(sepet);
   const genelKdvler = genelKdvHesapla(sepet);
 
-  const genelToplamSatirlari = Object.entries(genelToplamlar).map(([paraBirimi, tutar]) => ({
+  const genelToplamSatirlari = Array.from(
+    Object.entries(genelToplamlar)
+  ).map(([paraBirimi, tutar]) => ({
     text: `GENEL TOPLAM (${paraBirimi}) : ${paraFormatla(tutar, paraBirimi)} + KDV`,
     bold: true,
     fontSize: 12,
@@ -115,8 +116,7 @@ export async function teklifPdfIndir(teklif, sepet, mevcutNo = null) {
   });
   if (!yalnizMetni) yalnizMetni = "sıfır";
 
-  // Tarih nesne ise string'e çevir, zaten string ise direkt kullan
-  const tarihObj = typeof teklif.tarih === "string" ? new Date(teklif.tarih) : teklif.tarih;
+  const tarihObj = typeof teklif.tarih === "string" ? new Date(teklif.tarih) : (teklif.tarih || new Date());
   const tarihYazisi = tarihObj.toLocaleDateString("tr-TR");
 
   const notlarIcerigi = [];
@@ -127,7 +127,7 @@ export async function teklifPdfIndir(teklif, sepet, mevcutNo = null) {
     );
   }
 
-  // ARŞİVE OTOMATİK KAYIT (Sadece ilk defa indirilirken kaydet)
+  // TEKLİF İÇİN ARŞİVE KAYIT BLOKU (Eksik olan kısım buydu)
   if (!mevcutNo) {
     try {
       await supabase.from('teklifler').insert([{
@@ -140,7 +140,9 @@ export async function teklifPdfIndir(teklif, sepet, mevcutNo = null) {
         tarih: tarihObj.toISOString().split('T')[0],
         sepet: sepet
       }]);
-    } catch (e) { console.error("Arşive kaydedilemedi:", e); }
+    } catch (e) {
+      console.error("Arşive kaydedilemedi:", e);
+    }
   }
 
   const docDefinition = {
@@ -151,13 +153,26 @@ export async function teklifPdfIndir(teklif, sepet, mevcutNo = null) {
           columns: [
             {
               stack: [
-                { text: [{ text: 'KARATAŞ', fontSize: 34, color: '#222222' }, { text: 'CAM', fontSize: 34, bold: true, color: '#222222' }] },
+                {
+                  text: [
+                    { text: 'KARATAŞ', fontSize: 34, color: '#222222' },
+                    { text: 'CAM', fontSize: 34, bold: true, color: '#222222' }
+                  ]
+                },
                 { text: 'KARATAŞ AYNA KRİSTAL CAM MOB. İNŞ. TUR. NAK. MET. SAN. VE TİC. LTD. ŞTİ.', fontSize: 9, margin: [0, 5, 0, 0] }
               ],
-              alignment: 'left', margin: [0, 10, 0, 0], width: '*'
+              alignment: 'left',
+              margin: [0, 10, 0, 0],
+              width: '*'
             },
-            { width: 'auto', stack: [ logo1 ? { image: logo1, height: 40, margin: [0, 5, 15, 0] } : { text: '' } ] },
-            { width: 'auto', stack: [ logo2 ? { image: logo2, height: 40, margin: [0, 5, 0, 0] } : { text: '' } ] }
+            {
+              width: 'auto',
+              stack: [ logo1 ? { image: logo1, height: 40, margin: [0, 5, 15, 0] } : { text: '' } ]
+            },
+            {
+              width: 'auto',
+              stack: [ logo2 ? { image: logo2, height: 40, margin: [0, 5, 0, 0] } : { text: '' } ]
+            }
           ]
         },
         { canvas: [{ type: 'line', x1: 0, y1: 0, x2: 515, y2: 0, lineWidth: 1.5 }], margin: [0, 10, 0, 0] }
@@ -169,13 +184,20 @@ export async function teklifPdfIndir(teklif, sepet, mevcutNo = null) {
       {
         columns: [
           { text: "TEKLİFTİR.", fontSize: 10, width: '*' },
-          { stack: [{ text: `Tarih: ${tarihYazisi}`, alignment: "right", fontSize: 10 }, { text: `No: ${belgeNo}`, alignment: "right", fontSize: 10 }], width: 'auto' }
+          { 
+            stack: [
+              { text: `Tarih: ${tarihYazisi}`, alignment: "right", fontSize: 10 },
+              { text: `No: ${belgeNo}`, alignment: "right", fontSize: 10 }
+            ], 
+            width: 'auto' 
+          }
         ],
         margin: [0, 0, 0, 10]
       },
       { text: teklif.musteriAdi, fontSize: 10 },
       { text: teklif.ilgiliKisi, fontSize: 10, margin: [0, 0, 0, 10] },
       { text: `Proje Adı: ${teklif.projeAdi}`, bold: true, fontSize: 11, margin: [0, 0, 0, 10] },
+      { text: "İhtiyacınız olan camlara ilişkin fiyat teklifimiz aşağıdaki gibidir:", fontSize: 10, margin: [0, 0, 0, 10] },
       ...urunSatirlari,
       ...genelToplamSatirlari,
       { text: `YALNIZ: ${yalnizMetni}.`, bold: true, fontSize: 10, margin: [0, 35, 0, 10] },
@@ -239,7 +261,7 @@ export async function proformaPdfIndir(teklif, sepet, mevcutNo = null) {
   });
   if (!yalnizMetni) yalnizMetni = "sıfır";
 
-  const tarihObj = typeof teklif.tarih === "string" ? new Date(teklif.tarih) : teklif.tarih;
+  const tarihObj = typeof teklif.tarih === "string" ? new Date(teklif.tarih) : (teklif.tarih || new Date());
   const tarihYazisi = tarihObj.toLocaleDateString("tr-TR");
 
   let kisi = (teklif.ilgiliKisi || "").toLocaleUpperCase("tr-TR");
@@ -254,7 +276,7 @@ export async function proformaPdfIndir(teklif, sepet, mevcutNo = null) {
     );
   }
 
-  // ARŞİVE OTOMATİK KAYIT (Sadece ilk defa indirilirken kaydet)
+  // PROFORMA İÇİN ARŞİVE KAYIT BLOKU
   if (!mevcutNo) {
     try {
       await supabase.from('teklifler').insert([{
@@ -267,7 +289,9 @@ export async function proformaPdfIndir(teklif, sepet, mevcutNo = null) {
         tarih: tarihObj.toISOString().split('T')[0],
         sepet: sepet
       }]);
-    } catch (e) { console.error("Arşive kaydedilemedi:", e); }
+    } catch (e) {
+      console.error("Arşive kaydedilemedi:", e);
+    }
   }
 
   const kdvSecilenOran = sepet[0]?.kdvOrani ? `KDV %${sepet[0].kdvOrani}` : "KDV %20";
@@ -286,13 +310,26 @@ export async function proformaPdfIndir(teklif, sepet, mevcutNo = null) {
           columns: [
             {
               stack: [
-                { text: [{ text: 'KARATAŞ', fontSize: 34, color: '#222222' }, { text: 'CAM', fontSize: 34, bold: true, color: '#222222' }] },
+                {
+                  text: [
+                    { text: 'KARATAŞ', fontSize: 34, color: '#222222' },
+                    { text: 'CAM', fontSize: 34, bold: true, color: '#222222' }
+                  ]
+                },
                 { text: 'KARATAŞ AYNA KRİSTAL CAM MOB. İNŞ. TUR. NAK. MET. SAN. VE TİC. LTD. ŞTİ.', fontSize: 9, margin: [0, 5, 0, 0] }
               ],
-              alignment: 'left', margin: [0, 10, 0, 0], width: '*'
+              alignment: 'left',
+              margin: [0, 10, 0, 0],
+              width: '*'
             },
-            { width: 'auto', stack: [ logo1 ? { image: logo1, height: 40, margin: [0, 5, 15, 0] } : { text: '' } ] },
-            { width: 'auto', stack: [ logo2 ? { image: logo2, height: 40, margin: [0, 5, 0, 0] } : { text: '' } ] }
+            {
+              width: 'auto',
+              stack: [ logo1 ? { image: logo1, height: 40, margin: [0, 5, 15, 0] } : { text: '' } ]
+            },
+            {
+              width: 'auto',
+              stack: [ logo2 ? { image: logo2, height: 40, margin: [0, 5, 0, 0] } : { text: '' } ]
+            }
           ]
         },
         { canvas: [{ type: 'line', x1: 0, y1: 0, x2: 515, y2: 0, lineWidth: 1.5 }], margin: [0, 10, 0, 0] }
@@ -304,17 +341,29 @@ export async function proformaPdfIndir(teklif, sepet, mevcutNo = null) {
       {
         columns: [
           { text: `Proje Adı: ${teklif.projeAdi}`, bold: true, fontSize: 10, width: '*' },
-          { stack: [{ text: `Tarih: ${tarihYazisi}`, alignment: "right", fontSize: 10 }, { text: `No: ${belgeNo}`, alignment: "right", fontSize: 10 }], width: 'auto' }
+          { 
+            stack: [
+              { text: `Tarih: ${tarihYazisi}`, alignment: "right", fontSize: 10 },
+              { text: `No: ${belgeNo}`, alignment: "right", fontSize: 10 }
+            ], 
+            width: 'auto' 
+          }
         ],
         margin: [0, 0, 0, 10]
       },
       { text: "PROFORMA FATURA", style: "header", alignment: "center", bold: true, fontSize: 14, margin: [0, 10, 0, 20] },
       { text: dikkatineSatiri, bold: true, fontSize: 10, margin: [0, 0, 0, 10] },
       {
-        table: { headerRows: 1, widths: ['*', 'auto', 'auto', 'auto', 'auto', 'auto'], body: tabloGövdesi },
+        table: {
+          headerRows: 1,
+          widths: ['*', 'auto', 'auto', 'auto', 'auto', 'auto'], 
+          body: tabloGövdesi
+        },
         layout: {
-          hLineWidth: (i) => 1, vLineWidth: (i) => 1,
-          hLineColor: (i) => '#aaaaaa', vLineColor: (i) => '#aaaaaa',
+          hLineWidth: function (i, node) { return 1; },
+          vLineWidth: function (i, node) { return 1; },
+          hLineColor: function (i, node) { return '#aaaaaa'; },
+          vLineColor: function (i, node) { return '#aaaaaa'; },
         }
       },
       { text: `YALNIZ: ${yalnizMetni}.`, bold: true, fontSize: 10, margin: [0, 35, 0, 10] },
