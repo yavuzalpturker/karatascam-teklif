@@ -42,6 +42,18 @@ export default function TeklifBilgileriForm({ teklif, onDegistir }) {
           onChange={(e) => alanGuncelle("tarih", new Date(e.target.value))}
         />
       </label>
+
+      {/* YENİ: Notlar için geniş metin alanı */}
+      <label className="alan">
+        <span>Notlar (PDF'in altına eklenecek)</span>
+        <textarea
+          rows="7"
+          value={teklif.notlar || ""}
+          onChange={(e) => alanGuncelle("notlar", e.target.value)}
+          placeholder="- Bu belge fatura yerine geçmez.&#10;- Fabrika teslim fiyatımızdır."
+          style={{ width: "100%", padding: "10px", borderRadius: "6px", border: "1px solid #ccc", resize: "vertical" }}
+        />
+      </label>
     </aside>
   );
 }

@@ -1,9 +1,14 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { satirHesapla } from "../utils/hesaplama";
 
 export default function UrunEkleFormu({ urunler, yukleniyor, hata, onEkle }) {
-  const [arama, setArama] = useState(""); // YENİ: Arama çubuğu için state
+  const [arama, setArama] = useState("");
   const [secilenId, setSecilenId] = useState("");
+  const [listeAcik, setListeAcik] = useState(false);
+  
+  // YENİ: Elle girilecek özel açıklama state'i
+  const [ozelAciklama, setOzelAciklama] = useState("");
+
   const [en, setEn] = useState(100);
   const [boy, setBoy] = useState(100);
   const [adet, setAdet] = useState(1);
@@ -11,41 +16,63 @@ export default function UrunEkleFormu({ urunler, yukleniyor, hata, onEkle }) {
   const [paraBirimi, setParaBirimi] = useState("USD");
   const [kdvOrani, setKdvOrani] = useState("20");
 
-  // YENİ: Arama metnine göre ürünleri filtreleme (Hem Kodu hem Açıklama içinde arar)
-  const filtrelenmisUrunler = urunler.filter((urun) => {
-    if (!arama) return true;
-    const aramaMetni = arama.toLocaleLowerCase("tr-TR");
-    const aciklama = (urun.aciklama || "").toLocaleLowerCase("tr-TR");
-    const kodu = (urun.kodu || "").toLocaleLowerCase("tr-TR");
-    
-    return aciklama.includes(aramaMetni) || kodu.includes(aramaMetni);
-  });
+  const aciklamaBul = (u) => u?.Açıklama || u?.açıklama || u?.aciklama || u?.Aciklama || "İsimsiz Ürün";
+  const koduBul = (u) => u?.Kodu || u?.kodu || u?.code || "";
+  const birimBul = (u) => u?.["Ana Birim"] || u?.["ana birim"] || u?.ana_birim || u?.birim || "";
 
-  // YENİ: Liste filtrelendiğinde ilk ürünü otomatik seçili hale getirme
-  useEffect(() => {
-    if (filtrelenmisUrunler.length > 0 && !filtrelenmisUrunler.find(u => u.id === secilenId)) {
-      setSecilenId(filtrelenmisUrunler[0].id);
-    }
-  }, [filtrelenmisUrunler, secilenId]);
+  const filtrelenmisUrunler = urunler.filter((urun) => {
+    if (arama.length < 3) return false;
+    const aramaMetni = arama.toLocaleLowerCase("tr-TR");
+    const tumBilgiler = Object.values(urun).join(" ").toLocaleLowerCase("tr-TR");
+    return tumBilgiler.includes(aramaMetni);
+  });
 
   const secilenUrun = urunler.find((u) => u.id === secilenId);
   const fiyatGecerliMi = Number(birimFiyat) > 0;
 
+  const handleAramaDegisimi = (e) => {
+    setArama(e.target.value);
+    setSecilenId("");
+    setListeAcik(true);
+  };
+
+  const handleUrunSec = (urun) => {
+    setSecilenId(urun.id);
+    setArama(`${koduBul(urun)} - ${aciklamaBul(urun)}`);
+    setListeAcik(false);
+  };
+
   function ekle() {
     if (!secilenUrun || !fiyatGecerliMi) return;
-    
-    const satir = satirHesapla(secilenUrun, en, boy, adet, Number(birimFiyat), paraBirimi, Number(kdvOrani));
-    
+
+    const duzeltilmisUrun = {
+      ...secilenUrun,
+      "Ana Birim": birimBul(secilenUrun),
+      aciklama: aciklamaBul(secilenUrun),
+      Açıklama: aciklamaBul(secilenUrun)
+    };
+
+    const satir = satirHesapla(duzeltilmisUrun, en, boy, adet, Number(birimFiyat), paraBirimi, Number(kdvOrani));
+
+    // DEĞİŞİKLİK: PDF'e gitmesi için elle girilen özel açıklamayı satıra ekliyoruz
+    satir.ozelAciklama = ozelAciklama;
+    satir.en = en;
+    satir.boy = boy;
+
     onEkle(satir);
+    
+    // Formu temizle
     setBirimFiyat("");
-    setArama(""); // Eklendikten sonra arama kutusunu da temizle ki yeni ürüne hazır olsun
+    setArama("");
+    setSecilenId("");
+    setOzelAciklama(""); // Açıklama kutusunu sıfırla
   }
 
   if (yukleniyor) {
     return (
       <section className="panel">
         <h2 className="panel__baslik">Ürün Ekleme Ekranı</h2>
-        <p className="bilgi-metni">Ürün listesi yükleniyor…</p>
+        <p className="bilgi-metni">5700+ Ürün listesi yükleniyor, lütfen bekleyin…</p>
       </section>
     );
   }
@@ -64,48 +91,63 @@ export default function UrunEkleFormu({ urunler, yukleniyor, hata, onEkle }) {
       <h2 className="panel__baslik">Ürün Ekleme Ekranı</h2>
 
       <label className="alan">
-        <span>Ürün Ara ve Seç</span>
-        
-        {/* YENİ: Arama Kutusu */}
+        <span>Ürün Ara ve Seç (En az 3 harf giriniz)</span>
+        <div style={{ position: "relative" }}>
+          <input
+            type="text"
+            placeholder="Ürün adı veya kodu yazın..."
+            value={arama}
+            onChange={handleAramaDegisimi}
+            autoComplete="off"
+            style={{ width: "100%", padding: "10px", borderRadius: "6px", border: "1px solid #ccc" }}
+          />
+          
+          {listeAcik && arama.length >= 3 && (
+            <ul style={{ 
+              position: "absolute", top: "100%", left: 0, right: 0, maxHeight: "250px", 
+              overflowY: "auto", backgroundColor: "white", border: "1px solid #ccc", 
+              borderRadius: "0 0 6px 6px", zIndex: 1000, padding: 0, margin: 0, listStyle: "none",
+              boxShadow: "0 4px 6px rgba(0,0,0,0.1)"
+            }}>
+              {filtrelenmisUrunler.length === 0 ? (
+                <li style={{ padding: "10px", color: "#666" }}>Ürün bulunamadı...</li>
+              ) : (
+                filtrelenmisUrunler.map((urun) => (
+                  <li 
+                    key={urun.id} 
+                    onClick={() => handleUrunSec(urun)}
+                    style={{ padding: "10px", borderBottom: "1px solid #eee", cursor: "pointer", fontSize: "14px" }}
+                    onMouseEnter={(e) => e.target.style.backgroundColor = "#f0f8ff"}
+                    onMouseLeave={(e) => e.target.style.backgroundColor = "white"}
+                  >
+                    <strong>{koduBul(urun)}</strong> - {aciklamaBul(urun)}
+                  </li>
+                ))
+              )}
+            </ul>
+          )}
+        </div>
+      </label>
+
+      {/* YENİ: Elle girilecek serbest Açıklama kutusu */}
+      <label className="alan">
+        <span>Ürün Açıklaması / Detay (PDF'teki Açıklama Sütununa Yazılır)</span>
         <input
           type="text"
-          placeholder="Ürün adı veya kodu ile ara..."
-          value={arama}
-          onChange={(e) => setArama(e.target.value)}
-          style={{ 
-            marginBottom: "8px", 
-            width: "100%", 
-            padding: "10px", 
-            borderRadius: "6px", 
-            border: "1px solid #ccc" 
-          }}
-        />
-        
-        {/* GÜNCELLENDİ: Ürün Seçim Kutusu */}
-        <select 
-          value={secilenId} 
-          onChange={(e) => setSecilenId(e.target.value)}
+          placeholder="Örn: 100x100 cm Rodajlı, Bizoteli veya Özel İmalat..."
+          value={ozelAciklama}
+          onChange={(e) => setOzelAciklama(e.target.value)}
           style={{ width: "100%", padding: "10px", borderRadius: "6px", border: "1px solid #ccc" }}
-        >
-          {filtrelenmisUrunler.length === 0 ? (
-            <option value="" disabled>Ürün bulunamadı...</option>
-          ) : (
-            filtrelenmisUrunler.map((urun) => (
-              <option key={urun.id} value={urun.id}>
-                {urun.kodu} - {urun.aciklama}
-              </option>
-            ))
-          )}
-        </select>
+        />
       </label>
 
       <div className="olcu-grid">
         <label className="alan">
-          <span>En (cm)</span>
+          <span>En (cm) [Hesaplama İçin]</span>
           <input type="number" min="0" step="10" value={en} onChange={(e) => setEn(Number(e.target.value))} />
         </label>
         <label className="alan">
-          <span>Boy (cm)</span>
+          <span>Boy (cm) [Hesaplama İçin]</span>
           <input type="number" min="0" step="10" value={boy} onChange={(e) => setBoy(Number(e.target.value))} />
         </label>
         <label className="alan">
@@ -126,7 +168,7 @@ export default function UrunEkleFormu({ urunler, yukleniyor, hata, onEkle }) {
 
       <label className="alan">
         <span>
-          Birim Fiyat ({secilenUrun?.hesap_turu === "ADET" ? "adet" : "m²"} başına)
+          Birim Fiyat ({birimBul(secilenUrun) === "ADET" ? "adet" : "m²"} başına)
         </span>
         <div style={{ display: "flex", gap: "8px" }}>
           <input

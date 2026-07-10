@@ -10,10 +10,13 @@ export const useUrunler = () => {
     const fetchUrunler = async () => {
       try {
         setYukleniyor(true);
-        // Supabase'deki yeni sütun isimleriyle verileri çekiyoruz
+        
+        // ÇÖZÜM: aciklama_2 silindiği için sadece isim belirterek hata almamak adına
+        // '*' (yıldız) koyuyoruz. Bu sayede tabloda güncel olarak hangi sütunlar varsa sadece onları çeker.
         const { data, error } = await supabase
           .from('urunler')
-          .select('id, turu, kodu, aciklama, aciklama_2, hesap_turu, fiyat');
+          .select('*') 
+          .limit(10000);
 
         if (error) throw error;
         setUrunler(data || []);
