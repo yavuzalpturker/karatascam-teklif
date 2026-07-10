@@ -4,6 +4,7 @@ import TeklifBilgileriForm from "./components/TeklifBilgileriForm";
 import UrunEkleFormu from "./components/UrunEkleFormu";
 import SepetTablosu from "./components/SepetTablosu";
 import CiktiButonu from "./components/CiktiButonu";
+import GecmisTeklifler from './components/GecmisTeklifler';
 
 export default function App() {
   const { urunler, yukleniyor, hata } = useUrunler();
@@ -38,6 +39,9 @@ export default function App() {
           <SepetTablosu sepet={sepet} onTemizle={() => setSepet([])} />
 
           <CiktiButonu teklif={teklif} sepet={sepet} />
+
+          {/* YENİ: Geçmiş Teklifler ve Proforma Arşivi buraya yerleştirildi */}
+          <GecmisTeklifler />
         </main>
       </div>
     </div>
