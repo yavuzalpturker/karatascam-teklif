@@ -1,17 +1,34 @@
 const SEMBOLLER = { TRY: "₺", USD: "$", EUR: "€" };
 
-export function satirHesapla(urun, enCm, boyCm, adet, birimFiyat, paraBirimi = "USD", kdvOrani = 20) {
+/**
+ * @param {object} urun - Ürün bilgisi
+ * @param {number} enCm - (dummy hesap için, aşağıya bakın)
+ * @param {number} boyCm - (dummy hesap için, aşağıya bakın)
+ * @param {number} adet - Hesaplanmış toplam miktar (m², metretül veya adet olarak)
+ * @param {number} birimFiyat - Birim fiyat
+ * @param {string} paraBirimi - TRY / USD / EUR
+ * @param {number} kdvOrani - KDV yüzdesi
+ * @param {string} [birim] - Gerçek birim: "m²", "mt" veya "ad". Verilmezse urun.hesap_turu'ya bakılır (eski davranış).
+ */
+export function satirHesapla(urun, enCm, boyCm, adet, birimFiyat, paraBirimi = "USD", kdvOrani = 20, birim = null) {
   const metrekare = (enCm * boyCm) / 10000;
   const toplamMetrekare = metrekare * adet;
   const sembol = SEMBOLLER[paraBirimi] || "$";
 
+  // Gerçek birim önceliği: dışarıdan gelen `birim` parametresi > urun.hesap_turu (eski/varsayılan davranış)
+  const gercekBirim = birim || urun.hesap_turu;
+
   let tutar;
   let detay;
 
-  if (urun.hesap_turu === "m2") {
+  if (gercekBirim === "m2" || gercekBirim === "m²") {
     tutar = toplamMetrekare * birimFiyat;
     detay = `${toplamMetrekare.toFixed(2)} m² x ${birimFiyat.toFixed(2)} ${sembol}`;
+  } else if (gercekBirim === "mt") {
+    tutar = adet * birimFiyat;
+    detay = `${adet.toFixed(2)} mt x ${birimFiyat.toFixed(2)} ${sembol}`;
   } else {
+    // "ad" / "adet" ya da tanımsız durum
     tutar = adet * birimFiyat;
     detay = `${adet} adet x ${birimFiyat.toFixed(2)} ${sembol}`;
   }
@@ -53,7 +70,7 @@ export function paraFormatla(deger, paraBirimi = "USD") {
   })} ${sembol}`;
 }
 
-// YENİ EKLENEN: Sayıyı boşluksuz şekilde yazıya çeviren (çek mantığı) fonksiyon
+// Sayıyı boşluksuz şekilde yazıya çeviren (çek mantığı) fonksiyon
 export function sayiyiYaziyaCevir(sayi, paraBirimi = "USD") {
   const birler = ["", "bir", "iki", "üç", "dört", "beş", "altı", "yedi", "sekiz", "dokuz"];
   const onlar = ["", "on", "yirmi", "otuz", "kırk", "elli", "altmış", "yetmiş", "seksen", "doksan"];

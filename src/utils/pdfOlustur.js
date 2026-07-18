@@ -27,14 +27,23 @@ async function gorseliBase64eCevir(yol) {
   });
 }
 
-const SABIT_MADDELER = [
-  "Nakliye, montaj ve işçilik bedeli dahil fiyatlarımızdır.",
-  "Teslim süresi; imalat onayından sonra 2-3 hafta arasıdır.",
-  "Körkasa, güçlendirme profili hariçtir.",
-  "Alüminyum ve aksesuarlar RAL boyalı olacaktır.",
-  "Ödeme; %50 sipariş onayında, %25 malzeme şantiye tesliminde, kalan kısmı iş tesliminde nakit yapılacaktır.",
+const SOZLESME_SARTLARI = [
+  "Birim Fiyatı 31.12.2026 tarihe kadar siparişi geçilmemesi durumunda güncel fiyatlar geçerli olacaktır.",
+  "Sipariş miktarı +/- %10 değişimine kadar firma aynı birim fiyattan işi yapmayı taahhüt eder; aksi takdirde birim fiyat revize edilir.",
+  "Vadeli satışlarda; siparişi takiben 10 gün içerisinde kıymetli evrak teslim edilmiş olacaktır aksi halde %5 aylık faiz uygulanacaktır.",
+  "Ankara içi şantiye teslim fiyatlarımızdır. Montaj fiyatlara dahil değildir. Fiyatlar %10 fire oranına göre hazırlanmıştır.",
+  "Sevkiyat sonrasında kırık, çatlak, atık vb. durumlarda 12 saat içerisinde tarafımıza bildirilmemesi durumunda firmamızın herhangi bir sorumluluğu bulunmamaktadır.",
+  "Sözleşmedeki toplam metrajlar dışında çıkacak olan ölçüler ayrıca fiyatlandırılır. Kare, üçgen, yamuk vb. camlar dikdörtgen olarak hesaplanır. Şekilli camlar %25 fiyat farkı uygulanacaktır. 0,20m2 altında olan camlara %35 fiyat farkı uygulanacaktır.",
+  "Verilen ölçülerden kaynaklı hatalar alıcıya aittir. Ölçü gecikmelerinden sorumluluk alıcıya aittir.",
+  "Alıcının verdiği ölçü hatalarından kaynaklanan imalat hataları nedeniyle satıcıya kusur yüklenemez.",
+  "Şantiyede zemin ve montaj yerinin hazır olmamasından kaynaklanan gecikmenin sorumluluğu alıcıya aittir.",
+  "Zemin ve montaj yerinin hazır olmaması sebebiyle şantiyeye teslim ettirilen ya da imalatı yaptırılarak fabrikada bekletilen camların hasarlanmasından satıcı firma sorumlu değildir.",
+  "Paletli sevk edilen camların paletleri boşatıldıktan sonra iade edilmesi alıcıya aittir. İade edilmeyen paletlerin bedelini alıcı ödemekle yükümlüdür. Paletler 10.000 + KDV depozito bedeli olarak faturalandırılacaktır.",
+  "Sözleşme imzalandıktan sonra 7 gün içinde imalat ölçüsü verilmemesi halinde; malzeme ye gelen zamlardan doğacak vade farkı ve anında malzeme temini konusunda satıcı sorumlu olmayacaktır.",
+  "Anlaşmazlıkların çözümünde taraflar arasındaki mail yazışmaları delil olarak kabul edilecektir.",
+  "İş bu teklif yedi gün içinde onaylanmadığı taktir de reddedilmiş sayılacak ve firmamız teklifle bağlı olmayacaktır.",
+  "Temperli camlar TS EN 1863, Lamine camlar TS EN12543, Isıcamlar TS EN 1279-1 standartlarına göre yapılacak olup standart içerisindeki töleranslar dışında herhangi bir kontrol şartı tarafımızdan kabul edilmemektedir."
 ];
-
 function siradakiProformaNoGetir() {
   let sayac = localStorage.getItem("proforma_sayac");
   if (!sayac) {
@@ -100,17 +109,25 @@ const ORTAK_FOOTER = {
 // 1. DÜZ METİN TEKLİF PDF'İ
 // ==========================================
 export async function teklifPdfIndir(teklif, sepet, teklifNo, onizlemeMi = false) {
-  const logoSisecam = await gorseliBase64eCevir("/logo1.png");
+  const logoSisecam = await gorseliBase64eCevir("/sisecam.png");
   const logoIso = await gorseliBase64eCevir("/birinci-logo.jpg");
 
-  const urunSatirlari = sepet.flatMap((satir) => [
-    { text: satir.urunAciklamasi + (satir.ozelAciklama ? ` - ${satir.ozelAciklama}` : ""), bold: true, margin: [0, 6, 0, 2] },
-    {
-      text: `${satir.miktarDetay}  =  ${paraFormatla(satir.toplamTutar, satir.paraBirimi)} + KDV`,
-      alignment: "right",
-      margin: [0, 0, 0, 4],
-    },
-  ]);
+  const urunSatirlari = sepet.flatMap((satir) => {
+    // Sadece özel açıklama varsa ve ürün adından farklıysa ekle
+    let baslik = satir.urunAciklamasi;
+    if (satir.ozelAciklama && satir.ozelAciklama.trim() !== "" && satir.ozelAciklama.trim() !== satir.urunAciklamasi) {
+      baslik += ` - ${satir.ozelAciklama}`;
+    }
+
+    return [
+      { text: baslik, bold: true, margin: [0, 6, 0, 2] },
+      {
+        text: `${satir.miktarDetay}  =  ${paraFormatla(satir.toplamTutar, satir.paraBirimi)} + KDV`,
+        alignment: "right",
+        margin: [0, 0, 0, 4],
+      },
+    ];
+  });
 
   const genelToplamlar = genelToplamHesapla(sepet);
   const genelToplamSatirlari = Object.entries(genelToplamlar).map(([paraBirimi, tutar]) => ({
@@ -153,15 +170,25 @@ export async function teklifPdfIndir(teklif, sepet, teklifNo, onizlemeMi = false
       { text: "İhtiyacınız olan camlara ilişkin fiyat teklifimiz aşağıdaki gibidir:", fontSize: 10, margin: [0, 0, 0, 10] },
       ...urunSatirlari,
       ...genelToplamSatirlari,
-      ...SABIT_MADDELER.map((madde) => ({
-        text: `* ${madde}`,
-        fontSize: 9,
-        margin: [2, 0, 0, 2],
-      })),
+      // Eğer teklif.notlar varsa bunları ekle, yoksa hiçbir şey ekleme
+    ...(teklif.notlar ? teklif.notlar.split('\n').map((satir) => ({
+      text: `* ${satir}`,
+      fontSize: 9,
+      margin: [2, 0, 0, 2],
+    })) : []),
       { text: "Saygılarımla,", italics: true, alignment: "right", margin: [0, 20, 0, 2] },
       { text: "Sercan Temel", bold: true, alignment: "right", margin: [0, 0, 0, 30] },
       { text: "Almış olduğunuz teklifin teyidi için mutlaka onay veriniz.", bold: true, fontSize: 10 },
       { text: "Firma ismi ve kaşesi / Onayı / Özel notlar", fontSize: 10 },
+      // Yasal Şartlar Bloğu
+      {
+        stack: SOZLESME_SARTLARI.map(sart => ({
+          text: sart,
+          fontSize: 8,
+          margin: [0, 0, 0, 2]
+        })),
+        margin: [0, 10, 0, 0]
+      },
     ],
     defaultStyle: { font: "Roboto" },
   };
@@ -180,7 +207,7 @@ export async function teklifPdfIndir(teklif, sepet, teklifNo, onizlemeMi = false
 // 2. TABLOLU PROFORMA FATURA PDF'İ
 // ==========================================
 export async function proformaPdfIndir(teklif, sepet, teklifNo, onizlemeMi = false) {
-  const logoSisecam = await gorseliBase64eCevir("/logo1.png");
+  const logoSisecam = await gorseliBase64eCevir("/sisecam.png");
   const logoIso = await gorseliBase64eCevir("/birinci-logo.jpg");
   
   const tarihYazisi = teklif.tarih.toLocaleDateString("tr-TR");

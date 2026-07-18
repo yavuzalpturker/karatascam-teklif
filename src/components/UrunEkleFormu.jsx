@@ -104,6 +104,7 @@ export default function UrunEkleFormu({ urunler = [], yukleniyor, hata, onEkle }
         alert("Metretül hesabı için lütfen geçerli Uzunluk/Boy (mm) değerini giriniz!");
         return;
       }
+      
 
       hesaplananMiktar = (boyDegeri / 1000) * (Number(miktar) || 1);
       ekstraAciklama = ` (${boyDegeri} mm - ${Number(miktar) || 1} Adet)`;
@@ -150,7 +151,7 @@ export default function UrunEkleFormu({ urunler = [], yukleniyor, hata, onEkle }
       Açıklama: aciklamaBul(sonKullanilacakUrun)
     };
 
-    const satir = satirHesapla(duzeltilmisUrun, 100, 100, hesaplananMiktar, nihaiFiyat, paraBirimi, Number(kdvOrani));
+    const satir = satirHesapla(duzeltilmisUrun, 100, 100, hesaplananMiktar, nihaiFiyat, paraBirimi, Number(kdvOrani), nihaiBirim);
 
     satir.ozelAciklama = ozelAciklama + ekstraAciklama;
     satir.miktar = Number(hesaplananMiktar.toFixed(3)); 

@@ -1,4 +1,4 @@
-import { genelToplamHesapla, paraFormatla } from "../utils/hesaplama";
+import { genelToplamHesapla, genelKdvHesapla, paraFormatla } from "../utils/hesaplama";
 
 export default function SepetTablosu({ sepet, onTemizle, onSil }) {
   if (sepet.length === 0) {
@@ -13,6 +13,7 @@ export default function SepetTablosu({ sepet, onTemizle, onSil }) {
   }
 
   const genelToplamlar = genelToplamHesapla(sepet);
+  const genelKdvler = genelKdvHesapla(sepet);
 
   return (
     <section className="panel">
@@ -56,13 +57,22 @@ export default function SepetTablosu({ sepet, onTemizle, onSil }) {
         </tbody>
       </table>
 
-      {Object.entries(genelToplamlar).map(([paraBirimi, tutar]) => (
-        <p className="genel-toplam" key={paraBirimi}>
-          GENEL TOPLAM ({paraBirimi}) : {paraFormatla(tutar, paraBirimi)} + KDV
-        </p>
-      ))}
+      {Object.entries(genelToplamlar).map(([paraBirimi, tutar]) => {
+        const kdvTutari = genelKdvler[paraBirimi] || 0;
+        const kdvDahilToplam = tutar + kdvTutari;
 
-      <button className="buton buton--ikincil" onClick={onTemizle}>
+        return (
+          <div key={paraBirimi} style={{ textAlign: "right", marginTop: "10px", fontSize: "16px", fontWeight: "bold" }}>
+            <p style={{ margin: "2px 0" }}>Toplam: {paraFormatla(tutar, paraBirimi)}</p>
+            <p style={{ margin: "2px 0" }}>KDV Toplamı: {paraFormatla(kdvTutari, paraBirimi)}</p>
+            <p style={{ margin: "5px 0", color: "#007099", borderTop: "2px solid #ccc", paddingTop: "5px" }}>
+              GENEL TOPLAM (KDV DAHİL): {paraFormatla(kdvDahilToplam, paraBirimi)}
+            </p>
+          </div>
+        );
+      })}
+
+      <button className="buton buton--ikincil" onClick={onTemizle} style={{ marginTop: "15px" }}>
         Listeyi Temizle
       </button>
     </section>
