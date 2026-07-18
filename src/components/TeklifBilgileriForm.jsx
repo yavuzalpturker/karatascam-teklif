@@ -48,11 +48,21 @@ export default function TeklifBilgileriForm({ teklif, onDegistir }) {
       <label className="alan">
         <span>Notlar (PDF'in altına eklenecek)</span>
         <textarea
+        
           rows="7"
           value={teklif.notlar || ""}
           onChange={(e) => alanGuncelle("notlar", e.target.value)}
           placeholder="- Bu belge fatura yerine geçmez.&#10;- Fabrika teslim fiyatımızdır."
           style={{ width: "100%", padding: "10px", borderRadius: "6px", border: "1px solid #ccc", resize: "vertical" }}
+        />
+      </label>
+      <label className="alan">
+        <span>İmzalayan Kişi</span>
+        <input
+          type="text"
+          value={teklif.imzalayan || ""}
+          onChange={(e) => alanGuncelle("imzalayan", e.target.value)}
+          placeholder="Sercan Temel"
         />
       </label>
     </aside>

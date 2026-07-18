@@ -28,7 +28,7 @@ async function gorseliBase64eCevir(yol) {
 }
 
 const SOZLESME_SARTLARI = [
-  "Birim Fiyatı 31.12.2026 tarihe kadar siparişi geçilmemesi durumunda güncel fiyatlar geçerli olacaktır.",
+ 
   "Sipariş miktarı +/- %10 değişimine kadar firma aynı birim fiyattan işi yapmayı taahhüt eder; aksi takdirde birim fiyat revize edilir.",
   "Vadeli satışlarda; siparişi takiben 10 gün içerisinde kıymetli evrak teslim edilmiş olacaktır aksi halde %5 aylık faiz uygulanacaktır.",
   "Ankara içi şantiye teslim fiyatlarımızdır. Montaj fiyatlara dahil değildir. Fiyatlar %10 fire oranına göre hazırlanmıştır.",
@@ -130,13 +130,23 @@ export async function teklifPdfIndir(teklif, sepet, teklifNo, onizlemeMi = false
   });
 
   const genelToplamlar = genelToplamHesapla(sepet);
-  const genelToplamSatirlari = Object.entries(genelToplamlar).map(([paraBirimi, tutar]) => ({
-    text: `GENEL TOPLAM (${paraBirimi}) : ${paraFormatla(tutar, paraBirimi)} + KDV`,
-    bold: true,
-    fontSize: 12,
-    alignment: "right",
-    margin: [0, 4, 0, 4],
-  }));
+  const genelKdvler = genelKdvHesapla(sepet); // KDV'leri de hesaplıyoruz
+
+  const genelToplamSatirlari = Object.entries(genelToplamlar).map(([paraBirimi, tutar]) => {
+    const kdvTutar = genelKdvler[paraBirimi] || 0;
+    const kdvDahilToplam = tutar + kdvTutar;
+
+    return [
+      {
+        text: `GENEL TOPLAM (${paraBirimi}) : ${paraFormatla(tutar, paraBirimi)} + KDV`,
+        bold: true, fontSize: 11, alignment: "right", margin: [0, 4, 0, 2]
+      },
+      {
+        text: `KDV DAHİL TOPLAM : ${paraFormatla(kdvDahilToplam, paraBirimi)}`,
+        bold: true, fontSize: 12, alignment: "right", margin: [0, 0, 0, 8], color: '#333'
+      }
+    ];
+  }).flat(); // Düz bir liste haline getirmek için .flat() kullanıyoruz
 
   const tarihYazisi = teklif.tarih.toLocaleDateString("tr-TR");
   const belgeNo = teklifNo || siradakiProformaNoGetir(); 
@@ -146,13 +156,18 @@ export async function teklifPdfIndir(teklif, sepet, teklifNo, onizlemeMi = false
     header: ortakHeaderOlustur(logoSisecam, logoIso),
     footer: ORTAK_FOOTER,
     content: [
-      { text: "TEKLİFTİR.", fontSize: 10, margin: [0, 0, 0, 2] },
+      { text: "FİYAT TEKLİFİ.", fontSize: 10, margin: [0, 0, 0, 2] },
       {
         columns: [
           {
             stack: [
               { text: teklif.musteriAdi, fontSize: 10, bold: true },
-              { text: teklif.ilgiliKisi, fontSize: 10, margin: [0, 2, 0, 10] },
+              // 155. satırı bul ve şöyle değiştir:
+{ 
+  text: (!teklif.ilgiliKisi || teklif.ilgiliKisi.includes("Sn.")) ? teklif.ilgiliKisi : `Sn. ${teklif.ilgiliKisi} Dikkatine,`, 
+  fontSize: 10, 
+  margin: [0, 2, 0, 10] 
+},
               { text: `Proje Adı: ${teklif.projeAdi}`, bold: true, fontSize: 11 }
             ],
             alignment: 'left'
@@ -167,7 +182,7 @@ export async function teklifPdfIndir(teklif, sepet, teklifNo, onizlemeMi = false
         ],
         margin: [0, 10, 0, 20]
       },
-      { text: "İhtiyacınız olan camlara ilişkin fiyat teklifimiz aşağıdaki gibidir:", fontSize: 10, margin: [0, 0, 0, 10] },
+      { text: "İhtiyacınız olan ürünlere ilişkin teklifimiz aşağıdaki gibidir:", fontSize: 10, margin: [0, 0, 0, 10] },
       ...urunSatirlari,
       ...genelToplamSatirlari,
       // Eğer teklif.notlar varsa bunları ekle, yoksa hiçbir şey ekleme
@@ -176,8 +191,21 @@ export async function teklifPdfIndir(teklif, sepet, teklifNo, onizlemeMi = false
       fontSize: 9,
       margin: [2, 0, 0, 2],
     })) : []),
-      { text: "Saygılarımla,", italics: true, alignment: "right", margin: [0, 20, 0, 2] },
-      { text: "Sercan Temel", bold: true, alignment: "right", margin: [0, 0, 0, 30] },
+      { 
+      // Saygılarımla ve İsim Bloğu
+      
+        stack: [
+          { text: "Saygılarımla,", italics: true, alignment: "right", margin: [0, 20, 0, 2] },
+          { 
+            text: `${teklif.imzalayan || "Sercan Temel"}`, 
+            bold: true, 
+            alignment: "right", 
+            margin: [0, 0, 0, 30] 
+          }
+        ]
+      },
+  
+      
       { text: "Almış olduğunuz teklifin teyidi için mutlaka onay veriniz.", bold: true, fontSize: 10 },
       { text: "Firma ismi ve kaşesi / Onayı / Özel notlar", fontSize: 10, margin: [0, 0, 0, 80] },
       // Yasal Şartlar Bloğu
@@ -330,7 +358,7 @@ export async function proformaPdfIndir(teklif, sepet, teklifNo, onizlemeMi = fal
           {
             stack: [
               { text: 'Saygılarımla,', italics: true, fontSize: 11, margin: [0, 0, 0, 2] },
-              { text: 'Sercan Temel', bold: true, fontSize: 11 }
+              
             ],
             alignment: 'right'
           }
