@@ -9,6 +9,14 @@ export default function GecmisTeklifler() {
 
   useEffect(() => {
     fetchGecmisTeklifler();
+
+    // Üst taraftan yeni kayıt geldiğine dair sinyal dinleyici
+    const arsivGuncellemeDinleyici = () => fetchGecmisTeklifler();
+    window.addEventListener("arsivGuncellendi", arsivGuncellemeDinleyici);
+
+    return () => {
+      window.removeEventListener("arsivGuncellendi", arsivGuncellemeDinleyici);
+    };
   }, []);
 
   async function fetchGecmisTeklifler() {
@@ -120,7 +128,6 @@ export default function GecmisTeklifler() {
                   <td style={{ padding: "12px" }}>{t.musteri_adi}</td>
                   <td style={{ padding: "12px", textAlign: "center", whiteSpace: "nowrap" }}>
                     
-                    {/* YENİ GÖRÜNTÜLE BUTONU */}
                     <button 
                       onClick={() => onizle(t)} 
                       title="Yeni Sekmede Görüntüle"

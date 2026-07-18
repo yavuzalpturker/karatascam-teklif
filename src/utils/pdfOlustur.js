@@ -4,21 +4,18 @@ import { paraFormatla, genelToplamHesapla, genelKdvHesapla, sayiyiYaziyaCevir } 
 
 pdfMake.vfs = pdfFonts?.pdfMake?.vfs || pdfFonts?.vfs || pdfFonts?.default?.pdfMake?.vfs || pdfFonts?.default?.vfs;
 
-
 // YENİ NÜKLEER SEÇENEK: Bozuk/Sahte JPG'leri tarayıcıya zorla çizdirip %100 saf PNG'ye dönüştüren sistem
 async function gorseliBase64eCevir(yol) {
   return new Promise((resolve) => {
     const img = new Image();
     img.onload = () => {
       try {
-        // Görünmez bir tuval yaratıp resmi içine çiziyoruz
         const canvas = document.createElement('canvas');
         canvas.width = img.width;
         canvas.height = img.height;
         const ctx = canvas.getContext('2d');
         ctx.drawImage(img, 0, 0);
         
-        // Çizilen bu resmi PDF'in asla reddedemeyeceği saf bir PNG koduna çeviriyoruz!
         const safPng = canvas.toDataURL('image/png');
         resolve(safPng);
       } catch (e) {
@@ -54,14 +51,60 @@ function siradakiProformaNoGetir() {
   return noMetni;
 }
 
+// Ortak Header Üretici
+function ortakHeaderOlustur(logoSisecam, logoIso) {
+  return {
+    stack: [
+      {
+        columns: [
+          {
+            stack: [
+              {
+                text: [
+                  { text: 'KARATAŞ', fontSize: 26, color: '#222222' },
+                  { text: 'CAM', fontSize: 26, bold: true, color: '#222222' }
+                ]
+              },
+              { text: 'KARATAŞ AYNA KRİSTAL CAM MOB. İNŞ. TUR. NAK. MET. SAN. VE TİC. LTD. ŞTİ.', fontSize: 8, margin: [0, 4, 0, 0] }
+            ],
+            alignment: 'left',
+            margin: [0, 5, 0, 0]
+          },
+          {
+            columns: [
+              logoSisecam ? { image: logoSisecam, width: 50, margin: [0, 10, 10, 0] } : null,
+              logoIso ? { image: logoIso, width: 75, margin: [0, 0, 0, 0] } : null
+            ].filter(Boolean),
+            width: 'auto',
+            alignment: 'right'
+          }
+        ]
+      },
+      { canvas: [{ type: 'line', x1: 0, y1: 0, x2: 515, y2: 0, lineWidth: 1 }], margin: [0, 8, 0, 0] }
+    ],
+    margin: [40, 20, 40, 0]
+  };
+}
+
+// Ortak Footer Üretici
+const ORTAK_FOOTER = {
+  stack: [
+    { canvas: [{ type: 'line', x1: 0, y1: 0, x2: 515, y2: 0, lineWidth: 1 }], margin: [0, 0, 0, 5] },
+    { text: "Çalım Caddesi No : 19 Siteler - Altındağ / ANKARA   •   Tel : 0312. 348 91 62 (Pbx)   •   Fax : 0312. 348 70 78", fontSize: 8, alignment: "center" },
+    { text: "web: www.karatascam.com.tr   •   e-mail: info@karatascam.com.tr   •   Mersis No: 0522 0626 2270 0015", fontSize: 8, alignment: "center" },
+  ],
+  margin: [40, 0, 40, 20],
+};
+
 // ==========================================
 // 1. DÜZ METİN TEKLİF PDF'İ
 // ==========================================
 export async function teklifPdfIndir(teklif, sepet, teklifNo, onizlemeMi = false) {
-  const sagLogo = await gorseliBase64eCevir("/birinci-logo.jpg");
+  const logoSisecam = await gorseliBase64eCevir("/logo1.png");
+  const logoIso = await gorseliBase64eCevir("/birinci-logo.jpg");
 
   const urunSatirlari = sepet.flatMap((satir) => [
-    { text: satir.urunAciklamasi, bold: true, margin: [0, 6, 0, 2] },
+    { text: satir.urunAciklamasi + (satir.ozelAciklama ? ` - ${satir.ozelAciklama}` : ""), bold: true, margin: [0, 6, 0, 2] },
     {
       text: `${satir.miktarDetay}  =  ${paraFormatla(satir.toplamTutar, satir.paraBirimi)} + KDV`,
       alignment: "right",
@@ -79,44 +122,34 @@ export async function teklifPdfIndir(teklif, sepet, teklifNo, onizlemeMi = false
   }));
 
   const tarihYazisi = teklif.tarih.toLocaleDateString("tr-TR");
+  const belgeNo = teklifNo || siradakiProformaNoGetir(); 
 
   const docDefinition = {
     pageMargins: [40, 100, 40, 60],
-    
-    header: {
-      stack: [
-        {
-          columns: [
-            {
-              text: [
-                { text: 'KARATAŞ', fontSize: 26, color: '#222222' },
-                { text: 'CAM', fontSize: 26, bold: true, color: '#222222' }
-              ],
-              alignment: 'left',
-              margin: [0, 10, 0, 0]
-            },
-            sagLogo ? { image: sagLogo, width: 140, alignment: 'right' } : { text: '', width: 140 }
-          ]
-        },
-        { canvas: [{ type: 'line', x1: 0, y1: 0, x2: 515, y2: 0, lineWidth: 1 }], margin: [0, 8, 0, 0] }
-      ],
-      margin: [40, 20, 40, 0]
-    },
-      
-    footer: {
-      stack: [
-        { text: "Karataş Ayna Kristal Cam Ltd. Şti./ Çalım Sok No:19 SİTELER ANKARA", fontSize: 8 },
-        { text: "TEL: 0 312 348 9162  FAX: 0 312 348 70 78", fontSize: 8 },
-        { text: "www.karatascam.com.tr  |  info@karatascam.com.tr", fontSize: 8 },
-      ],
-      margin: [40, 0, 40, 20],
-    },
+    header: ortakHeaderOlustur(logoSisecam, logoIso),
+    footer: ORTAK_FOOTER,
     content: [
       { text: "TEKLİFTİR.", fontSize: 10, margin: [0, 0, 0, 2] },
-      { text: teklif.musteriAdi, fontSize: 10 },
-      { text: teklif.ilgiliKisi, fontSize: 10, margin: [0, 0, 0, 10] },
-      { text: `Proje Adı: ${teklif.projeAdi}`, bold: true, fontSize: 11 },
-      { text: `Tarih: ${tarihYazisi}`, fontSize: 10, margin: [0, 0, 0, 10] },
+      {
+        columns: [
+          {
+            stack: [
+              { text: teklif.musteriAdi, fontSize: 10, bold: true },
+              { text: teklif.ilgiliKisi, fontSize: 10, margin: [0, 2, 0, 10] },
+              { text: `Proje Adı: ${teklif.projeAdi}`, bold: true, fontSize: 11 }
+            ],
+            alignment: 'left'
+          },
+          {
+            stack: [
+              { text: `Tarih: ${tarihYazisi}`, fontSize: 10 },
+              { text: `No: ${belgeNo}`, fontSize: 10 }
+            ],
+            alignment: 'right'
+          }
+        ],
+        margin: [0, 10, 0, 20]
+      },
       { text: "İhtiyacınız olan camlara ilişkin fiyat teklifimiz aşağıdaki gibidir:", fontSize: 10, margin: [0, 0, 0, 10] },
       ...urunSatirlari,
       ...genelToplamSatirlari,
@@ -135,7 +168,6 @@ export async function teklifPdfIndir(teklif, sepet, teklifNo, onizlemeMi = false
 
   const dosyaAdi = `Karatascam_Teklif_${teklif.musteriAdi}.pdf`;
   
-  // YENİ EKLENEN KISIM: Önizleme ise sekmede aç, değilse indir
   const pdfDoc = pdfMake.createPdf(docDefinition);
   if (onizlemeMi) {
     pdfDoc.open();
@@ -148,15 +180,16 @@ export async function teklifPdfIndir(teklif, sepet, teklifNo, onizlemeMi = false
 // 2. TABLOLU PROFORMA FATURA PDF'İ
 // ==========================================
 export async function proformaPdfIndir(teklif, sepet, teklifNo, onizlemeMi = false) {
-  const sagLogo = await gorseliBase64eCevir("/birinci-logo.jpg");
+  const logoSisecam = await gorseliBase64eCevir("/logo1.png");
+  const logoIso = await gorseliBase64eCevir("/birinci-logo.jpg");
   
   const tarihYazisi = teklif.tarih.toLocaleDateString("tr-TR");
-  // DIŞARIDAN NUMARA GELMİŞSEONU KULLAN (Geçmiş teklifleri bozmamak için), YOKSA YENİ NUMARA ÜRET
   const belgeNo = teklifNo || siradakiProformaNoGetir(); 
 
   const tabloGövdesi = [
     [
       { text: 'MALIN CİNSİ', bold: true, fillColor: '#eeeeee', margin: [5, 5, 0, 5], alignment: 'left' },
+      { text: 'AÇIKLAMA', bold: true, fillColor: '#eeeeee', margin: [5, 5, 0, 5], alignment: 'left' },
       { text: 'ADET / METRAJ', bold: true, fillColor: '#eeeeee', margin: [0, 5, 0, 5], alignment: 'center' },
       { text: 'BİRİM FİYAT', bold: true, fillColor: '#eeeeee', margin: [0, 5, 0, 5], alignment: 'center' },
       { text: 'KDV ORANI', bold: true, fillColor: '#eeeeee', margin: [0, 5, 0, 5], alignment: 'center' },
@@ -176,6 +209,7 @@ export async function proformaPdfIndir(teklif, sepet, teklifNo, onizlemeMi = fal
 
     tabloGövdesi.push([
       { text: satir.urunAciklamasi, fontSize: 9, margin: [5, 5, 0, 5], alignment: 'left' },
+      { text: satir.ozelAciklama || "-", fontSize: 9, margin: [5, 5, 0, 5], alignment: 'left' },
       { text: miktarMetni, fontSize: 9, alignment: 'center', margin: [0, 5, 0, 5] },
       { text: birimFiyatMetni, fontSize: 9, alignment: 'center', margin: [0, 5, 0, 5] },
       { text: `% ${satir.kdvOrani}`, fontSize: 9, alignment: 'center', margin: [0, 5, 0, 5] },
@@ -197,17 +231,17 @@ export async function proformaPdfIndir(teklif, sepet, teklifNo, onizlemeMi = fal
 
     tabloGövdesi.push(
       [
-        { text: '', colSpan: 3, border: [false, false, false, false] }, {}, {}, 
+        { text: '', colSpan: 4, border: [false, false, false, false] }, {}, {}, {}, 
         { text: `TOPLAM`, alignment: 'right', bold: true, margin: [0, 3, 5, 3], fillColor: '#f5f5f5' }, 
         { text: paraFormatla(tutar, paraBirimi), alignment: 'right', bold: true, margin: [0, 3, 5, 3], fillColor: '#f5f5f5' }
       ],
       [
-        { text: '', colSpan: 3, border: [false, false, false, false] }, {}, {}, 
-        { text: `HESAPLANAN KDV`, alignment: 'right', bold: true, margin: [0, 3, 5, 3], fillColor: '#f5f5f5' }, 
+        { text: '', colSpan: 4, border: [false, false, false, false] }, {}, {}, {}, 
+        { text: `KDV %20`, alignment: 'right', bold: true, margin: [0, 3, 5, 3], fillColor: '#f5f5f5' }, 
         { text: paraFormatla(kdvTutar, paraBirimi), alignment: 'right', bold: true, margin: [0, 3, 5, 3], fillColor: '#f5f5f5' }
       ],
       [
-        { text: '', colSpan: 3, border: [false, false, false, false] }, {}, {}, 
+        { text: '', colSpan: 4, border: [false, false, false, false] }, {}, {}, {}, 
         { text: `GENEL TOPLAM`, alignment: 'right', bold: true, margin: [0, 3, 5, 3], fillColor: '#e0e0e0' }, 
         { text: paraFormatla(genelToplam, paraBirimi), alignment: 'right', bold: true, margin: [0, 3, 5, 3], fillColor: '#e0e0e0' }
       ]
@@ -222,45 +256,28 @@ export async function proformaPdfIndir(teklif, sepet, teklifNo, onizlemeMi = fal
 
   const docDefinition = {
     pageMargins: [40, 100, 40, 60],
-    
-    header: {
-      stack: [
-        {
-          columns: [
-            {
-              text: [
-                { text: 'KARATAŞ', fontSize: 26, color: '#222222' },
-                { text: 'CAM', fontSize: 26, bold: true, color: '#222222' }
-              ],
-              alignment: 'left',
-              margin: [0, 10, 0, 0]
-            },
-            sagLogo ? { image: sagLogo, width: 140, alignment: 'right' } : { text: '', width: 140 }
-          ]
-        },
-        { canvas: [{ type: 'line', x1: 0, y1: 0, x2: 515, y2: 0, lineWidth: 1 }], margin: [0, 8, 0, 0] }
-      ],
-      margin: [40, 20, 40, 0]
-    },
-      
-    footer: {
-      stack: [
-        { text: `YALNIZ: ${yalnizMetni}.`, fontSize: 10, margin: [0, 0, 0, 2] },
-        { canvas: [{ type: 'line', x1: 0, y1: 0, x2: 515, y2: 0, lineWidth: 1 }], margin: [0, 0, 0, 5] },
-        { text: "Çalım Caddesi No : 19 Siteler - Altındağ / ANKARA   •   Tel : 0312. 348 91 62 (Pbx)   •   Fax : 0312. 348 70 78", fontSize: 8, alignment: "center" },
-        { text: "web: www.karatascam.com.tr   •   e-mail: info@karatascam.com.tr   •   Mersis No: 0522 0626 2270 0015", fontSize: 8, alignment: "center" },
-      ],
-      margin: [40, 0, 40, 20],
-    },
+    header: ortakHeaderOlustur(logoSisecam, logoIso),
+    footer: ORTAK_FOOTER,
     content: [
-      { text: `Tarih: ${tarihYazisi}`, alignment: "right", fontSize: 10 },
-      { text: `No: ${belgeNo}`, alignment: "right", fontSize: 10, margin: [0, 2, 0, 5] },
-      { text: "PROFORMA FATURA", style: "header", alignment: "center", bold: true, fontSize: 14, margin: [0, 10, 0, 20] },
+      {
+        columns: [
+          { text: `Proje Adı: ${teklif.projeAdi || ""}`, bold: true, fontSize: 10, alignment: 'left' },
+          {
+            stack: [
+              { text: `Tarih: ${tarihYazisi}`, fontSize: 10 },
+              { text: `No: ${belgeNo}`, fontSize: 10 }
+            ],
+            alignment: 'right'
+          }
+        ],
+        margin: [0, 10, 0, 20]
+      },
+      { text: "PROFORMA FATURA", style: "header", alignment: "center", bold: true, fontSize: 14, margin: [0, 0, 0, 20] },
       { text: dikkatineSatiri, bold: true, fontSize: 10, margin: [0, 0, 0, 10] },
       {
         table: {
           headerRows: 1,
-          widths: ['*', 'auto', 'auto', 'auto', 'auto'],
+          widths: ['*', '*', 'auto', 'auto', 'auto', 'auto'],
           body: tabloGövdesi
         },
         layout: {
@@ -269,14 +286,38 @@ export async function proformaPdfIndir(teklif, sepet, teklifNo, onizlemeMi = fal
           hLineColor: function (i, node) { return '#aaaaaa'; },
           vLineColor: function (i, node) { return '#aaaaaa'; },
         }
-      }
+      },
+      
+      // YALNIZ YAZISI: Sağa dayalı (alignment: 'right') yapıldı!
+      { text: [ {text: 'YALNIZ: ', bold: true}, `${yalnizMetni}.` ], fontSize: 10, alignment: 'right', margin: [0, 4, 0, 20] },
+      
+      {
+        columns: [
+          {
+            stack: [
+              { text: 'İŞBANKASI / SİTELER ŞUBESİ', bold: true, fontSize: 10, margin: [0, 0, 0, 5] },
+              { text: 'IBAN NO : TR26 0006 4000 0014 2210 2141 37', fontSize: 10 }
+            ],
+            alignment: 'left'
+          },
+          {
+            stack: [
+              { text: 'Saygılarımla,', italics: true, fontSize: 11, margin: [0, 0, 0, 2] },
+              { text: 'Sercan Temel', bold: true, fontSize: 11 }
+            ],
+            alignment: 'right'
+          }
+        ],
+        margin: [0, 10, 0, 30]
+      },
+      { text: "Almış olduğunuz teklifin teyidi için mutlaka onay veriniz.", bold: true, fontSize: 10 },
+      { text: "Firma ismi ve kaşesi / Onayı / Özel notlar", fontSize: 10 }
     ],
     defaultStyle: { font: "Roboto" },
   };
 
   const dosyaAdi = `Proforma_Fatura_${teklif.musteriAdi}.pdf`;
   
-  // YENİ EKLENEN KISIM: Önizleme ise sekmede aç, değilse indir
   const pdfDoc = pdfMake.createPdf(docDefinition);
   if (onizlemeMi) {
     pdfDoc.open();

@@ -44,6 +44,11 @@ export default function App() {
   
   const [sepet, setSepet] = useState([]);
 
+  // YENİ EKLENEN: Sepetten tekil ürün silme fonksiyonu
+  const sepettenUrunSil = (silinecekIndex) => {
+    setSepet(sepet.filter((_, index) => index !== silinecekIndex));
+  };
+
   // EĞER GİRİŞ YAPILMADIYSA SADECE GİRİŞ EKRANINI GÖSTER
   if (!girisBasarili) {
     return <Login onLogin={handleLogin} />;
@@ -66,7 +71,7 @@ export default function App() {
             src="/logo3.jpg" 
             alt="Karataşcam Logo" 
             style={{ 
-              height: '75px',     /* Fotoğraftaki gibi ideal boy */
+              height: '75px',    /* Fotoğraftaki gibi ideal boy */
               width: 'auto',      /* Zorla uzatma iptal, kendi orijinal oranında kalacak */
               objectFit: 'contain',  
               borderRadius: '4px',
@@ -95,7 +100,12 @@ export default function App() {
             onEkle={(satir) => setSepet((mevcut) => [...mevcut, satir])}
           />
 
-          <SepetTablosu sepet={sepet} onTemizle={() => setSepet([])} />
+          {/* YENİ EKLENEN: onSil bağlantısı yapıldı */}
+          <SepetTablosu 
+            sepet={sepet} 
+            onTemizle={() => setSepet([])} 
+            onSil={sepettenUrunSil} 
+          />
 
           <CiktiButonu teklif={teklif} sepet={sepet} />
 
