@@ -14,7 +14,8 @@ export default function UrunEkleFormu({ urunler = [], yukleniyor, hata, onEkle }
   const [secilenBirim, setSecilenBirim] = useState("m²");
 
   const [birimFiyat, setBirimFiyat] = useState("");
-  const [paraBirimi, setParaBirimi] = useState("USD");
+  // BURASI DEĞİŞTİ: Varsayılan para birimi USD yerine TRY yapıldı
+  const [paraBirimi, setParaBirimi] = useState("TRY");
   const [kdvOrani, setKdvOrani] = useState("20");
 
   const aciklamaBul = (u) => u?.Açıklama || u?.açıklama || u?.aciklama || u?.Aciklama || "İsimsiz Ürün";
