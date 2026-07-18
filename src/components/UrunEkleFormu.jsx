@@ -10,11 +10,13 @@ export default function UrunEkleFormu({ urunler = [], yukleniyor, hata, onEkle }
 
   const [en, setEn] = useState("");
   const [boy, setBoy] = useState("");
-  const [miktar, setMiktar] = useState("1"); // Başlangıç değerini yazı(string) yaptık
+  const [miktar, setMiktar] = useState("1"); 
   const [secilenBirim, setSecilenBirim] = useState("m²");
 
-  const [birimFiyat, setBirimFiyat] = useState("");
-  // BURASI DEĞİŞTİ: Varsayılan para birimi USD yerine TRY yapıldı
+  // YENİ SİSTEM: İki farklı fiyat kutusu için iki ayrı state
+  const [fiyatAna, setFiyatAna] = useState(""); 
+  const [fiyatAdet, setFiyatAdet] = useState(""); 
+
   const [paraBirimi, setParaBirimi] = useState("TRY");
   const [kdvOrani, setKdvOrani] = useState("20");
 
@@ -28,12 +30,12 @@ export default function UrunEkleFormu({ urunler = [], yukleniyor, hata, onEkle }
     return tumBilgiler.includes(aramaMetni);
   });
 
-  // BURASI DEĞİŞTİ: Eğer secilenId "ozel_urun" ise, arama metninden sahte bir ürün objesi yaratıyoruz.
   const secilenUrun = secilenId === "ozel_urun" 
     ? { id: "ozel_urun", Kodu: "ÖZEL", Açıklama: arama.toUpperCase() }
     : (urunler || []).find((u) => u.id === secilenId);
 
-  const fiyatGecerliMi = Number(birimFiyat) > 0;
+  // Kutu 1 veya Kutu 2'den herhangi biri doluysa fiyat geçerlidir
+  const fiyatGecerliMi = Number(fiyatAna) > 0 || Number(fiyatAdet) > 0;
 
   const handleAramaDegisimi = (e) => {
     setArama(e.target.value);
@@ -47,7 +49,6 @@ export default function UrunEkleFormu({ urunler = [], yukleniyor, hata, onEkle }
     setListeAcik(false);
   };
 
-  // BURASI EKLENDİ: Özel ürün seçme fonksiyonu
   const handleOzelUrunSec = () => {
     setSecilenId("ozel_urun");
     setListeAcik(false);
@@ -58,6 +59,8 @@ export default function UrunEkleFormu({ urunler = [], yukleniyor, hata, onEkle }
 
     let hesaplananMiktar = Number(miktar) || 1;
     let ekstraAciklama = "";
+    let nihaiFiyat = 0;
+    let nihaiBirim = secilenBirim;
 
     if (secilenBirim === "m²") {
       const enDegeri = Number(en) || 0;
@@ -68,8 +71,24 @@ export default function UrunEkleFormu({ urunler = [], yukleniyor, hata, onEkle }
         return;
       }
       
-      hesaplananMiktar = ((enDegeri * boyDegeri) / 10000) * (Number(miktar) || 1);
-      ekstraAciklama = ` (${enDegeri}x${boyDegeri} cm - ${Number(miktar) || 1} Adet)`;
+      const tekCamM2 = (enDegeri * boyDegeri) / 10000;
+      const toplamM2 = tekCamM2 * (Number(miktar) || 1);
+      
+      // Detaylı m2 bilgisi PDF açıklamasına ekleniyor
+      ekstraAciklama = ` (${enDegeri}x${boyDegeri} cm - ${Number(miktar) || 1} Adet - Toplam: ${toplamM2.toFixed(2)} m²)`;
+
+      if (fiyatAdet && Number(fiyatAdet) > 0) {
+        // EĞER ADET FİYATI GİRİLDİYSE: Sepette birim "Adet" olarak görünür
+        hesaplananMiktar = Number(miktar) || 1; 
+        nihaiFiyat = Number(fiyatAdet);
+        nihaiBirim = "ad"; 
+      } else {
+        // EĞER M2 FİYATI GİRİLDİYSE: Normal m2 hesabı yapılır
+        hesaplananMiktar = toplamM2;
+        nihaiFiyat = Number(fiyatAna);
+        nihaiBirim = "m²";
+      }
+
     } 
     else if (secilenBirim === "mt") {
       const boyDegeri = Number(boy) || 0;
@@ -81,35 +100,44 @@ export default function UrunEkleFormu({ urunler = [], yukleniyor, hata, onEkle }
 
       hesaplananMiktar = (boyDegeri / 100) * (Number(miktar) || 1);
       ekstraAciklama = ` (${boyDegeri} cm - ${Number(miktar) || 1} Adet)`;
+      nihaiFiyat = Number(fiyatAna);
+      nihaiBirim = "mt";
+    } 
+    else {
+      hesaplananMiktar = Number(miktar) || 1;
+      nihaiFiyat = Number(fiyatAna);
+      nihaiBirim = "ad";
     }
 
     const duzeltilmisUrun = {
       ...secilenUrun,
-      "Ana Birim": secilenBirim.toUpperCase(), 
+      "Ana Birim": nihaiBirim.toUpperCase(), 
       aciklama: aciklamaBul(secilenUrun),
       Açıklama: aciklamaBul(secilenUrun)
     };
 
-    const satir = satirHesapla(duzeltilmisUrun, 100, 100, hesaplananMiktar, Number(birimFiyat), paraBirimi, Number(kdvOrani));
+    const satir = satirHesapla(duzeltilmisUrun, 100, 100, hesaplananMiktar, nihaiFiyat, paraBirimi, Number(kdvOrani));
 
     satir.ozelAciklama = ozelAciklama + ekstraAciklama;
     satir.miktar = Number(hesaplananMiktar.toFixed(3)); 
-    satir.secilenBirim = secilenBirim;
-    satir.birimFiyat = Number(birimFiyat);
-    satir.birim = secilenBirim; 
-    satir.Birim = secilenBirim;
+    satir.secilenBirim = nihaiBirim;
+    satir.birimFiyat = nihaiFiyat;
+    satir.birim = nihaiBirim; 
+    satir.Birim = nihaiBirim;
 
     if (onEkle) {
       onEkle(satir);
     } 
     
-    setBirimFiyat("");
+    // Formu sıfırlama işlemleri
+    setFiyatAna("");
+    setFiyatAdet("");
     setArama("");
     setSecilenId("");
     setOzelAciklama(""); 
     setEn("");
     setBoy("");
-    setMiktar("1"); // Form temizlenince yine string olarak 1 atıyoruz
+    setMiktar("1"); 
   }
 
   if (yukleniyor) {
@@ -169,7 +197,6 @@ export default function UrunEkleFormu({ urunler = [], yukleniyor, hata, onEkle }
                 ))
               )}
 
-              {/* BURASI EKLENDİ: Arama yapılmışsa her zaman en altta çıkan Özel Ürün Butonu */}
               {secilenId !== "ozel_urun" && (
                 <li 
                   onClick={handleOzelUrunSec}
@@ -262,18 +289,40 @@ export default function UrunEkleFormu({ urunler = [], yukleniyor, hata, onEkle }
 
       <label className="alan">
         <span>
-          Birim Fiyat (1 {secilenBirim} başına)
+          {secilenBirim === "m²" 
+            ? "Fiyatlandırma (Sadece birini doldurmanız yeterlidir)" 
+            : `Birim Fiyat (1 ${secilenBirim} başına)`}
         </span>
         <div style={{ display: "flex", gap: "8px" }}>
+          
           <input
             type="number"
             min="0"
             step="0.01"
-            placeholder="Fiyatı girin"
-            value={birimFiyat}
-            onChange={(e) => setBirimFiyat(e.target.value)}
+            placeholder={secilenBirim === "m²" ? "m² Fiyatı Girin" : "Fiyatı girin"}
+            value={fiyatAna}
+            onChange={(e) => {
+              setFiyatAna(e.target.value);
+              if (secilenBirim === "m²") setFiyatAdet(""); 
+            }}
             style={{ flex: 1 }}
           />
+
+          {secilenBirim === "m²" && (
+            <input
+              type="number"
+              min="0"
+              step="0.01"
+              placeholder="Adet Fiyatı Girin"
+              value={fiyatAdet}
+              onChange={(e) => {
+                setFiyatAdet(e.target.value);
+                setFiyatAna(""); 
+              }}
+              style={{ flex: 1 }}
+            />
+          )}
+
           <select value={paraBirimi} onChange={(e) => setParaBirimi(e.target.value)} style={{ flex: "0 0 90px" }}>
             <option value="TRY">TL (₺)</option>
             <option value="USD">Dolar ($)</option>
