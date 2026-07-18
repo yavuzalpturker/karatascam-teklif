@@ -1,3 +1,5 @@
+import FirmaOtomatikTamamlama from "./FirmaOtomatikTamamlama";
+
 export default function TeklifBilgileriForm({ teklif, onDegistir }) {
   function alanGuncelle(alan, deger) {
     onDegistir({ ...teklif, [alan]: deger });
@@ -9,10 +11,9 @@ export default function TeklifBilgileriForm({ teklif, onDegistir }) {
 
       <label className="alan">
         <span>Firma Adı</span>
-        <input
-          type="text"
-          value={teklif.musteriAdi}
-          onChange={(e) => alanGuncelle("musteriAdi", e.target.value)}
+        <FirmaOtomatikTamamlama
+          deger={teklif.musteriAdi}
+          onSecim={(deger) => alanGuncelle("musteriAdi", deger)}
         />
       </label>
 
