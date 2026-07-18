@@ -1,15 +1,16 @@
 import { useState } from "react";
 import { satirHesapla } from "../utils/hesaplama";
 
-export default function UrunEkleFormu({ urunler, yukleniyor, hata, onEkle }) {
+export default function UrunEkleFormu({ urunler = [], yukleniyor, hata, onEkle }) {
   const [arama, setArama] = useState("");
   const [secilenId, setSecilenId] = useState("");
   const [listeAcik, setListeAcik] = useState(false);
   
   const [ozelAciklama, setOzelAciklama] = useState("");
 
-  // YENİ: En boy yerine direkt Miktar ve Birim seçtiriyoruz
-  const [miktar, setMiktar] = useState(1);
+  const [en, setEn] = useState("");
+  const [boy, setBoy] = useState("");
+  const [miktar, setMiktar] = useState("1"); // Başlangıç değerini yazı(string) yaptık
   const [secilenBirim, setSecilenBirim] = useState("m²");
 
   const [birimFiyat, setBirimFiyat] = useState("");
@@ -19,14 +20,18 @@ export default function UrunEkleFormu({ urunler, yukleniyor, hata, onEkle }) {
   const aciklamaBul = (u) => u?.Açıklama || u?.açıklama || u?.aciklama || u?.Aciklama || "İsimsiz Ürün";
   const koduBul = (u) => u?.Kodu || u?.kodu || u?.code || "";
 
-  const filtrelenmisUrunler = urunler.filter((urun) => {
+  const filtrelenmisUrunler = (urunler || []).filter((urun) => {
     if (arama.length < 3) return false;
     const aramaMetni = arama.toLocaleLowerCase("tr-TR");
     const tumBilgiler = Object.values(urun).join(" ").toLocaleLowerCase("tr-TR");
     return tumBilgiler.includes(aramaMetni);
   });
 
-  const secilenUrun = urunler.find((u) => u.id === secilenId);
+  // BURASI DEĞİŞTİ: Eğer secilenId "ozel_urun" ise, arama metninden sahte bir ürün objesi yaratıyoruz.
+  const secilenUrun = secilenId === "ozel_urun" 
+    ? { id: "ozel_urun", Kodu: "ÖZEL", Açıklama: arama.toUpperCase() }
+    : (urunler || []).find((u) => u.id === secilenId);
+
   const fiyatGecerliMi = Number(birimFiyat) > 0;
 
   const handleAramaDegisimi = (e) => {
@@ -41,32 +46,69 @@ export default function UrunEkleFormu({ urunler, yukleniyor, hata, onEkle }) {
     setListeAcik(false);
   };
 
+  // BURASI EKLENDİ: Özel ürün seçme fonksiyonu
+  const handleOzelUrunSec = () => {
+    setSecilenId("ozel_urun");
+    setListeAcik(false);
+  };
+
   function ekle() {
     if (!secilenUrun || !fiyatGecerliMi) return;
 
+    let hesaplananMiktar = Number(miktar) || 1;
+    let ekstraAciklama = "";
+
+    if (secilenBirim === "m²") {
+      const enDegeri = Number(en) || 0;
+      const boyDegeri = Number(boy) || 0;
+      
+      if (enDegeri === 0 || boyDegeri === 0) {
+        alert("Lütfen geçerli En ve Boy cm değerlerini giriniz!");
+        return;
+      }
+      
+      hesaplananMiktar = ((enDegeri * boyDegeri) / 10000) * (Number(miktar) || 1);
+      ekstraAciklama = ` (${enDegeri}x${boyDegeri} cm - ${Number(miktar) || 1} Adet)`;
+    } 
+    else if (secilenBirim === "mt") {
+      const boyDegeri = Number(boy) || 0;
+
+      if (boyDegeri === 0) {
+        alert("Lütfen geçerli Uzunluk/Boy cm değerini giriniz!");
+        return;
+      }
+
+      hesaplananMiktar = (boyDegeri / 100) * (Number(miktar) || 1);
+      ekstraAciklama = ` (${boyDegeri} cm - ${Number(miktar) || 1} Adet)`;
+    }
+
     const duzeltilmisUrun = {
       ...secilenUrun,
-      "Ana Birim": secilenBirim.toUpperCase(), // Arka plandaki hesaplama şaşmasın diye birimi kilitliyoruz
+      "Ana Birim": secilenBirim.toUpperCase(), 
       aciklama: aciklamaBul(secilenUrun),
       Açıklama: aciklamaBul(secilenUrun)
     };
 
-    // Arka plandaki matematiksel formül bozulmasın diye en=100, boy=100 (yani 1 birim) gönderip 
-    // senin girdiğin miktarla çarptırıyoruz. Sonuç kusursuz çıkacak.
-    const satir = satirHesapla(duzeltilmisUrun, 100, 100, miktar, Number(birimFiyat), paraBirimi, Number(kdvOrani));
+    const satir = satirHesapla(duzeltilmisUrun, 100, 100, hesaplananMiktar, Number(birimFiyat), paraBirimi, Number(kdvOrani));
 
-    // PDF'e gidecek özel verilerimizi satıra ekliyoruz
-    satir.ozelAciklama = ozelAciklama;
-    satir.miktar = miktar;
+    satir.ozelAciklama = ozelAciklama + ekstraAciklama;
+    satir.miktar = Number(hesaplananMiktar.toFixed(3)); 
     satir.secilenBirim = secilenBirim;
     satir.birimFiyat = Number(birimFiyat);
+    satir.birim = secilenBirim; 
+    satir.Birim = secilenBirim;
 
-    onEkle(satir);
+    if (onEkle) {
+      onEkle(satir);
+    } 
     
     setBirimFiyat("");
     setArama("");
     setSecilenId("");
     setOzelAciklama(""); 
+    setEn("");
+    setBoy("");
+    setMiktar("1"); // Form temizlenince yine string olarak 1 atıyoruz
   }
 
   if (yukleniyor) {
@@ -111,7 +153,7 @@ export default function UrunEkleFormu({ urunler, yukleniyor, hata, onEkle }) {
               boxShadow: "0 4px 6px rgba(0,0,0,0.1)"
             }}>
               {filtrelenmisUrunler.length === 0 ? (
-                <li style={{ padding: "10px", color: "#666" }}>Ürün bulunamadı...</li>
+                <li style={{ padding: "10px", color: "#666" }}>Veritabanında eşleşen ürün bulunamadı...</li>
               ) : (
                 filtrelenmisUrunler.map((urun) => (
                   <li 
@@ -124,6 +166,28 @@ export default function UrunEkleFormu({ urunler, yukleniyor, hata, onEkle }) {
                     <strong>{koduBul(urun)}</strong> - {aciklamaBul(urun)}
                   </li>
                 ))
+              )}
+
+              {/* BURASI EKLENDİ: Arama yapılmışsa her zaman en altta çıkan Özel Ürün Butonu */}
+              {secilenId !== "ozel_urun" && (
+                <li 
+                  onClick={handleOzelUrunSec}
+                  style={{ 
+                    padding: "12px 10px", 
+                    backgroundColor: "#e6fcff", 
+                    borderTop: "2px solid #b3e6ff", 
+                    cursor: "pointer", 
+                    color: "#007099", 
+                    fontWeight: "bold", 
+                    textAlign: "center",
+                    position: "sticky",
+                    bottom: 0
+                  }}
+                  onMouseEnter={(e) => e.target.style.backgroundColor = "#cceeff"}
+                  onMouseLeave={(e) => e.target.style.backgroundColor = "#e6fcff"}
+                >
+                  ➕ "{arama}" Özel Ürün Olarak Seç
+                </li>
               )}
             </ul>
           )}
@@ -143,18 +207,46 @@ export default function UrunEkleFormu({ urunler, yukleniyor, hata, onEkle }) {
 
       <div className="olcu-grid">
         <label className="alan">
-          <span>Miktar</span>
-          <input type="number" min="0.01" step="0.01" value={miktar} onChange={(e) => setMiktar(Number(e.target.value))} />
-        </label>
-        
-        <label className="alan">
-          <span>Birim</span>
+          <span>Birim Seçimi</span>
           <select value={secilenBirim} onChange={(e) => setSecilenBirim(e.target.value)}>
-            <option value="ad">Adet (ad)</option>
             <option value="m²">Metrekare (m²)</option>
+            <option value="ad">Adet (ad)</option>
             <option value="mt">Metretül (mt)</option>
           </select>
         </label>
+
+        {secilenBirim === "m²" ? (
+          <>
+            <label className="alan">
+              <span>En (cm)</span>
+              <input type="number" min="0" placeholder="Örn: 150" value={en} onChange={(e) => setEn(e.target.value)} />
+            </label>
+            <label className="alan">
+              <span>Boy (cm)</span>
+              <input type="number" min="0" placeholder="Örn: 200" value={boy} onChange={(e) => setBoy(e.target.value)} />
+            </label>
+            <label className="alan">
+              <span>Adet</span>
+              <input type="number" min="1" step="1" value={miktar} onChange={(e) => setMiktar(e.target.value)} />
+            </label>
+          </>
+        ) : secilenBirim === "mt" ? (
+          <>
+            <label className="alan">
+              <span>Uzunluk / Boy (cm)</span>
+              <input type="number" min="0" placeholder="Örn: 200" value={boy} onChange={(e) => setBoy(e.target.value)} />
+            </label>
+            <label className="alan">
+              <span>Adet</span>
+              <input type="number" min="1" step="1" value={miktar} onChange={(e) => setMiktar(e.target.value)} />
+            </label>
+          </>
+        ) : (
+          <label className="alan">
+            <span>Miktar</span>
+            <input type="number" min="0.01" step="0.01" value={miktar} onChange={(e) => setMiktar(e.target.value)} />
+          </label>
+        )}
         
         <label className="alan">
           <span>KDV Oranı (%)</span>

@@ -35,7 +35,7 @@ export default function GecmisTeklifler() {
     }
   }
 
-  // YANLIŞLIKLA SİLDİĞİMİZ İNDİRME FONKSİYONU (Geri Geldi!)
+  // İNDİRME FONKSİYONU
   function tekrarIndir(t) {
     const teklifBilgisi = {
       musteriAdi: t.musteri_adi,
@@ -46,9 +46,26 @@ export default function GecmisTeklifler() {
     };
 
     if (t.tur === "PROFORMA") {
-      proformaPdfIndir(teklifBilgisi, t.sepet, t.teklif_no);
+      proformaPdfIndir(teklifBilgisi, t.sepet, t.teklif_no, false); // false = indirme modu
     } else {
-      teklifPdfIndir(teklifBilgisi, t.sepet, t.teklif_no);
+      teklifPdfIndir(teklifBilgisi, t.sepet, t.teklif_no, false); // false = indirme modu
+    }
+  }
+
+  // YENİ: GÖRÜNTÜLEME (ÖNİZLEME) FONKSİYONU
+  function onizle(t) {
+    const teklifBilgisi = {
+      musteriAdi: t.musteri_adi,
+      projeAdi: t.proje_adi,
+      ilgiliKisi: t.ilgili_kisi,
+      notlar: t.notlar,
+      tarih: new Date(t.tarih)
+    };
+
+    if (t.tur === "PROFORMA") {
+      proformaPdfIndir(teklifBilgisi, t.sepet, t.teklif_no, true); // true = önizleme modu
+    } else {
+      teklifPdfIndir(teklifBilgisi, t.sepet, t.teklif_no, true); // true = önizleme modu
     }
   }
 
@@ -102,7 +119,18 @@ export default function GecmisTeklifler() {
                   </td>
                   <td style={{ padding: "12px" }}>{t.musteri_adi}</td>
                   <td style={{ padding: "12px", textAlign: "center", whiteSpace: "nowrap" }}>
+                    
+                    {/* YENİ GÖRÜNTÜLE BUTONU */}
+                    <button 
+                      onClick={() => onizle(t)} 
+                      title="Yeni Sekmede Görüntüle"
+                      style={{ backgroundColor: "#0ea5e9", color: "white", border: "none", padding: "6px 10px", borderRadius: "4px", cursor: "pointer", fontSize: "12px", margin: "0 5px 0 0" }}
+                    >
+                      👁️ Görüntüle
+                    </button>
+
                     <button onClick={() => tekrarIndir(t)} className="buton buton--birincil" style={{ cursor: "pointer", padding: "6px 12px", fontSize: "12px", margin: "0 5px 0 0" }}>İndir</button>
+                    
                     <button 
                       onClick={() => sil(t.id)} 
                       style={{ backgroundColor: "#ff4d4d", color: "white", border: "none", padding: "6px 12px", borderRadius: "4px", cursor: "pointer", fontSize: "12px" }}
