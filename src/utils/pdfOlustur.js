@@ -179,7 +179,7 @@ export async function teklifPdfIndir(teklif, sepet, teklifNo, onizlemeMi = false
       { text: "Saygılarımla,", italics: true, alignment: "right", margin: [0, 20, 0, 2] },
       { text: "Sercan Temel", bold: true, alignment: "right", margin: [0, 0, 0, 30] },
       { text: "Almış olduğunuz teklifin teyidi için mutlaka onay veriniz.", bold: true, fontSize: 10 },
-      { text: "Firma ismi ve kaşesi / Onayı / Özel notlar", fontSize: 10 },
+      { text: "Firma ismi ve kaşesi / Onayı / Özel notlar", fontSize: 10, margin: [0, 0, 0, 80] },
       // Yasal Şartlar Bloğu
       {
         stack: SOZLESME_SARTLARI.map(sart => ({
