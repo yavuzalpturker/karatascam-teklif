@@ -13,7 +13,6 @@ export default function UrunEkleFormu({ urunler = [], yukleniyor, hata, onEkle }
   const [miktar, setMiktar] = useState("1"); 
   const [secilenBirim, setSecilenBirim] = useState("m²");
 
-  // YENİ SİSTEM: İki farklı fiyat kutusu için iki ayrı state
   const [fiyatAna, setFiyatAna] = useState(""); 
   const [fiyatAdet, setFiyatAdet] = useState(""); 
 
@@ -34,7 +33,6 @@ export default function UrunEkleFormu({ urunler = [], yukleniyor, hata, onEkle }
     ? { id: "ozel_urun", Kodu: "ÖZEL", Açıklama: arama.toUpperCase() }
     : (urunler || []).find((u) => u.id === secilenId);
 
-  // Kutu 1 veya Kutu 2'den herhangi biri doluysa fiyat geçerlidir
   const fiyatGecerliMi = Number(fiyatAna) > 0 || Number(fiyatAdet) > 0;
 
   const handleAramaDegisimi = (e) => {
@@ -62,7 +60,8 @@ export default function UrunEkleFormu({ urunler = [], yukleniyor, hata, onEkle }
     let nihaiFiyat = 0;
     let nihaiBirim = secilenBirim;
 
-    if (secilenBirim === "m²") {
+    // BURASI DEĞİŞTİ: Artık m² ve ad seçimi aynı mantıkla çalışıyor
+    if (secilenBirim === "m²" || secilenBirim === "ad") {
       const enDegeri = Number(en) || 0;
       const boyDegeri = Number(boy) || 0;
       
@@ -74,16 +73,13 @@ export default function UrunEkleFormu({ urunler = [], yukleniyor, hata, onEkle }
       const tekCamM2 = (enDegeri * boyDegeri) / 10000;
       const toplamM2 = tekCamM2 * (Number(miktar) || 1);
       
-      // Detaylı m2 bilgisi PDF açıklamasına ekleniyor
       ekstraAciklama = ` (${enDegeri}x${boyDegeri} cm - ${Number(miktar) || 1} Adet - Toplam: ${toplamM2.toFixed(2)} m²)`;
 
       if (fiyatAdet && Number(fiyatAdet) > 0) {
-        // EĞER ADET FİYATI GİRİLDİYSE: Sepette birim "Adet" olarak görünür
         hesaplananMiktar = Number(miktar) || 1; 
         nihaiFiyat = Number(fiyatAdet);
         nihaiBirim = "ad"; 
       } else {
-        // EĞER M2 FİYATI GİRİLDİYSE: Normal m2 hesabı yapılır
         hesaplananMiktar = toplamM2;
         nihaiFiyat = Number(fiyatAna);
         nihaiBirim = "m²";
@@ -129,7 +125,6 @@ export default function UrunEkleFormu({ urunler = [], yukleniyor, hata, onEkle }
       onEkle(satir);
     } 
     
-    // Formu sıfırlama işlemleri
     setFiyatAna("");
     setFiyatAdet("");
     setArama("");
@@ -243,7 +238,8 @@ export default function UrunEkleFormu({ urunler = [], yukleniyor, hata, onEkle }
           </select>
         </label>
 
-        {secilenBirim === "m²" ? (
+        {/* BURASI DEĞİŞTİ: m² ve ad için aynı ölçü alanları çıkacak */}
+        {(secilenBirim === "m²" || secilenBirim === "ad") ? (
           <>
             <label className="alan">
               <span>En (cm)</span>
@@ -288,8 +284,9 @@ export default function UrunEkleFormu({ urunler = [], yukleniyor, hata, onEkle }
       </div>
 
       <label className="alan">
+        {/* BURASI DEĞİŞTİ: Başlık da ortak oldu */}
         <span>
-          {secilenBirim === "m²" 
+          {(secilenBirim === "m²" || secilenBirim === "ad")
             ? "Fiyatlandırma (Sadece birini doldurmanız yeterlidir)" 
             : `Birim Fiyat (1 ${secilenBirim} başına)`}
         </span>
@@ -299,16 +296,17 @@ export default function UrunEkleFormu({ urunler = [], yukleniyor, hata, onEkle }
             type="number"
             min="0"
             step="0.01"
-            placeholder={secilenBirim === "m²" ? "m² Fiyatı Girin" : "Fiyatı girin"}
+            placeholder={(secilenBirim === "m²" || secilenBirim === "ad") ? "m² Fiyatı Girin" : "Fiyatı girin"}
             value={fiyatAna}
             onChange={(e) => {
               setFiyatAna(e.target.value);
-              if (secilenBirim === "m²") setFiyatAdet(""); 
+              if (secilenBirim === "m²" || secilenBirim === "ad") setFiyatAdet(""); 
             }}
             style={{ flex: 1 }}
           />
 
-          {secilenBirim === "m²" && (
+          {/* BURASI DEĞİŞTİ: Adet fiyatı kutusu iki birimde de görünecek */}
+          {(secilenBirim === "m²" || secilenBirim === "ad") && (
             <input
               type="number"
               min="0"
