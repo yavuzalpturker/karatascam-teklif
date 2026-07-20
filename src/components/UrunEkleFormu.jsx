@@ -22,7 +22,6 @@ export default function UrunEkleFormu({ urunler = [], yukleniyor, hata, onEkle, 
 
   const [eklenenOzelUrunler, setEklenenOzelUrunler] = useState([]);
 
-  // DÜZENLE veya TEKRAR ET tıklandığında formu dolduran sihirli kısım
   useEffect(() => {
     if (islemVerisi && islemVerisi.satir && islemVerisi.satir.hamVeri) {
       const ham = islemVerisi.satir.hamVeri;
@@ -74,6 +73,35 @@ export default function UrunEkleFormu({ urunler = [], yukleniyor, hata, onEkle, 
     setSecilenId("ozel_urun");
     setListeAcik(false);
   };
+
+  // YENİ EKLENEN: ÜRÜN SİLME FONKSİYONU
+  async function urunSil(silinecekUrun, e) {
+    e.stopPropagation();
+    e.preventDefault();
+
+    const urunAdi = aciklamaBul(silinecekUrun);
+    const onay = window.confirm(`"${urunAdi}" ürününü veritabanından kalıcı olarak silmek istediğinize emin misiniz?`);
+    if (!onay) return;
+
+    try {
+      const { error } = await supabase
+        .from('urunler') // Veritabanındaki tablonun adı 'urunler' varsayıldı
+        .delete()
+        .eq('id', silinecekUrun.id);
+
+      if (error) {
+        console.error("Ürün silinemedi:", error);
+        alert("Silme işlemi sırasında hata oluştu. Muhtemelen Güvenlik (RLS) ayarından dolayı: " + error.message);
+      } else {
+        setArama("");
+        setSecilenId("");
+        setListeAcik(false);
+        alert("Ürün başarıyla silindi! (Listeden tamamen kaybolması için sayfayı yenilemeniz gerekebilir)");
+      }
+    } catch (err) {
+      console.error("Supabase bağlantı hatası:", err);
+    }
+  }
 
   async function ekle() {
     if (!secilenUrun || !fiyatGecerliMi) return;
@@ -177,18 +205,16 @@ export default function UrunEkleFormu({ urunler = [], yukleniyor, hata, onEkle, 
     satir.birim = nihaiBirim; 
     satir.Birim = nihaiBirim;
 
-    // HAM VERİLERİ KAYDEDİYORUZ Kİ SONRA GERİ ÇAĞIRABİLELİM
     satir.hamVeri = {
       arama, secilenId, ozelAciklama, en, boy, miktar, secilenBirim, fiyatAna, fiyatAdet, paraBirimi, kdvOrani
     };
 
-    // EĞER DÜZENLEME MODUNDAYSAK GÜNCELLE, DEĞİLSE YENİ EKLE
     if (islemVerisi && islemVerisi.tip === "duzenle") {
       if (onGuncelle) onGuncelle(islemVerisi.index, satir);
       if (onIptal) onIptal();
     } else {
       if (onEkle) onEkle(satir);
-      if (islemVerisi && islemVerisi.tip === "tekrar" && onIptal) onIptal(); // Tekrar et modundan çık
+      if (islemVerisi && islemVerisi.tip === "tekrar" && onIptal) onIptal(); 
     }
     
     setFiyatAna("");
@@ -223,9 +249,6 @@ export default function UrunEkleFormu({ urunler = [], yukleniyor, hata, onEkle, 
     <section className="panel">
       <h2 className="panel__baslik">Ürün Ekleme Ekranı</h2>
 
-      {/* ... BURALAR AYNI ... */}
-      {/* SADECE EN ALTTAKİ BUTON KISMINI DEĞİŞTİRİYORUZ */}
-      
       <label className="alan">
         <span>Ürün Ara ve Seç (En az 3 harf giriniz)</span>
         <div style={{ position: "relative" }}>
@@ -250,13 +273,44 @@ export default function UrunEkleFormu({ urunler = [], yukleniyor, hata, onEkle, 
               ) : (
                 filtrelenmisUrunler.map((urun) => (
                   <li 
-                    key={urun.id} 
-                    onClick={() => handleUrunSec(urun)}
-                    style={{ padding: "10px", borderBottom: "1px solid #eee", cursor: "pointer", fontSize: "14px" }}
-                    onMouseEnter={(e) => e.target.style.backgroundColor = "#f0f8ff"}
-                    onMouseLeave={(e) => e.target.style.backgroundColor = "white"}
+                    key={urun.id}
+                    style={{ 
+                      display: "flex", 
+                      justifyContent: "space-between", 
+                      alignItems: "center", 
+                      padding: "10px", 
+                      borderBottom: "1px solid #eee", 
+                      cursor: "pointer", 
+                      fontSize: "14px" 
+                    }}
+                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "#f0f8ff"}
+                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "white"}
                   >
-                    <strong>{koduBul(urun)}</strong> - {aciklamaBul(urun)}
+                    {/* SOL TARAF: Tıklanınca ürünü seçer */}
+                    <div onClick={() => handleUrunSec(urun)} style={{ flex: 1 }} onMouseDown={(e) => e.preventDefault()}>
+                      <strong>{koduBul(urun)}</strong> - {aciklamaBul(urun)}
+                    </div>
+
+                    {/* SAĞ TARAF: SİLME BUTONU */}
+                    <button
+                      onClick={(e) => urunSil(urun, e)}
+                      onMouseDown={(e) => e.preventDefault()}
+                      style={{
+                        background: 'transparent',
+                        border: 'none',
+                        color: '#ef4444',
+                        cursor: 'pointer',
+                        fontSize: '12px',
+                        padding: '4px 8px',
+                        borderRadius: '4px',
+                        fontWeight: 'bold'
+                      }}
+                      title="Bu ürünü veritabanından kalıcı olarak sil"
+                      onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "#fee2e2"}
+                      onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "transparent"}
+                    >
+                      ❌ Sil
+                    </button>
                   </li>
                 ))
               )}
@@ -397,7 +451,6 @@ export default function UrunEkleFormu({ urunler = [], yukleniyor, hata, onEkle, 
         </div>
       </label>
 
-      {/* BUTONLAR DEĞİŞTİ */}
       <div style={{ display: "flex", gap: "10px" }}>
         <button 
           className="buton buton--birincil" 

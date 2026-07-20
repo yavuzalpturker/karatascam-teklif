@@ -298,12 +298,18 @@ export async function proformaPdfIndir(teklif, sepet, teklifNo, onizlemeMi = fal
       ]
     );
   });
-
-  if (!yalnizMetni) yalnizMetni = "sıfır";
+if (!yalnizMetni) yalnizMetni = "sıfır";
 
   let kisi = (teklif.ilgiliKisi || "").toLocaleUpperCase("tr-TR");
   kisi = kisi.replace(/DİKKATİNE/g, "").replace(/[,;]/g, "").trim();
-  const dikkatineSatiri = kisi ? `${kisi} DİKKATİNE;` : "";
+  
+  // EĞER KİŞİ YAZILDIYSA VE BAŞINDA "SN." YOKSA OTOMATİK EKLE
+  if (kisi && !kisi.startsWith("SN.") && !kisi.startsWith("SN ")) {
+    kisi = `Sn. ${kisi}`;
+  }
+  
+  const dikkatineSatiri = kisi ? `${kisi} Dikkatine;` : "";
+  
 
   const docDefinition = {
     pageMargins: [40, 100, 40, 60],

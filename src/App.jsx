@@ -36,10 +36,10 @@ export default function App() {
   // --- ŞİFRE KORUMA SİSTEMİ BİTİŞ ---
 
   const [teklif, setTeklif] = useState({
-    musteriAdi: "BERFİN BULTAN MİMARLIK",
-    ilgiliKisi: "Sn. Berfin Hanım Dikkatine,",
-    projeAdi: "NUROL HOLDİNG / LUGAL OTEL",
-    tarih: new Date(),
+    musteriAdi: "",
+    ilgiliKisi: "",
+    projeAdi: "",
+    tarih: new Date(), // Tarih otomatik bugünün tarihi gelsin diye kalabilir
   });
   
   const [sepet, setSepet] = useState([]);

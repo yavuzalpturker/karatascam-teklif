@@ -14,11 +14,16 @@ export const useFirmaArama = (aramaMetni) => {
     const zamanlayici = setTimeout(async () => {
       try {
         setYukleniyor(true);
+        
+        // Türkçe karakter (i, İ, ı, I) sorununu aşmak için metni büyük harfe de çeviriyoruz
+        const arananBuyuk = aramaMetni.toLocaleUpperCase('tr-TR');
+        const arananKucuk = aramaMetni.toLocaleLowerCase('tr-TR');
+
         const { data, error } = await supabase
-          
           .from('firmalar')
           .select('firma_adi')
-          .ilike('firma_adi', `%${aramaMetni}%`)
+          // Hem orijinal, hem büyük, hem küçük haliyle arama yaptırarak her ihtimali yakalıyoruz
+          .or(`firma_adi.ilike.%${aramaMetni}%,firma_adi.ilike.%${arananBuyuk}%,firma_adi.ilike.%${arananKucuk}%`)
           .limit(20);
 
         if (error) throw error;
