@@ -145,6 +145,7 @@ export default function App() {
                   setIslemVerisi({ tip: "tekrar", satir });
                   window.scrollTo({ top: 0, behavior: 'smooth' });
                 }}
+                onTopluFiyatGuncelle={(yeniSepet) => setSepet(yeniSepet)}
               />
 
               <CiktiButonu teklif={teklif} sepet={sepet} />
