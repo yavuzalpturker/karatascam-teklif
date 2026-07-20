@@ -1,10 +1,10 @@
 import pdfMake from "pdfmake/build/pdfmake";
 import pdfFonts from "pdfmake/build/vfs_fonts";
 import { paraFormatla, genelToplamHesapla, genelKdvHesapla, sayiyiYaziyaCevir } from "./hesaplama";
+import { supabase } from "../lib/supabaseClient";
 
 pdfMake.vfs = pdfFonts?.pdfMake?.vfs || pdfFonts?.vfs || pdfFonts?.default?.pdfMake?.vfs || pdfFonts?.default?.vfs;
 
-// YENİ NÜKLEER SEÇENEK: Bozuk/Sahte JPG'leri tarayıcıya zorla çizdirip %100 saf PNG'ye dönüştüren sistem
 async function gorseliBase64eCevir(yol) {
   return new Promise((resolve) => {
     const img = new Image();
@@ -60,7 +60,6 @@ function siradakiProformaNoGetir() {
   return noMetni;
 }
 
-// Ortak Header Üretici
 function ortakHeaderOlustur(logoSisecam, logoIso) {
   return {
     stack: [
@@ -95,7 +94,6 @@ function ortakHeaderOlustur(logoSisecam, logoIso) {
   };
 }
 
-// Ortak Footer Üretici
 const ORTAK_FOOTER = {
   stack: [
     { canvas: [{ type: 'line', x1: 0, y1: 0, x2: 515, y2: 0, lineWidth: 1 }], margin: [0, 0, 0, 5] },
@@ -112,8 +110,11 @@ export async function teklifPdfIndir(teklif, sepet, teklifNo, onizlemeMi = false
   const logoSisecam = await gorseliBase64eCevir("/sisecam.png");
   const logoIso = await gorseliBase64eCevir("/birinci-logo.jpg");
 
+  const { data: ayarlar } = await supabase.from('ayarlar').select('*').eq('id', 1).single();
+  const imzalayanKisi = teklif.imzalayan || ayarlar?.imzalayan || "Sercan Temel";
+  const dinamikSartlar = ayarlar?.sartlar ? ayarlar.sartlar.split('\n').filter(s => s.trim() !== '') : SOZLESME_SARTLARI;
+
   const urunSatirlari = sepet.flatMap((satir) => {
-    // Sadece özel açıklama varsa ve ürün adından farklıysa ekle
     let baslik = satir.urunAciklamasi;
     if (satir.ozelAciklama && satir.ozelAciklama.trim() !== "" && satir.ozelAciklama.trim() !== satir.urunAciklamasi) {
       baslik += ` - ${satir.ozelAciklama}`;
@@ -192,27 +193,28 @@ export async function teklifPdfIndir(teklif, sepet, teklifNo, onizlemeMi = false
       })) : []),
       { 
         stack: [
-          { text: "Saygılarımla,", italics: true, alignment: "right", margin: [0, 20, 0, 2] },
+          { text: "Saygılarımla,", italics: true, alignment: "right", margin: [0, 15, 0, 2] },
           { 
-            text: `${teklif.imzalayan || "Sercan Temel"}`, 
+            text: `${imzalayanKisi}`, 
             bold: true, 
             alignment: "right", 
-            margin: [0, 0, 0, 30] 
+            margin: [0, 0, 0, 15] 
           }
         ]
       },
       
       { text: "Almış olduğunuz teklifin teyidi için mutlaka onay veriniz.", bold: true, fontSize: 10 },
-      { text: "Firma ismi ve kaşesi / Onayı / Özel notlar", fontSize: 10, margin: [0, 0, 0, 80] },
+      // KAŞE İÇİN GENİŞ BOŞLUK (MARGİN 70 YAPILDI)
+      { text: "Firma ismi ve kaşesi / Onayı / Özel notlar", fontSize: 10, margin: [0, 0, 0, 70] },
       
       {
-        stack: SOZLESME_SARTLARI.map(sart => ({
+        stack: dinamikSartlar.map(sart => ({
           text: sart,
           fontSize: 8,
           margin: [0, 0, 0, 2]
         })),
-        margin: [0, 10, 0, 0]
-      },
+        margin: [0, 0, 0, 0]
+      }
     ],
     defaultStyle: { font: "Roboto" },
   };
@@ -234,6 +236,11 @@ export async function proformaPdfIndir(teklif, sepet, teklifNo, onizlemeMi = fal
   const logoSisecam = await gorseliBase64eCevir("/sisecam.png");
   const logoIso = await gorseliBase64eCevir("/birinci-logo.jpg");
   
+  const { data: ayarlar } = await supabase.from('ayarlar').select('*').eq('id', 1).single();
+  const imzalayanKisi = teklif.imzalayan || ayarlar?.imzalayan || "Sercan Temel";
+  const bankaIban = ayarlar?.iban || "TR26 0006 4000 0014 2210 2141 37";
+  const dinamikSartlar = ayarlar?.sartlar ? ayarlar.sartlar.split('\n').filter(s => s.trim() !== '') : SOZLESME_SARTLARI;
+
   const tarihYazisi = teklif.tarih.toLocaleDateString("tr-TR");
   const belgeNo = teklifNo || siradakiProformaNoGetir(); 
 
@@ -298,18 +305,17 @@ export async function proformaPdfIndir(teklif, sepet, teklifNo, onizlemeMi = fal
       ]
     );
   });
-if (!yalnizMetni) yalnizMetni = "sıfır";
+
+  if (!yalnizMetni) yalnizMetni = "sıfır";
 
   let kisi = (teklif.ilgiliKisi || "").toLocaleUpperCase("tr-TR");
   kisi = kisi.replace(/DİKKATİNE/g, "").replace(/[,;]/g, "").trim();
   
-  // EĞER KİŞİ YAZILDIYSA VE BAŞINDA "SN." YOKSA OTOMATİK EKLE
   if (kisi && !kisi.startsWith("SN.") && !kisi.startsWith("SN ")) {
     kisi = `Sn. ${kisi}`;
   }
   
   const dikkatineSatiri = kisi ? `${kisi} Dikkatine;` : "";
-  
 
   const docDefinition = {
     pageMargins: [40, 100, 40, 60],
@@ -352,23 +358,32 @@ if (!yalnizMetni) yalnizMetni = "sıfır";
           {
             stack: [
               { text: 'İŞBANKASI / SİTELER ŞUBESİ', bold: true, fontSize: 10, margin: [0, 0, 0, 5] },
-              { text: 'IBAN NO : TR26 0006 4000 0014 2210 2141 37', fontSize: 10 }
+              { text: `IBAN NO : ${bankaIban}`, fontSize: 10 }
             ],
             alignment: 'left'
           },
           {
             stack: [
               { text: 'Saygılarımla,', italics: true, fontSize: 11, margin: [0, 0, 0, 2] },
-              // İŞTE EKSİK OLAN KISMI BURAYA EKLEDİK:
-              { text: `${teklif.imzalayan || "Sercan Temel"}`, bold: true, fontSize: 11 }
+              { text: `${imzalayanKisi}`, bold: true, fontSize: 11 }
             ],
             alignment: 'right'
           }
         ],
-        margin: [0, 10, 0, 30]
+        margin: [0, 10, 0, 15]
       },
       { text: "Almış olduğunuz teklifin teyidi için mutlaka onay veriniz.", bold: true, fontSize: 10 },
-      { text: "Firma ismi ve kaşesi / Onayı / Özel notlar", fontSize: 10 }
+      // KAŞE İÇİN GENİŞ BOŞLUK (MARGİN 70 YAPILDI)
+      { text: "Firma ismi ve kaşesi / Onayı / Özel notlar", fontSize: 10, margin: [0, 0, 0, 70] },
+      
+      {
+        stack: dinamikSartlar.map(sart => ({
+          text: sart,
+          fontSize: 8,
+          margin: [0, 0, 0, 2]
+        })),
+        margin: [0, 0, 0, 0]
+      }
     ],
     defaultStyle: { font: "Roboto" },
   };
