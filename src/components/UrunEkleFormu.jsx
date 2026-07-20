@@ -1,8 +1,8 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { satirHesapla } from "../utils/hesaplama";
 import { supabase } from "../lib/supabaseClient";
 
-export default function UrunEkleFormu({ urunler = [], yukleniyor, hata, onEkle }) {
+export default function UrunEkleFormu({ urunler = [], yukleniyor, hata, onEkle, islemVerisi, onGuncelle, onIptal }) {
   const [arama, setArama] = useState("");
   const [secilenId, setSecilenId] = useState("");
   const [listeAcik, setListeAcik] = useState(false);
@@ -21,6 +21,24 @@ export default function UrunEkleFormu({ urunler = [], yukleniyor, hata, onEkle }
   const [kdvOrani, setKdvOrani] = useState("20");
 
   const [eklenenOzelUrunler, setEklenenOzelUrunler] = useState([]);
+
+  // DÜZENLE veya TEKRAR ET tıklandığında formu dolduran sihirli kısım
+  useEffect(() => {
+    if (islemVerisi && islemVerisi.satir && islemVerisi.satir.hamVeri) {
+      const ham = islemVerisi.satir.hamVeri;
+      setArama(ham.arama);
+      setSecilenId(ham.secilenId);
+      setOzelAciklama(ham.ozelAciklama);
+      setEn(ham.en);
+      setBoy(ham.boy);
+      setMiktar(ham.miktar);
+      setSecilenBirim(ham.secilenBirim);
+      setFiyatAna(ham.fiyatAna);
+      setFiyatAdet(ham.fiyatAdet);
+      setParaBirimi(ham.paraBirimi);
+      setKdvOrani(ham.kdvOrani);
+    }
+  }, [islemVerisi]);
 
   const tumUrunler = [...(urunler || []), ...eklenenOzelUrunler];
 
@@ -105,7 +123,6 @@ export default function UrunEkleFormu({ urunler = [], yukleniyor, hata, onEkle }
         return;
       }
       
-
       hesaplananMiktar = (boyDegeri / 1000) * (Number(miktar) || 1);
       ekstraAciklama = ` (${boyDegeri} mm - ${Number(miktar) || 1} Adet)`;
       nihaiFiyat = Number(fiyatAna);
@@ -160,9 +177,19 @@ export default function UrunEkleFormu({ urunler = [], yukleniyor, hata, onEkle }
     satir.birim = nihaiBirim; 
     satir.Birim = nihaiBirim;
 
-    if (onEkle) {
-      onEkle(satir);
-    } 
+    // HAM VERİLERİ KAYDEDİYORUZ Kİ SONRA GERİ ÇAĞIRABİLELİM
+    satir.hamVeri = {
+      arama, secilenId, ozelAciklama, en, boy, miktar, secilenBirim, fiyatAna, fiyatAdet, paraBirimi, kdvOrani
+    };
+
+    // EĞER DÜZENLEME MODUNDAYSAK GÜNCELLE, DEĞİLSE YENİ EKLE
+    if (islemVerisi && islemVerisi.tip === "duzenle") {
+      if (onGuncelle) onGuncelle(islemVerisi.index, satir);
+      if (onIptal) onIptal();
+    } else {
+      if (onEkle) onEkle(satir);
+      if (islemVerisi && islemVerisi.tip === "tekrar" && onIptal) onIptal(); // Tekrar et modundan çık
+    }
     
     setFiyatAna("");
     setFiyatAdet("");
@@ -196,6 +223,9 @@ export default function UrunEkleFormu({ urunler = [], yukleniyor, hata, onEkle }
     <section className="panel">
       <h2 className="panel__baslik">Ürün Ekleme Ekranı</h2>
 
+      {/* ... BURALAR AYNI ... */}
+      {/* SADECE EN ALTTAKİ BUTON KISMINI DEĞİŞTİRİYORUZ */}
+      
       <label className="alan">
         <span>Ürün Ara ve Seç (En az 3 harf giriniz)</span>
         <div style={{ position: "relative" }}>
@@ -329,7 +359,6 @@ export default function UrunEkleFormu({ urunler = [], yukleniyor, hata, onEkle }
         </span>
         <div style={{ display: "flex", gap: "8px" }}>
           
-          {/* M2 Fiyatı Kutusu: Eğer "Adet Fiyatı" boşsa görünür */}
           {((secilenBirim !== "m²" && secilenBirim !== "ad") || fiyatAdet === "") && (
             <input
               type="number"
@@ -345,7 +374,6 @@ export default function UrunEkleFormu({ urunler = [], yukleniyor, hata, onEkle }
             />
           )}
 
-          {/* Adet Fiyatı Kutusu: Eğer "M2 Fiyatı" boşsa görünür */}
           {(secilenBirim === "m²" || secilenBirim === "ad") && fiyatAna === "" && (
             <input
               type="number"
@@ -369,9 +397,27 @@ export default function UrunEkleFormu({ urunler = [], yukleniyor, hata, onEkle }
         </div>
       </label>
 
-      <button className="buton buton--birincil" onClick={ekle} disabled={!secilenUrun || !fiyatGecerliMi}>
-        Hesapla ve Listeye Ekle
-      </button>
+      {/* BUTONLAR DEĞİŞTİ */}
+      <div style={{ display: "flex", gap: "10px" }}>
+        <button 
+          className="buton buton--birincil" 
+          onClick={ekle} 
+          disabled={!secilenUrun || !fiyatGecerliMi}
+          style={{ flex: 1, backgroundColor: islemVerisi?.tip === "duzenle" ? "#10b981" : "" }}
+        >
+          {islemVerisi?.tip === "duzenle" ? "Değişikliği Kaydet" : "Hesapla ve Listeye Ekle"}
+        </button>
+
+        {islemVerisi && (
+          <button 
+            className="buton buton--ikincil" 
+            onClick={onIptal} 
+            style={{ backgroundColor: "#6b7280", color: "white" }}
+          >
+            İptal
+          </button>
+        )}
+      </div>
     </section>
   );
 }

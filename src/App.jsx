@@ -44,9 +44,19 @@ export default function App() {
   
   const [sepet, setSepet] = useState([]);
 
-  // YENİ EKLENEN: Sepetten tekil ürün silme fonksiyonu
+  // YENİ EKLENEN: Düzenleme ve Tekrar Etme işlemlerini hafızada tutan state
+  const [islemVerisi, setIslemVerisi] = useState(null);
+
+  // Sepetten tekil ürün silme fonksiyonu
   const sepettenUrunSil = (silinecekIndex) => {
     setSepet(sepet.filter((_, index) => index !== silinecekIndex));
+  };
+
+  // YENİ EKLENEN: Mevcut satırı güncelleyen fonksiyon
+  const handleGuncelle = (index, guncelSatir) => {
+    const yeniSepet = [...sepet];
+    yeniSepet[index] = guncelSatir;
+    setSepet(yeniSepet);
   };
 
   // EĞER GİRİŞ YAPILMADIYSA SADECE GİRİŞ EKRANINI GÖSTER
@@ -54,7 +64,7 @@ export default function App() {
     return <Login onLogin={handleLogin} />;
   }
 
-  // EĞER ŞİFRE DOĞRUYSA SENİN ORİJİNAL SİSTEMİNİ GÖSTER
+  // EĞER ŞİFRE DOĞRUYSA SİSTEMİ GÖSTER
   return (
     <div className="sayfa">
       <header className="ust-bar" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '15px 20px' }}>
@@ -86,7 +96,6 @@ export default function App() {
             Çıkış Yap
           </button>
         </div>
-
       </header>
 
       <div className="govde">
@@ -98,13 +107,27 @@ export default function App() {
             yukleniyor={yukleniyor}
             hata={hata}
             onEkle={(satir) => setSepet((mevcut) => [...mevcut, satir])}
+            
+            // YENİ PROPLAR: Form ile haberleşmeyi sağlar
+            islemVerisi={islemVerisi}
+            onGuncelle={handleGuncelle}
+            onIptal={() => setIslemVerisi(null)}
           />
 
-          {/* YENİ EKLENEN: onSil bağlantısı yapıldı */}
           <SepetTablosu 
             sepet={sepet} 
             onTemizle={() => setSepet([])} 
             onSil={sepettenUrunSil} 
+            
+            // YENİ PROPLAR: Tablodan gelen tıklamaları yakalar
+            onDuzenle={(index, satir) => {
+              setIslemVerisi({ tip: "duzenle", index, satir });
+              window.scrollTo({ top: 0, behavior: 'smooth' }); // Formun olduğu tepeye kaydırır
+            }}
+            onTekrarEt={(satir) => {
+              setIslemVerisi({ tip: "tekrar", satir });
+              window.scrollTo({ top: 0, behavior: 'smooth' }); // Formun olduğu tepeye kaydırır
+            }}
           />
 
           <CiktiButonu teklif={teklif} sepet={sepet} />

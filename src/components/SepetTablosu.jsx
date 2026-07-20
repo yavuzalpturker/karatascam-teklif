@@ -1,6 +1,6 @@
 import { genelToplamHesapla, genelKdvHesapla, paraFormatla } from "../utils/hesaplama";
 
-export default function SepetTablosu({ sepet, onTemizle, onSil }) {
+export default function SepetTablosu({ sepet, onTemizle, onSil, onDuzenle, onTekrarEt }) {
   if (sepet.length === 0) {
     return (
       <section className="panel">
@@ -25,7 +25,7 @@ export default function SepetTablosu({ sepet, onTemizle, onSil }) {
             <th>Ürün Açıklaması</th>
             <th>Miktar / Detay</th>
             <th>Toplam Tutar</th>
-            <th style={{ textAlign: "center", width: "80px" }}>İşlem</th>
+            <th style={{ textAlign: "center", minWidth: "180px" }}>İşlem</th>
           </tr>
         </thead>
         <tbody>
@@ -35,22 +35,32 @@ export default function SepetTablosu({ sepet, onTemizle, onSil }) {
               <td>{satir.miktarDetay}</td>
               <td>{paraFormatla(satir.toplamTutar, satir.paraBirimi)}</td>
               <td style={{ textAlign: "center" }}>
-                <button 
-                  onClick={() => onSil(index)}
-                  style={{
-                    backgroundColor: "#ef4444",
-                    color: "white",
-                    border: "none",
-                    padding: "6px 12px",
-                    borderRadius: "4px",
-                    cursor: "pointer",
-                    fontSize: "12px",
-                    fontWeight: "bold"
-                  }}
-                  title="Bu ürünü sepetten çıkar"
-                >
-                  Sil
-                </button>
+                
+                {/* BUTONLAR BURAYA YAN YANA GELDİ */}
+                <div style={{ display: "flex", gap: "6px", justifyContent: "center" }}>
+                  <button 
+                    onClick={() => onTekrarEt(satir)}
+                    style={{ backgroundColor: "#6b7280", color: "white", border: "none", padding: "6px 10px", borderRadius: "4px", cursor: "pointer", fontSize: "12px", fontWeight: "bold" }}
+                    title="Aynı ürünü formda tekrar aç"
+                  >
+                    Tekrar Et
+                  </button>
+                  <button 
+                    onClick={() => onDuzenle(index, satir)}
+                    style={{ backgroundColor: "#3b82f6", color: "white", border: "none", padding: "6px 10px", borderRadius: "4px", cursor: "pointer", fontSize: "12px", fontWeight: "bold" }}
+                    title="Bu satırı düzenle"
+                  >
+                    Düzenle
+                  </button>
+                  <button 
+                    onClick={() => onSil(index)}
+                    style={{ backgroundColor: "#ef4444", color: "white", border: "none", padding: "6px 10px", borderRadius: "4px", cursor: "pointer", fontSize: "12px", fontWeight: "bold" }}
+                    title="Bu ürünü sepetten çıkar"
+                  >
+                    Sil
+                  </button>
+                </div>
+
               </td>
             </tr>
           ))}

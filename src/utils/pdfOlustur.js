@@ -28,7 +28,6 @@ async function gorseliBase64eCevir(yol) {
 }
 
 const SOZLESME_SARTLARI = [
- 
   "Sipariş miktarı +/- %10 değişimine kadar firma aynı birim fiyattan işi yapmayı taahhüt eder; aksi takdirde birim fiyat revize edilir.",
   "Vadeli satışlarda; siparişi takiben 10 gün içerisinde kıymetli evrak teslim edilmiş olacaktır aksi halde %5 aylık faiz uygulanacaktır.",
   "Ankara içi şantiye teslim fiyatlarımızdır. Montaj fiyatlara dahil değildir. Fiyatlar %10 fire oranına göre hazırlanmıştır.",
@@ -44,6 +43,7 @@ const SOZLESME_SARTLARI = [
   "İş bu teklif yedi gün içinde onaylanmadığı taktir de reddedilmiş sayılacak ve firmamız teklifle bağlı olmayacaktır.",
   "Temperli camlar TS EN 1863, Lamine camlar TS EN12543, Isıcamlar TS EN 1279-1 standartlarına göre yapılacak olup standart içerisindeki töleranslar dışında herhangi bir kontrol şartı tarafımızdan kabul edilmemektedir."
 ];
+
 function siradakiProformaNoGetir() {
   let sayac = localStorage.getItem("proforma_sayac");
   if (!sayac) {
@@ -130,7 +130,7 @@ export async function teklifPdfIndir(teklif, sepet, teklifNo, onizlemeMi = false
   });
 
   const genelToplamlar = genelToplamHesapla(sepet);
-  const genelKdvler = genelKdvHesapla(sepet); // KDV'leri de hesaplıyoruz
+  const genelKdvler = genelKdvHesapla(sepet); 
 
   const genelToplamSatirlari = Object.entries(genelToplamlar).map(([paraBirimi, tutar]) => {
     const kdvTutar = genelKdvler[paraBirimi] || 0;
@@ -146,7 +146,7 @@ export async function teklifPdfIndir(teklif, sepet, teklifNo, onizlemeMi = false
         bold: true, fontSize: 12, alignment: "right", margin: [0, 0, 0, 8], color: '#333'
       }
     ];
-  }).flat(); // Düz bir liste haline getirmek için .flat() kullanıyoruz
+  }).flat(); 
 
   const tarihYazisi = teklif.tarih.toLocaleDateString("tr-TR");
   const belgeNo = teklifNo || siradakiProformaNoGetir(); 
@@ -162,12 +162,11 @@ export async function teklifPdfIndir(teklif, sepet, teklifNo, onizlemeMi = false
           {
             stack: [
               { text: teklif.musteriAdi, fontSize: 10, bold: true },
-              // 155. satırı bul ve şöyle değiştir:
-{ 
-  text: (!teklif.ilgiliKisi || teklif.ilgiliKisi.includes("Sn.")) ? teklif.ilgiliKisi : `Sn. ${teklif.ilgiliKisi} Dikkatine,`, 
-  fontSize: 10, 
-  margin: [0, 2, 0, 10] 
-},
+              { 
+                text: (!teklif.ilgiliKisi || teklif.ilgiliKisi.includes("Sn.")) ? teklif.ilgiliKisi : `Sn. ${teklif.ilgiliKisi} Dikkatine,`, 
+                fontSize: 10, 
+                margin: [0, 2, 0, 10] 
+              },
               { text: `Proje Adı: ${teklif.projeAdi}`, bold: true, fontSize: 11 }
             ],
             alignment: 'left'
@@ -185,15 +184,13 @@ export async function teklifPdfIndir(teklif, sepet, teklifNo, onizlemeMi = false
       { text: "İhtiyacınız olan ürünlere ilişkin teklifimiz aşağıdaki gibidir:", fontSize: 10, margin: [0, 0, 0, 10] },
       ...urunSatirlari,
       ...genelToplamSatirlari,
-      // Eğer teklif.notlar varsa bunları ekle, yoksa hiçbir şey ekleme
-    ...(teklif.notlar ? teklif.notlar.split('\n').map((satir) => ({
-      text: `* ${satir}`,
-      fontSize: 9,
-      margin: [2, 0, 0, 2],
-    })) : []),
-      { 
-      // Saygılarımla ve İsim Bloğu
       
+      ...(teklif.notlar ? teklif.notlar.split('\n').map((satir) => ({
+        text: `* ${satir}`,
+        fontSize: 9,
+        margin: [2, 0, 0, 2],
+      })) : []),
+      { 
         stack: [
           { text: "Saygılarımla,", italics: true, alignment: "right", margin: [0, 20, 0, 2] },
           { 
@@ -204,11 +201,10 @@ export async function teklifPdfIndir(teklif, sepet, teklifNo, onizlemeMi = false
           }
         ]
       },
-  
       
       { text: "Almış olduğunuz teklifin teyidi için mutlaka onay veriniz.", bold: true, fontSize: 10 },
       { text: "Firma ismi ve kaşesi / Onayı / Özel notlar", fontSize: 10, margin: [0, 0, 0, 80] },
-      // Yasal Şartlar Bloğu
+      
       {
         stack: SOZLESME_SARTLARI.map(sart => ({
           text: sart,
@@ -343,7 +339,6 @@ export async function proformaPdfIndir(teklif, sepet, teklifNo, onizlemeMi = fal
         }
       },
       
-      // YALNIZ YAZISI: Sağa dayalı (alignment: 'right') yapıldı!
       { text: [ {text: 'YALNIZ: ', bold: true}, `${yalnizMetni}.` ], fontSize: 10, alignment: 'right', margin: [0, 4, 0, 20] },
       
       {
@@ -358,7 +353,8 @@ export async function proformaPdfIndir(teklif, sepet, teklifNo, onizlemeMi = fal
           {
             stack: [
               { text: 'Saygılarımla,', italics: true, fontSize: 11, margin: [0, 0, 0, 2] },
-              
+              // İŞTE EKSİK OLAN KISMI BURAYA EKLEDİK:
+              { text: `${teklif.imzalayan || "Sercan Temel"}`, bold: true, fontSize: 11 }
             ],
             alignment: 'right'
           }
