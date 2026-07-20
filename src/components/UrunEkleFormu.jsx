@@ -55,7 +55,8 @@ export default function UrunEkleFormu({ urunler = [], yukleniyor, hata, onEkle, 
     ? { id: "ozel_urun", kodu: "ÖZEL", aciklama: arama.toLocaleUpperCase("tr-TR") }
     : tumUrunler.find((u) => u.id === secilenId);
 
-  const fiyatGecerliMi = Number(fiyatAna) > 0 || Number(fiyatAdet) > 0;
+  // FİYAT KONTROLÜ KALDIRILDI: Artık fiyat girmek ZORUNLU DEĞİL. Sadece ürün seçilmesi yeterli!
+  const fiyatGecerliMi = true; 
 
   const handleAramaDegisimi = (e) => {
     setArama(e.target.value);
@@ -74,7 +75,6 @@ export default function UrunEkleFormu({ urunler = [], yukleniyor, hata, onEkle, 
     setListeAcik(false);
   };
 
-  // YENİ EKLENEN: ÜRÜN SİLME FONKSİYONU
   async function urunSil(silinecekUrun, e) {
     e.stopPropagation();
     e.preventDefault();
@@ -85,18 +85,18 @@ export default function UrunEkleFormu({ urunler = [], yukleniyor, hata, onEkle, 
 
     try {
       const { error } = await supabase
-        .from('urunler') // Veritabanındaki tablonun adı 'urunler' varsayıldı
+        .from('urunler')
         .delete()
         .eq('id', silinecekUrun.id);
 
       if (error) {
         console.error("Ürün silinemedi:", error);
-        alert("Silme işlemi sırasında hata oluştu. Muhtemelen Güvenlik (RLS) ayarından dolayı: " + error.message);
+        alert("Silme işlemi sırasında hata oluştu: " + error.message);
       } else {
         setArama("");
         setSecilenId("");
         setListeAcik(false);
-        alert("Ürün başarıyla silindi! (Listeden tamamen kaybolması için sayfayı yenilemeniz gerekebilir)");
+        alert("Ürün başarıyla silindi!");
       }
     } catch (err) {
       console.error("Supabase bağlantı hatası:", err);
@@ -104,30 +104,23 @@ export default function UrunEkleFormu({ urunler = [], yukleniyor, hata, onEkle, 
   }
 
   async function ekle() {
-    if (!secilenUrun || !fiyatGecerliMi) return;
+    if (!secilenUrun) return;
 
     let hesaplananMiktar = Number(miktar) || 1;
     let ekstraAciklama = "";
-    let nihaiFiyat = 0;
+    let nihaiFiyat = Number(fiyatAna) || Number(fiyatAdet) || 0; // Fiyat boşsa 0 alır
     let nihaiBirim = secilenBirim;
 
     if (secilenBirim === "m²" || secilenBirim === "ad") {
       const enDegeri = Number(en) || 0;
       const boyDegeri = Number(boy) || 0;
       
-      const m2HesabiGerekli = secilenBirim === "m²" || (fiyatAna && !fiyatAdet);
-
-      if (m2HesabiGerekli && (enDegeri === 0 || boyDegeri === 0)) {
-        alert("Metrekare hesabı için lütfen geçerli En ve Boy (mm) değerlerini giriniz!");
-        return;
-      }
-      
       let toplamM2 = 0;
       
       if (enDegeri > 0 && boyDegeri > 0) {
         const tekCamM2 = (enDegeri * boyDegeri) / 1000000;
         toplamM2 = tekCamM2 * (Number(miktar) || 1);
-        ekstraAciklama = ` (${enDegeri}x${boyDegeri} mm - ${Number(miktar) || 1} Adet - Toplam: ${toplamM2.toFixed(2)} m²)`;
+        ekstraAciklama = ` (${enDegeri}×{boyDegeri} mm - ${Number(miktar) || 1} Adet - Toplam: ${toplamM2.toFixed(2)} m²)`;
       } else {
         ekstraAciklama = ` (${Number(miktar) || 1} Adet)`;
       }
@@ -138,27 +131,21 @@ export default function UrunEkleFormu({ urunler = [], yukleniyor, hata, onEkle, 
         nihaiBirim = "ad"; 
       } else {
         hesaplananMiktar = toplamM2 > 0 ? toplamM2 : (Number(miktar) || 1);
-        nihaiFiyat = Number(fiyatAna);
+        nihaiFiyat = Number(fiyatAna) || 0;
         nihaiBirim = toplamM2 > 0 ? "m²" : "ad";
       }
 
     } 
     else if (secilenBirim === "mt") {
       const boyDegeri = Number(boy) || 0;
-
-      if (boyDegeri === 0) {
-        alert("Metretül hesabı için lütfen geçerli Uzunluk/Boy (mm) değerini giriniz!");
-        return;
-      }
-      
       hesaplananMiktar = (boyDegeri / 1000) * (Number(miktar) || 1);
       ekstraAciklama = ` (${boyDegeri} mm - ${Number(miktar) || 1} Adet)`;
-      nihaiFiyat = Number(fiyatAna);
+      nihaiFiyat = Number(fiyatAna) || 0;
       nihaiBirim = "mt";
     } 
     else {
       hesaplananMiktar = Number(miktar) || 1;
-      nihaiFiyat = Number(fiyatAna);
+      nihaiFiyat = Number(fiyatAna) || 0;
       nihaiBirim = "ad";
     }
 
@@ -179,7 +166,6 @@ export default function UrunEkleFormu({ urunler = [], yukleniyor, hata, onEkle, 
 
         if (error) {
           console.error("Yeni ürün kaydedilemedi:", error);
-          alert(`DİKKAT: Ürün faturaya eklendi ama VERİTABANINA KAYDEDİLEMEDİ!\nSupabase'deki sütun adlarını kontrol et ('kodu' ve 'aciklama' şeklinde olmalıdır).\n\nHata: ${error.message}`);
         } else if (data) {
           sonKullanilacakUrun = data;
           setEklenenOzelUrunler((prev) => [...prev, data]); 
@@ -286,12 +272,10 @@ export default function UrunEkleFormu({ urunler = [], yukleniyor, hata, onEkle, 
                     onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "#f0f8ff"}
                     onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "white"}
                   >
-                    {/* SOL TARAF: Tıklanınca ürünü seçer */}
                     <div onClick={() => handleUrunSec(urun)} style={{ flex: 1 }} onMouseDown={(e) => e.preventDefault()}>
                       <strong>{koduBul(urun)}</strong> - {aciklamaBul(urun)}
                     </div>
 
-                    {/* SAĞ TARAF: SİLME BUTONU */}
                     <button
                       onClick={(e) => urunSil(urun, e)}
                       onMouseDown={(e) => e.preventDefault()}
@@ -406,11 +390,7 @@ export default function UrunEkleFormu({ urunler = [], yukleniyor, hata, onEkle, 
       </div>
 
       <label className="alan">
-        <span>
-          {(secilenBirim === "m²" || secilenBirim === "ad")
-            ? "Fiyatlandırma (Hangi kutuya yazarsanız diğeri kaybolur)" 
-            : `Birim Fiyat (1 ${secilenBirim} başına)`}
-        </span>
+        <span>Fiyatlandırma (İsteğe bağlı - Boş bırakabilirsiniz)</span>
         <div style={{ display: "flex", gap: "8px" }}>
           
           {((secilenBirim !== "m²" && secilenBirim !== "ad") || fiyatAdet === "") && (
@@ -418,7 +398,7 @@ export default function UrunEkleFormu({ urunler = [], yukleniyor, hata, onEkle, 
               type="number"
               min="0"
               step="0.01"
-              placeholder={(secilenBirim === "m²" || secilenBirim === "ad") ? "m² Fiyatı Girin" : "Fiyatı girin"}
+              placeholder={(secilenBirim === "m²" || secilenBirim === "ad") ? "m² Fiyatı (İsteğe bağlı)" : "Fiyat (İsteğe bağlı)"}
               value={fiyatAna}
               onChange={(e) => {
                 setFiyatAna(e.target.value);
@@ -433,7 +413,7 @@ export default function UrunEkleFormu({ urunler = [], yukleniyor, hata, onEkle, 
               type="number"
               min="0"
               step="0.01"
-              placeholder="Adet Fiyatı Girin"
+              placeholder="Adet Fiyatı (İsteğe bağlı)"
               value={fiyatAdet}
               onChange={(e) => {
                 setFiyatAdet(e.target.value);
@@ -455,10 +435,10 @@ export default function UrunEkleFormu({ urunler = [], yukleniyor, hata, onEkle, 
         <button 
           className="buton buton--birincil" 
           onClick={ekle} 
-          disabled={!secilenUrun || !fiyatGecerliMi}
+          disabled={!secilenUrun}
           style={{ flex: 1, backgroundColor: islemVerisi?.tip === "duzenle" ? "#10b981" : "" }}
         >
-          {islemVerisi?.tip === "duzenle" ? "Değişikliği Kaydet" : "Hesapla ve Listeye Ekle"}
+          {islemVerisi?.tip === "duzenle" ? "Değişikliği Kaydet" : "Listeye Ekle"}
         </button>
 
         {islemVerisi && (
