@@ -198,25 +198,64 @@ export default function GecmisTeklifler({ kullaniciRolu }) {
                   </td>
                   <td style={{ padding: "12px" }}>{t.musteri_adi}</td>
                   <td style={{ padding: "12px", textAlign: "center", whiteSpace: "nowrap" }}>
-                    <button 
-                      onClick={() => onizle(t)} 
-                      title="Yeni Sekmede Görüntüle"
-                      style={{ backgroundColor: "#0ea5e9", color: "white", border: "none", padding: "6px 10px", borderRadius: "4px", cursor: "pointer", fontSize: "12px", margin: "0 5px 0 0" }}
-                    >
-                      👁️ Görüntüle
-                    </button>
-
-                    <button onClick={() => tekrarIndir(t)} className="buton buton--birincil" style={{ cursor: "pointer", padding: "6px 12px", fontSize: "12px", margin: "0 5px 0 0" }}>İndir</button>
-                    
-                    {/* Sadece Yönetici İse Tekli Sil Butonunu Göster */}
-                    {kullaniciRolu === 'admin' && (
+                    <div style={{ display: "inline-flex", gap: "6px", justifyContent: "center" }}>
                       <button 
-                        onClick={() => sil(t.id)} 
-                        style={{ backgroundColor: "#ff4d4d", color: "white", border: "none", padding: "6px 12px", borderRadius: "4px", cursor: "pointer", fontSize: "12px" }}
+                        onClick={() => onizle(t)} 
+                        title="Yeni Sekmede Görüntüle"
+                        style={{ 
+                          backgroundColor: "#f8fafc", 
+                          color: "#334155", 
+                          border: "1px solid #cbd5e1", 
+                          padding: "6px 12px", 
+                          borderRadius: "6px", 
+                          cursor: "pointer", 
+                          fontSize: "13px", 
+                          fontWeight: "600",
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "5px",
+                          boxShadow: "0 1px 2px rgba(0,0,0,0.05)"
+                        }}
                       >
-                        Sil
+                        <span style={{ fontSize: "14px" }}>👁️</span> Görüntüle
                       </button>
-                    )}
+
+                      <button 
+                        onClick={() => tekrarIndir(t)} 
+                        style={{ 
+                          backgroundColor: "#0f2942", // Siteyle uyumlu koyu lacivert
+                          color: "white", 
+                          border: "none", 
+                          padding: "6px 14px", 
+                          borderRadius: "6px", 
+                          cursor: "pointer", 
+                          fontSize: "13px", 
+                          fontWeight: "600",
+                          boxShadow: "0 2px 4px rgba(15, 41, 66, 0.2)"
+                        }}
+                      >
+                        📥 İndir
+                      </button>
+                      
+                      {kullaniciRolu === 'admin' && (
+                        <button 
+                          onClick={() => sil(t.id)} 
+                          style={{ 
+                            backgroundColor: "white", 
+                            color: "#e11d48", // Göz yormayan şık bir bordo/kırmızı
+                            border: "1px solid #fecdd3", 
+                            padding: "6px 12px", 
+                            borderRadius: "6px", 
+                            cursor: "pointer", 
+                            fontSize: "13px",
+                            fontWeight: "600",
+                            boxShadow: "0 1px 2px rgba(0,0,0,0.05)"
+                          }}
+                        >
+                          Sil
+                        </button>
+                      )}
+                    </div>
                   </td>
                 </tr>
               ))

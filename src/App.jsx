@@ -94,30 +94,46 @@ export default function App() {
             }} 
           />
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', position: 'relative', zIndex: 9999 }}>
-            <div style={{ display: 'flex', gap: '8px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', position: 'relative', zIndex: 9999, alignItems: 'flex-end' }}>
+            {kullaniciRolu === 'admin' && (
               <button 
-                onClick={() => setAktifSayfa(aktifSayfa === "m2hesapla" ? "teklif" : "m2hesapla")} 
-                style={{ backgroundColor: '#10b981', color: 'white', padding: '8px 14px', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}
+                onClick={() => setAktifSayfa(aktifSayfa === "ayarlar" ? "teklif" : "ayarlar")} 
+                style={{ 
+                  backgroundColor: 'rgba(255, 255, 255, 0.95)', 
+                  color: '#0f2942', // Sitenin lacivertine uyumlu
+                  padding: '10px 20px', 
+                  border: '1px solid rgba(255, 255, 255, 0.5)', 
+                  borderRadius: '6px', 
+                  cursor: 'pointer', 
+                  fontWeight: '700',
+                  fontSize: '14px',
+                  boxShadow: '0 4px 15px rgba(0, 0, 0, 0.15)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  transition: 'all 0.2s ease'
+                }}
               >
-                {aktifSayfa === "m2hesapla" ? "📄 Teklif Ekranına Dön" : "📏 m² Fiyat Bul"}
+                {aktifSayfa === "ayarlar" ? "📄 Teklif Ekranına Dön" : "⚙️ Ayarlar"}
               </button>
-
-              {kullaniciRolu === 'admin' && (
-                <button 
-                  onClick={() => setAktifSayfa(aktifSayfa === "ayarlar" ? "teklif" : "ayarlar")} 
-                  style={{ backgroundColor: '#fcd34d', color: '#1f2937', padding: '8px 14px', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}
-                >
-                  {aktifSayfa === "ayarlar" ? "📄 Teklif Ekranına Dön" : "⚙️ Ayarlar"}
-                </button>
-              )}
-            </div>
+            )}
 
             <button 
               onClick={cikisYap} 
-              style={{ backgroundColor: 'transparent', color: 'white', padding: '6px 12px', border: '1px solid white', borderRadius: '4px', cursor: 'pointer', alignSelf: 'flex-end' }}
+              style={{ 
+                backgroundColor: 'rgba(255, 255, 255, 0.1)', 
+                color: 'white', 
+                padding: '8px 20px', 
+                border: '1px solid rgba(255, 255, 255, 0.2)', 
+                borderRadius: '6px', 
+                cursor: 'pointer', 
+                fontSize: '13px',
+                fontWeight: '500',
+                backdropFilter: 'blur(10px)',
+                transition: 'all 0.2s ease'
+              }}
             >
-              Çıkış Yap
+              Çıkış Yap 🚪
             </button>
           </div>
         </div>

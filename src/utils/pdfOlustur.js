@@ -1,7 +1,6 @@
 import pdfMake from "pdfmake/build/pdfmake";
 import pdfFonts from "pdfmake/build/vfs_fonts";
 import { paraFormatla, genelToplamHesapla, genelKdvHesapla, sayiyiYaziyaCevir } from "./hesaplama";
-import { supabase } from "../lib/supabaseClient";
 
 pdfMake.vfs = pdfFonts?.pdfMake?.vfs || pdfFonts?.vfs || pdfFonts?.default?.pdfMake?.vfs || pdfFonts?.default?.vfs;
 
@@ -110,9 +109,9 @@ export async function teklifPdfIndir(teklif, sepet, teklifNo, onizlemeMi = false
   const logoSisecam = await gorseliBase64eCevir("/sisecam.png");
   const logoIso = await gorseliBase64eCevir("/birinci-logo.jpg");
 
-  const { data: ayarlar } = await supabase.from('ayarlar').select('*').eq('id', 1).single();
-  const imzalayanKisi = teklif.imzalayan || ayarlar?.imzalayan || "Sercan Temel";
-  const dinamikSartlar = ayarlar?.sartlar ? ayarlar.sartlar.split('\n').filter(s => s.trim() !== '') : SOZLESME_SARTLARI;
+  // SABİT DEĞERLER (Ayarlar İptal Edildi)
+  const imzalayanKisi = teklif.imzalayan || "Sercan Temel";
+  const dinamikSartlar = SOZLESME_SARTLARI;
 
   const urunSatirlari = sepet.flatMap((satir) => {
     let baslik = satir.urunAciklamasi;
@@ -204,7 +203,6 @@ export async function teklifPdfIndir(teklif, sepet, teklifNo, onizlemeMi = false
       },
       
       { text: "Almış olduğunuz teklifin teyidi için mutlaka onay veriniz.", bold: true, fontSize: 10 },
-      // KAŞE İÇİN GENİŞ BOŞLUK (MARGİN 70 YAPILDI)
       { text: "Firma ismi ve kaşesi / Onayı / Özel notlar", fontSize: 10, margin: [0, 0, 0, 70] },
       
       {
@@ -236,10 +234,10 @@ export async function proformaPdfIndir(teklif, sepet, teklifNo, onizlemeMi = fal
   const logoSisecam = await gorseliBase64eCevir("/sisecam.png");
   const logoIso = await gorseliBase64eCevir("/birinci-logo.jpg");
   
-  const { data: ayarlar } = await supabase.from('ayarlar').select('*').eq('id', 1).single();
-  const imzalayanKisi = teklif.imzalayan || ayarlar?.imzalayan || "Sercan Temel";
-  const bankaIban = ayarlar?.iban || "TR26 0006 4000 0014 2210 2141 37";
-  const dinamikSartlar = ayarlar?.sartlar ? ayarlar.sartlar.split('\n').filter(s => s.trim() !== '') : SOZLESME_SARTLARI;
+  // SABİT DEĞERLER (Ayarlar İptal Edildi)
+  const imzalayanKisi = teklif.imzalayan || "Sercan Temel";
+  const bankaIban = "TR26 0006 4000 0014 2210 2141 37";
+  const dinamikSartlar = SOZLESME_SARTLARI;
 
   const tarihYazisi = teklif.tarih.toLocaleDateString("tr-TR");
   const belgeNo = teklifNo || siradakiProformaNoGetir(); 
@@ -373,7 +371,6 @@ export async function proformaPdfIndir(teklif, sepet, teklifNo, onizlemeMi = fal
         margin: [0, 10, 0, 15]
       },
       { text: "Almış olduğunuz teklifin teyidi için mutlaka onay veriniz.", bold: true, fontSize: 10 },
-      // KAŞE İÇİN GENİŞ BOŞLUK (MARGİN 70 YAPILDI)
       { text: "Firma ismi ve kaşesi / Onayı / Özel notlar", fontSize: 10, margin: [0, 0, 0, 70] },
       
       {

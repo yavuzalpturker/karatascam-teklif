@@ -8,10 +8,16 @@ export default function Login({ onLogin }) {
   const girisYap = (e) => {
     e.preventDefault();
     
-    if (kullaniciAdi === 'karatas' && sifre === '1234') {
+    // Ayarlardan kaydedilen şifreleri çek, yoksa varsayılan olarak 1234 kullan
+    const kayitliSifreler = JSON.parse(localStorage.getItem('karatas_sifreler')) || {
+      admin: '1234',
+      personel: '1234'
+    };
+    
+    if (kullaniciAdi === 'karatas' && sifre === kayitliSifreler.admin) {
       // Yönetici girişi
       onLogin(true, 'admin');
-    } else if (kullaniciAdi === 'personel' && sifre === '1234') {
+    } else if (kullaniciAdi === 'personel' && sifre === kayitliSifreler.personel) {
       // Normal çalışan girişi
       onLogin(true, 'calisan');
     } else {
