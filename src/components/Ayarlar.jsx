@@ -1,19 +1,26 @@
 import React, { useState, useEffect } from 'react';
 
 export default function Ayarlar() {
-  // Şifre Ayarları State'leri
+  // Yönetici State'leri
+  const [adminKadi, setAdminKadi] = useState('');
   const [adminSifre, setAdminSifre] = useState('');
+  
+  // Personel State'leri
+  const [personelKadi, setPersonelKadi] = useState('');
   const [personelSifre, setPersonelSifre] = useState('');
+
   const [mesaj, setMesaj] = useState({ tip: '', metin: '' });
 
-  // Sayfa yüklendiğinde şifreleri LocalStorage'dan getir
+  // Sayfa yüklendiğinde bilgileri LocalStorage'dan getir
   useEffect(() => {
-    const kayitliSifreler = JSON.parse(localStorage.getItem('karatas_sifreler')) || {
-      admin: '1234',
-      personel: '1234'
-    };
-    setAdminSifre(kayitliSifreler.admin);
-    setPersonelSifre(kayitliSifreler.personel);
+    const kayitliSifreler = JSON.parse(localStorage.getItem('karatas_sifreler')) || {};
+    
+    // Eğer daha önceden kayıtlı kullanıcı adı yoksa eski varsayılanları koy
+    setAdminKadi(kayitliSifreler.adminKadi || 'karatas');
+    setAdminSifre(kayitliSifreler.admin || '1234');
+    
+    setPersonelKadi(kayitliSifreler.personelKadi || 'personel');
+    setPersonelSifre(kayitliSifreler.personel || '1234');
   }, []);
 
   const gosterMesaj = (tip, metin) => {
@@ -21,14 +28,25 @@ export default function Ayarlar() {
     setTimeout(() => setMesaj({ tip: '', metin: '' }), 3000);
   };
 
-  const sifreleriKaydet = () => {
-    if(adminSifre.length < 4 || personelSifre.length < 4) {
+  const bilgileriKaydet = () => {
+    if (adminSifre.length < 4 || personelSifre.length < 4) {
       gosterMesaj('error', 'Şifreler güvenlik için en az 4 haneli olmalıdır!');
       return;
     }
-    const sifreler = { admin: adminSifre, personel: personelSifre };
-    localStorage.setItem('karatas_sifreler', JSON.stringify(sifreler));
-    gosterMesaj('success', 'Şifreler başarıyla güncellendi!');
+    if (!adminKadi.trim() || !personelKadi.trim()) {
+      gosterMesaj('error', 'Kullanıcı adları boş bırakılamaz!');
+      return;
+    }
+
+    const bilgiler = { 
+      adminKadi: adminKadi.trim(), 
+      admin: adminSifre, // Eski kodlar bozulmasın diye şifreyi eski key ile de tutuyoruz
+      personelKadi: personelKadi.trim(), 
+      personel: personelSifre
+    };
+    
+    localStorage.setItem('karatas_sifreler', JSON.stringify(bilgiler));
+    gosterMesaj('success', 'Kullanıcı adları ve şifreler başarıyla güncellendi!');
   };
 
   return (
@@ -49,36 +67,65 @@ export default function Ayarlar() {
         )}
       </div>
 
-      {/* SADECE ŞİFRE AYARLARI KALDI */}
       <div style={{ backgroundColor: "#f8fafc", padding: "20px", borderRadius: "8px", border: "1px solid #e2e8f0" }}>
         <h3 style={{ borderBottom: "2px solid #0f2942", paddingBottom: "10px", color: "#0f2942", marginTop: 0 }}>🔐 Kullanıcı & Şifre Yönetimi</h3>
-        <p style={{ fontSize: "13px", color: "#64748b", marginBottom: "20px" }}>Sisteme giriş şifrelerini buradan değiştirebilirsiniz.</p>
+        <p style={{ fontSize: "13px", color: "#64748b", marginBottom: "20px" }}>Sisteme giriş için kullanıcı adlarını ve şifreleri buradan değiştirebilirsiniz.</p>
         
-        <div style={{ marginBottom: "15px" }}>
-          <label style={{ display: "block", fontSize: "14px", fontWeight: "600", marginBottom: "5px", color: "#334155" }}>Yönetici (Admin) Şifresi - Kullanıcı Adı: <span style={{ color: "black" }}>karatas</span></label>
-          <input 
-            type="text" 
-            value={adminSifre}
-            onChange={(e) => setAdminSifre(e.target.value)}
-            style={{ width: "100%", padding: "10px", borderRadius: "6px", border: "1px solid #cbd5e1", boxSizing: "border-box" }} 
-          />
+        {/* YÖNETİCİ BİLGİLERİ */}
+        <div style={{ marginBottom: "20px", paddingBottom: "15px", borderBottom: "1px dashed #cbd5e1" }}>
+          <h4 style={{ margin: "0 0 10px 0", color: "#334155" }}>Yönetici (Admin) Bilgileri</h4>
+          <div style={{ display: "flex", gap: "15px" }}>
+            <div style={{ flex: 1 }}>
+              <label style={{ display: "block", fontSize: "13px", fontWeight: "600", marginBottom: "5px", color: "#475569" }}>Kullanıcı Adı</label>
+              <input 
+                type="text" 
+                value={adminKadi}
+                onChange={(e) => setAdminKadi(e.target.value)}
+                style={{ width: "100%", padding: "10px", borderRadius: "6px", border: "1px solid #cbd5e1", boxSizing: "border-box" }} 
+              />
+            </div>
+            <div style={{ flex: 1 }}>
+              <label style={{ display: "block", fontSize: "13px", fontWeight: "600", marginBottom: "5px", color: "#475569" }}>Şifre</label>
+              <input 
+                type="text" 
+                value={adminSifre}
+                onChange={(e) => setAdminSifre(e.target.value)}
+                style={{ width: "100%", padding: "10px", borderRadius: "6px", border: "1px solid #cbd5e1", boxSizing: "border-box" }} 
+              />
+            </div>
+          </div>
         </div>
 
-        <div style={{ marginBottom: "20px" }}>
-          <label style={{ display: "block", fontSize: "14px", fontWeight: "600", marginBottom: "5px", color: "#334155" }}>Çalışan (Personel) Şifresi - Kullanıcı Adı: <span style={{ color: "black" }}>personel</span></label>
-          <input 
-            type="text" 
-            value={personelSifre}
-            onChange={(e) => setPersonelSifre(e.target.value)}
-            style={{ width: "100%", padding: "10px", borderRadius: "6px", border: "1px solid #cbd5e1", boxSizing: "border-box" }} 
-          />
+        {/* PERSONEL BİLGİLERİ */}
+        <div style={{ marginBottom: "25px" }}>
+          <h4 style={{ margin: "0 0 10px 0", color: "#334155" }}>Çalışan (Personel) Bilgileri</h4>
+          <div style={{ display: "flex", gap: "15px" }}>
+            <div style={{ flex: 1 }}>
+              <label style={{ display: "block", fontSize: "13px", fontWeight: "600", marginBottom: "5px", color: "#475569" }}>Kullanıcı Adı</label>
+              <input 
+                type="text" 
+                value={personelKadi}
+                onChange={(e) => setPersonelKadi(e.target.value)}
+                style={{ width: "100%", padding: "10px", borderRadius: "6px", border: "1px solid #cbd5e1", boxSizing: "border-box" }} 
+              />
+            </div>
+            <div style={{ flex: 1 }}>
+              <label style={{ display: "block", fontSize: "13px", fontWeight: "600", marginBottom: "5px", color: "#475569" }}>Şifre</label>
+              <input 
+                type="text" 
+                value={personelSifre}
+                onChange={(e) => setPersonelSifre(e.target.value)}
+                style={{ width: "100%", padding: "10px", borderRadius: "6px", border: "1px solid #cbd5e1", boxSizing: "border-box" }} 
+              />
+            </div>
+          </div>
         </div>
 
         <button 
-          onClick={sifreleriKaydet}
+          onClick={bilgileriKaydet}
           style={{ width: "100%", backgroundColor: "#0f2942", color: "white", padding: "12px", border: "none", borderRadius: "6px", fontWeight: "bold", cursor: "pointer", fontSize: "14px" }}
         >
-          🔑 Şifreleri Güncelle
+          💾 Bilgileri Güncelle
         </button>
       </div>
     </section>

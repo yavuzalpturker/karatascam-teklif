@@ -102,16 +102,8 @@ const ORTAK_FOOTER = {
   margin: [40, 0, 40, 20],
 };
 
-// ==========================================
-// 1. DÜZ METİN TEKLİF PDF'İ
-// ==========================================
-export async function teklifPdfIndir(teklif, sepet, teklifNo, onizlemeMi = false) {
-  const logoSisecam = await gorseliBase64eCevir("/sisecam.png");
-  const logoIso = await gorseliBase64eCevir("/birinci-logo.jpg");
-
-  // SABİT DEĞERLER (Ayarlar İptal Edildi)
-  const imzalayanKisi = teklif.imzalayan || "Sercan Temel";
-  const dinamikSartlar = SOZLESME_SARTLARI;
+function sepetIcerikOlustur(sepet, baslikMetni) {
+  if (!sepet || sepet.length === 0) return [];
 
   const urunSatirlari = sepet.flatMap((satir) => {
     let baslik = satir.urunAciklamasi;
@@ -146,7 +138,30 @@ export async function teklifPdfIndir(teklif, sepet, teklifNo, onizlemeMi = false
         bold: true, fontSize: 12, alignment: "right", margin: [0, 0, 0, 8], color: '#333'
       }
     ];
-  }).flat(); 
+  }).flat();
+
+  return [
+    { text: baslikMetni, bold: true, fontSize: 12, color: '#0f2942', margin: [0, 10, 0, 5] },
+    { canvas: [{ type: 'line', x1: 0, y1: 0, x2: 515, y2: 0, lineWidth: 1, lineColor: '#0f2942' }], margin: [0, 0, 0, 8] },
+    ...urunSatirlari,
+    ...genelToplamSatirlari
+  ];
+}
+
+// ==========================================
+// 1. DÜZ METİN TEKLİF PDF'İ
+// ==========================================
+export async function teklifPdfIndir(teklif, sepet1, sepet2 = [], teklifNo, onizlemeMi = false) {
+  const logoSisecam = await gorseliBase64eCevir("/sisecam.png");
+  const logoIso = await gorseliBase64eCevir("/birinci-logo.jpg");
+
+  const imzalayanKisi = teklif.imzalayan || "Sercan Temel";
+  const dinamikSartlar = SOZLESME_SARTLARI;
+
+  const birinciSecenekIcerik = sepetIcerikOlustur(sepet1, "1. SEÇENEK");
+  const ikinciSecenekIcerik = (sepet2 && sepet2.length > 0) 
+    ? sepetIcerikOlustur(sepet2, "2. SEÇENEK") 
+    : [];
 
   const tarihYazisi = teklif.tarih.toLocaleDateString("tr-TR");
   const belgeNo = teklifNo || siradakiProformaNoGetir(); 
@@ -182,13 +197,14 @@ export async function teklifPdfIndir(teklif, sepet, teklifNo, onizlemeMi = false
         margin: [0, 10, 0, 20]
       },
       { text: "İhtiyacınız olan ürünlere ilişkin teklifimiz aşağıdaki gibidir:", fontSize: 10, margin: [0, 0, 0, 10] },
-      ...urunSatirlari,
-      ...genelToplamSatirlari,
+      
+      ...birinciSecenekIcerik,
+      ...ikinciSecenekIcerik,
       
       ...(teklif.notlar ? teklif.notlar.split('\n').map((satir) => ({
         text: `* ${satir}`,
         fontSize: 9,
-        margin: [2, 0, 0, 2],
+        margin: [2, 5, 0, 2],
       })) : []),
       { 
         stack: [
@@ -218,7 +234,6 @@ export async function teklifPdfIndir(teklif, sepet, teklifNo, onizlemeMi = false
   };
 
   const dosyaAdi = `Karatascam_Teklif_${teklif.musteriAdi}.pdf`;
-  
   const pdfDoc = pdfMake.createPdf(docDefinition);
   if (onizlemeMi) {
     pdfDoc.open();
@@ -227,25 +242,13 @@ export async function teklifPdfIndir(teklif, sepet, teklifNo, onizlemeMi = false
   }
 }
 
-// ==========================================
-// 2. TABLOLU PROFORMA FATURA PDF'İ
-// ==========================================
-export async function proformaPdfIndir(teklif, sepet, teklifNo, onizlemeMi = false) {
-  const logoSisecam = await gorseliBase64eCevir("/sisecam.png");
-  const logoIso = await gorseliBase64eCevir("/birinci-logo.jpg");
-  
-  // SABİT DEĞERLER (Ayarlar İptal Edildi)
-  const imzalayanKisi = teklif.imzalayan || "Sercan Temel";
-  const bankaIban = "TR26 0006 4000 0014 2210 2141 37";
-  const dinamikSartlar = SOZLESME_SARTLARI;
-
-  const tarihYazisi = teklif.tarih.toLocaleDateString("tr-TR");
-  const belgeNo = teklifNo || siradakiProformaNoGetir(); 
+function proformaTabloOlustur(sepet, baslikMetni) {
+  if (!sepet || sepet.length === 0) return [];
 
   const tabloGövdesi = [
     [
-      { text: 'MALIN CİNSİ', bold: true, fillColor: '#eeeeee', margin: [5, 5, 0, 5], alignment: 'left' },
-      { text: 'AÇIKLAMA', bold: true, fillColor: '#eeeeee', margin: [5, 5, 0, 5], alignment: 'left' },
+      { text: `${baslikMetni} - MALIN CİNSİ`, bold: true, fillColor: '#eeeeee', margin: [5, 5, 0, 5], alignment: 'left', colSpan: 2 },
+      {},
       { text: 'ADET / METRAJ', bold: true, fillColor: '#eeeeee', margin: [0, 5, 0, 5], alignment: 'center' },
       { text: 'BİRİM FİYAT', bold: true, fillColor: '#eeeeee', margin: [0, 5, 0, 5], alignment: 'center' },
       { text: 'KDV ORANI', bold: true, fillColor: '#eeeeee', margin: [0, 5, 0, 5], alignment: 'center' },
@@ -304,42 +307,74 @@ export async function proformaPdfIndir(teklif, sepet, teklifNo, onizlemeMi = fal
     );
   });
 
-  if (!yalnizMetni) yalnizMetni = "sıfır";
+  return { tabloGövdesi, yalnizMetni };
+}
+
+// ==========================================
+// 2. TABLOLU PROFORMA FATURA PDF'İ
+// ==========================================
+export async function proformaPdfIndir(teklif, sepet1, sepet2 = [], teklifNo, onizlemeMi = false) {
+  const logoSisecam = await gorseliBase64eCevir("/sisecam.png");
+  const logoIso = await gorseliBase64eCevir("/birinci-logo.jpg");
+  
+  const imzalayanKisi = teklif.imzalayan || "Sercan Temel";
+  const bankaIban = "TR26 0006 4000 0014 2210 2141 37";
+  const dinamikSartlar = SOZLESME_SARTLARI;
+
+  const tarihYazisi = teklif.tarih.toLocaleDateString("tr-TR");
+  const belgeNo = teklifNo || siradakiProformaNoGetir(); 
+
+  const sonuc1 = proformaTabloOlustur(sepet1, "1. SEÇENEK");
+  const sonuc2 = (sepet2 && sepet2.length > 0) ? proformaTabloOlustur(sepet2, "2. SEÇENEK") : null;
 
   let kisi = (teklif.ilgiliKisi || "").toLocaleUpperCase("tr-TR");
   kisi = kisi.replace(/DİKKATİNE/g, "").replace(/[,;]/g, "").trim();
-  
   if (kisi && !kisi.startsWith("SN.") && !kisi.startsWith("SN ")) {
     kisi = `Sn. ${kisi}`;
   }
-  
   const dikkatineSatiri = kisi ? `${kisi} Dikkatine;` : "";
 
-  const docDefinition = {
-    pageMargins: [40, 100, 40, 60],
-    header: ortakHeaderOlustur(logoSisecam, logoIso),
-    footer: ORTAK_FOOTER,
-    content: [
-      {
-        columns: [
-          { text: `Proje Adı: ${teklif.projeAdi || ""}`, bold: true, fontSize: 10, alignment: 'left' },
-          {
-            stack: [
-              { text: `Tarih: ${tarihYazisi}`, fontSize: 10 },
-              { text: `No: ${belgeNo}`, fontSize: 10 }
-            ],
-            alignment: 'right'
-          }
-        ],
-        margin: [0, 10, 0, 20]
+  const icerikDizisi = [
+    {
+      columns: [
+        { text: `Proje Adı: ${teklif.projeAdi || ""}`, bold: true, fontSize: 10, alignment: 'left' },
+        {
+          stack: [
+            { text: `Tarih: ${tarihYazisi}`, fontSize: 10 },
+            { text: `No: ${belgeNo}`, fontSize: 10 }
+          ],
+          alignment: 'right'
+        }
+      ],
+      margin: [0, 10, 0, 20]
+    },
+    { text: "PROFORMA FATURA", style: "header", alignment: "center", bold: true, fontSize: 14, margin: [0, 0, 0, 20] },
+    { text: dikkatineSatiri, bold: true, fontSize: 10, margin: [0, 0, 0, 10] },
+    
+    {
+      table: {
+        headerRows: 1,
+        widths: ['*', '*', 'auto', 'auto', 'auto', 'auto'],
+        body: sonuc1.tabloGövdesi
       },
-      { text: "PROFORMA FATURA", style: "header", alignment: "center", bold: true, fontSize: 14, margin: [0, 0, 0, 20] },
-      { text: dikkatineSatiri, bold: true, fontSize: 10, margin: [0, 0, 0, 10] },
+      layout: {
+        hLineWidth: function (i, node) { return 1; },
+        vLineWidth: function (i, node) { return 1; },
+        hLineColor: function (i, node) { return '#aaaaaa'; },
+        vLineColor: function (i, node) { return '#aaaaaa'; },
+      }
+    },
+    { text: [ {text: 'YALNIZ (1. Seçenek): ', bold: true}, `${sonuc1.yalnizMetni}.` ], fontSize: 10, alignment: 'right', margin: [0, 4, 0, 20] }
+  ];
+
+  if (sonuc2 && sepet2.length > 0) {
+    icerikDizisi.push(
+      { text: "", margin: [0, 10, 0, 10] },
       {
         table: {
           headerRows: 1,
           widths: ['*', '*', 'auto', 'auto', 'auto', 'auto'],
-          body: tabloGövdesi
+          body: sonuc2.tabloGövdesi
         },
         layout: {
           hLineWidth: function (i, node) { return 1; },
@@ -348,45 +383,51 @@ export async function proformaPdfIndir(teklif, sepet, teklifNo, onizlemeMi = fal
           vLineColor: function (i, node) { return '#aaaaaa'; },
         }
       },
-      
-      { text: [ {text: 'YALNIZ: ', bold: true}, `${yalnizMetni}.` ], fontSize: 10, alignment: 'right', margin: [0, 4, 0, 20] },
-      
-      {
-        columns: [
-          {
-            stack: [
-              { text: 'İŞBANKASI / SİTELER ŞUBESİ', bold: true, fontSize: 10, margin: [0, 0, 0, 5] },
-              { text: `IBAN NO : ${bankaIban}`, fontSize: 10 }
-            ],
-            alignment: 'left'
-          },
-          {
-            stack: [
-              { text: 'Saygılarımla,', italics: true, fontSize: 11, margin: [0, 0, 0, 2] },
-              { text: `${imzalayanKisi}`, bold: true, fontSize: 11 }
-            ],
-            alignment: 'right'
-          }
-        ],
-        margin: [0, 10, 0, 15]
-      },
-      { text: "Almış olduğunuz teklifin teyidi için mutlaka onay veriniz.", bold: true, fontSize: 10 },
-      { text: "Firma ismi ve kaşesi / Onayı / Özel notlar", fontSize: 10, margin: [0, 0, 0, 70] },
-      
-      {
-        stack: dinamikSartlar.map(sart => ({
-          text: sart,
-          fontSize: 8,
-          margin: [0, 0, 0, 2]
-        })),
-        margin: [0, 0, 0, 0]
-      }
-    ],
+      { text: [ {text: 'YALNIZ (2. Seçenek): ', bold: true}, `${sonuc2.yalnizMetni}.` ], fontSize: 10, alignment: 'right', margin: [0, 4, 0, 20] }
+    );
+  }
+
+  icerikDizisi.push(
+    {
+      columns: [
+        {
+          stack: [
+            { text: 'İŞBANKASI / SİTELER ŞUBESİ', bold: true, fontSize: 10, margin: [0, 0, 0, 5] },
+            { text: `IBAN NO : ${bankaIban}`, fontSize: 10 }
+          ],
+          alignment: 'left'
+        },
+        {
+          stack: [
+            { text: 'Saygılarımla,', italics: true, fontSize: 11, margin: [0, 0, 0, 2] },
+            { text: `${imzalayanKisi}`, bold: true, fontSize: 11 }
+          ],
+          alignment: 'right'
+        }
+      ],
+      margin: [0, 10, 0, 15]
+    },
+    { text: "Almış olduğunuz teklifin teyidi için mutlaka onay veriniz.", bold: true, fontSize: 10 },
+    { text: "Firma ismi ve kaşesi / Onayı / Özel notlar", fontSize: 10, margin: [0, 0, 0, 70] },
+    {
+      stack: dinamikSartlar.map(sart => ({
+        text: sart,
+        fontSize: 8,
+        margin: [0, 0, 0, 2]
+      })),
+      margin: [0, 0, 0, 0]
+    }
+  );
+
+  const docDefinition = {
+    pageMargins: [40, 100, 40, 60],
+    header: ortakHeaderOlustur(logoSisecam, logoIso),
+    footer: ORTAK_FOOTER,
+    content: icerikDizisi,
     defaultStyle: { font: "Roboto" },
   };
 
   const dosyaAdi = `Proforma_Fatura_${teklif.musteriAdi}.pdf`;
-  
   const pdfDoc = pdfMake.createPdf(docDefinition);
   if (onizlemeMi) {
     pdfDoc.open();

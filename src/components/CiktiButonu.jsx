@@ -2,12 +2,13 @@ import { useState } from "react";
 import { supabase } from "../lib/supabaseClient";
 import { teklifPdfIndir, proformaPdfIndir } from "../utils/pdfOlustur";
 
-export default function CiktiButonu({ teklif, sepet }) {
+export default function CiktiButonu({ teklif, sepet, sepet2 = [] }) {
   const [islemDurumu, setIslemDurumu] = useState(null);
 
-  if (sepet.length === 0) return null;
+  // Eğer her iki sepet de boşsa butonları gösterme
+  if (sepet.length === 0 && sepet2.length === 0) return null;
 
-  // SUPABASE'E KAYDETME VE NUMARA ÜRETME MOTORU (Aynı mantık)
+  // SUPABASE'E KAYDETME VE NUMARA ÜRETME MOTORU (Çift Sepet Destekli)
   const supabaseKaydet = async (tur) => {
     let sayac = parseInt(localStorage.getItem("proforma_sayac") || "1", 10);
     const yil = new Date().getFullYear();
@@ -21,7 +22,8 @@ export default function CiktiButonu({ teklif, sepet }) {
       ilgili_kisi: teklif.ilgiliKisi,
       notlar: teklif.notlar || "",
       tarih: new Date().toISOString(),
-      sepet: sepet 
+      sepet: sepet,     // 1. Seçenek (Ana Sepet)
+      sepet2: sepet2    // 2. Alternatif Seçenek
     };
 
     const { error } = await supabase.from("teklifler").insert([yeniKayit]);
@@ -43,9 +45,9 @@ export default function CiktiButonu({ teklif, sepet }) {
     try {
       const belgeNo = await supabaseKaydet(tur);
       if (tur === "TEKLİF") {
-        await teklifPdfIndir(teklif, sepet, belgeNo, onizlemeMi);
+        await teklifPdfIndir(teklif, sepet, sepet2, belgeNo, onizlemeMi);
       } else {
-        await proformaPdfIndir(teklif, sepet, belgeNo, onizlemeMi);
+        await proformaPdfIndir(teklif, sepet, sepet2, belgeNo, onizlemeMi);
       }
     } finally {
       setIslemDurumu(null);

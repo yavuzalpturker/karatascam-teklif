@@ -2,16 +2,15 @@ import { useState, useEffect } from "react";
 import { supabase } from "../lib/supabaseClient";
 import { teklifPdfIndir, proformaPdfIndir } from "../utils/pdfOlustur";
 
-export default function GecmisTeklifler({ kullaniciRolu }) {
+export default function GecmisTeklifler({ kullaniciRolu, onSepetiYukle }) {
   const [teklifler, setTeklifler] = useState([]);
-  const [secilenler, setSecilenler] = useState([]); // Seçilen teklif ID'lerini tutar
+  const [secilenler, setSecilenler] = useState([]);
   const [yukleniyor, setYukleniyor] = useState(true);
   const [arama, setArama] = useState("");
 
   useEffect(() => {
     fetchGecmisTeklifler();
 
-    // Üst taraftan yeni kayıt geldiğine dair sinyal dinleyici
     const arsivGuncellemeDinleyici = () => fetchGecmisTeklifler();
     window.addEventListener("arsivGuncellendi", arsivGuncellemeDinleyici);
 
@@ -25,7 +24,7 @@ export default function GecmisTeklifler({ kullaniciRolu }) {
     const { data, error } = await supabase
       .from("teklifler")
       .select("*")
-      .order("created_at", { ascending: false }); // En yeniler en üstte
+      .order("created_at", { ascending: false });
       
     if (error) console.error("Hata:", error);
     setTeklifler(data || []);
@@ -62,7 +61,6 @@ export default function GecmisTeklifler({ kullaniciRolu }) {
     }
   };
 
-  // SİLME FONKSİYONU (TEKLİ)
   async function sil(id) {
     if (!window.confirm("Bu teklifi arşivden silmek istediğine emin misin?")) return;
     
@@ -75,7 +73,6 @@ export default function GecmisTeklifler({ kullaniciRolu }) {
     }
   }
 
-  // İNDİRME FONKSİYONU
   function tekrarIndir(t) {
     const teklifBilgisi = {
       musteriAdi: t.musteri_adi,
@@ -85,14 +82,16 @@ export default function GecmisTeklifler({ kullaniciRolu }) {
       tarih: new Date(t.tarih)
     };
 
+    const sepet1 = t.sepet || [];
+    const sepet2 = t.sepet2 || [];
+
     if (t.tur === "PROFORMA") {
-      proformaPdfIndir(teklifBilgisi, t.sepet, t.teklif_no, false);
+      proformaPdfIndir(teklifBilgisi, sepet1, sepet2, t.teklif_no, false);
     } else {
-      teklifPdfIndir(teklifBilgisi, t.sepet, t.teklif_no, false);
+      teklifPdfIndir(teklifBilgisi, sepet1, sepet2, t.teklif_no, false);
     }
   }
 
-  // GÖRÜNTÜLEME (ÖNİZLEME) FONKSİYONU
   function onizle(t) {
     const teklifBilgisi = {
       musteriAdi: t.musteri_adi,
@@ -102,10 +101,13 @@ export default function GecmisTeklifler({ kullaniciRolu }) {
       tarih: new Date(t.tarih)
     };
 
+    const sepet1 = t.sepet || [];
+    const sepet2 = t.sepet2 || [];
+
     if (t.tur === "PROFORMA") {
-      proformaPdfIndir(teklifBilgisi, t.sepet, t.teklif_no, true);
+      proformaPdfIndir(teklifBilgisi, sepet1, sepet2, t.teklif_no, true);
     } else {
-      teklifPdfIndir(teklifBilgisi, t.sepet, t.teklif_no, true);
+      teklifPdfIndir(teklifBilgisi, sepet1, sepet2, t.teklif_no, true);
     }
   }
 
@@ -121,7 +123,6 @@ export default function GecmisTeklifler({ kullaniciRolu }) {
     <section className="panel" style={{ marginTop: "30px" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "15px" }}>
         <h2 className="panel__baslik" style={{ margin: 0 }}>Geçmiş Teklifler</h2>
-        {/* Sadece Yönetici İse Toplu Sil Butonunu Göster */}
         {kullaniciRolu === 'admin' && secilenler.length > 0 && (
           <button 
             onClick={topluSil} 
@@ -144,7 +145,6 @@ export default function GecmisTeklifler({ kullaniciRolu }) {
         <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "14px" }}>
           <thead>
             <tr style={{ backgroundColor: "#f4f4f4", textAlign: "left" }}>
-              {/* Sadece Yönetici İse En Üstteki Kutucuğu Göster */}
               {kullaniciRolu === 'admin' && (
                 <th style={{ padding: "12px", borderBottom: "2px solid #ccc", position: "sticky", top: 0, backgroundColor: "#eeeeee", zIndex: 1, width: "40px", textAlign: "center" }}>
                   <input 
@@ -175,7 +175,6 @@ export default function GecmisTeklifler({ kullaniciRolu }) {
             ) : (
               filtrelenmisTeklifler.map((t) => (
                 <tr key={t.id} style={{ borderBottom: "1px solid #eee" }}>
-                  {/* Sadece Yönetici İse Satır Başı Kutucuğunu Göster */}
                   {kullaniciRolu === 'admin' && (
                     <td style={{ padding: "12px", textAlign: "center" }}>
                       <input 
@@ -199,6 +198,29 @@ export default function GecmisTeklifler({ kullaniciRolu }) {
                   <td style={{ padding: "12px" }}>{t.musteri_adi}</td>
                   <td style={{ padding: "12px", textAlign: "center", whiteSpace: "nowrap" }}>
                     <div style={{ display: "inline-flex", gap: "6px", justifyContent: "center" }}>
+                      
+                      {/* SEPETİ GETİR BUTONU */}
+                      <button 
+                        onClick={() => onSepetiYukle(t, t.sepet, t.sepet2)} 
+                        title="Bu teklifin sepetini ve bilgilerini ana ekrana yükle"
+                        style={{ 
+                          backgroundColor: "#f59e0b", 
+                          color: "white", 
+                          border: "none", 
+                          padding: "6px 12px", 
+                          borderRadius: "6px", 
+                          cursor: "pointer", 
+                          fontSize: "13px", 
+                          fontWeight: "600",
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "4px",
+                          boxShadow: "0 1px 2px rgba(0,0,0,0.05)"
+                        }}
+                      >
+                        📥 Sepeti Getir
+                      </button>
+
                       <button 
                         onClick={() => onizle(t)} 
                         title="Yeni Sekmede Görüntüle"
@@ -223,7 +245,7 @@ export default function GecmisTeklifler({ kullaniciRolu }) {
                       <button 
                         onClick={() => tekrarIndir(t)} 
                         style={{ 
-                          backgroundColor: "#0f2942", // Siteyle uyumlu koyu lacivert
+                          backgroundColor: "#0f2942", 
                           color: "white", 
                           border: "none", 
                           padding: "6px 14px", 
@@ -242,7 +264,7 @@ export default function GecmisTeklifler({ kullaniciRolu }) {
                           onClick={() => sil(t.id)} 
                           style={{ 
                             backgroundColor: "white", 
-                            color: "#e11d48", // Göz yormayan şık bir bordo/kırmızı
+                            color: "#e11d48", 
                             border: "1px solid #fecdd3", 
                             padding: "6px 12px", 
                             borderRadius: "6px", 

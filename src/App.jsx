@@ -54,17 +54,34 @@ export default function App() {
     tarih: new Date(),
   });
   
-  const [sepet, setSepet] = useState([]);
+  // İKİ AYRI SEPET STATE'İ (1. Seçenek ve 2. Alternatif Seçenek)
+  const [sepet1, setSepet1] = useState([]);
+  const [sepet2, setSepet2] = useState([]);
+  
+  // Ürünün hangi sepete ekleneceğini seçmek için (1 veya 2)
+  const [aktifSepetNumarasi, setAktifSepetNumarasi] = useState(1);
+
   const [islemVerisi, setIslemVerisi] = useState(null);
 
-  const sepettenUrunSil = (silinecekIndex) => {
-    setSepet(sepet.filter((_, index) => index !== silinecekIndex));
+  // Silme işlemleri
+  const sepettenUrunSil = (silinecekIndex, sepetNo) => {
+    if (sepetNo === 1) {
+      setSepet1(sepet1.filter((_, index) => index !== silinecekIndex));
+    } else {
+      setSepet2(sepet2.filter((_, index) => index !== silinecekIndex));
+    }
   };
 
-  const handleGuncelle = (index, guncelSatir) => {
-    const yeniSepet = [...sepet];
-    yeniSepet[index] = guncelSatir;
-    setSepet(yeniSepet);
+  const handleGuncelle = (index, guncelSatir, sepetNo) => {
+    if (sepetNo === 1) {
+      const yeniSepet = [...sepet1];
+      yeniSepet[index] = guncelSatir;
+      setSepet1(yeniSepet);
+    } else {
+      const yeniSepet = [...sepet2];
+      yeniSepet[index] = guncelSatir;
+      setSepet2(yeniSepet);
+    }
   };
 
   if (!girisBasarili) {
@@ -80,7 +97,7 @@ export default function App() {
           <p>Kurumsal Fiyat Teklifi Oluşturma Sistemi</p>
         </div>
 
-        {/* SAĞ TARAF: Logo ve Butonlar (Z-Index Eklendi) */}
+        {/* SAĞ TARAF: Logo ve Butonlar */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
           <img 
             src="/logo3.jpg" 
@@ -100,7 +117,7 @@ export default function App() {
                 onClick={() => setAktifSayfa(aktifSayfa === "ayarlar" ? "teklif" : "ayarlar")} 
                 style={{ 
                   backgroundColor: 'rgba(255, 255, 255, 0.95)', 
-                  color: '#0f2942', // Sitenin lacivertine uyumlu
+                  color: '#0f2942',
                   padding: '10px 20px', 
                   border: '1px solid rgba(255, 255, 255, 0.5)', 
                   borderRadius: '6px', 
@@ -149,34 +166,125 @@ export default function App() {
             <TeklifBilgileriForm teklif={teklif} onDegistir={setTeklif} />
 
             <main className="ana-icerik">
+              
+              {/* HANGİ SEPETE EKLECEĞİNİ SEÇME SEKMELERİ */}
+              <div style={{ display: 'flex', gap: '10px', marginBottom: '15px', backgroundColor: '#e2e8f0', padding: '6px', borderRadius: '8px' }}>
+                <button
+                  type="button"
+                  onClick={() => setAktifSepetNumarasi(1)}
+                  style={{
+                    flex: 1,
+                    padding: '10px',
+                    borderRadius: '6px',
+                    border: 'none',
+                    backgroundColor: aktifSepetNumarasi === 1 ? '#0f2942' : 'transparent',
+                    color: aktifSepetNumarasi === 1 ? 'white' : '#475569',
+                    fontWeight: 'bold',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s'
+                  }}
+                >
+                  🛒 1. Seçenek (Ana Sepet) [{sepet1.length} Ürün]
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setAktifSepetNumarasi(2)}
+                  style={{
+                    flex: 1,
+                    padding: '10px',
+                    borderRadius: '6px',
+                    border: 'none',
+                    backgroundColor: aktifSepetNumarasi === 2 ? '#0f2942' : 'transparent',
+                    color: aktifSepetNumarasi === 2 ? 'white' : '#475569',
+                    fontWeight: 'bold',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s'
+                  }}
+                >
+                  ⚡ 2. Alternatif Seçenek [{sepet2.length} Ürün]
+                </button>
+              </div>
+
               <UrunEkleFormu
                 urunler={urunler}
                 yukleniyor={yukleniyor}
                 hata={hata}
-                onEkle={(satir) => setSepet((mevcut) => [...mevcut, satir])}
+                onEkle={(satir) => {
+                  if (aktifSepetNumarasi === 1) {
+                    setSepet1((mevcut) => [...mevcut, satir]);
+                  } else {
+                    setSepet2((mevcut) => [...mevcut, satir]);
+                  }
+                }}
                 islemVerisi={islemVerisi}
-                onGuncelle={handleGuncelle}
+                onGuncelle={(index, guncelSatir) => {
+                  const hedefSepetNo = islemVerisi?.sepetNo || 1;
+                  handleGuncelle(index, guncelSatir, hedefSepetNo);
+                }}
                 onIptal={() => setIslemVerisi(null)}
               />
 
-              <SepetTablosu 
-                sepet={sepet} 
-                onTemizle={() => setSepet([])} 
-                onSil={sepettenUrunSil} 
-                onDuzenle={(index, satir) => {
-                  setIslemVerisi({ tip: "duzenle", index, satir });
+              {/* 1. SEPET TABLOSU */}
+              <div style={{ marginBottom: '30px' }}>
+                <h3 style={{ color: '#0f2942', borderBottom: '2px solid #0f2942', paddingBottom: '8px', marginBottom: '15px' }}>
+                  📦 1. Seçenek (Ana Sepet)
+                </h3>
+                <SepetTablosu 
+                  sepet={sepet1} 
+                  onTemizle={() => setSepet1([])} 
+                  onSil={(index) => sepettenUrunSil(index, 1)} 
+                  onDuzenle={(index, satir) => {
+                    setIslemVerisi({ tip: "duzenle", index, satir, sepetNo: 1 });
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }}
+                  onTekrarEt={(satir) => {
+                    setIslemVerisi({ tip: "tekrar", satir, sepetNo: 1 });
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }}
+                  onTopluFiyatGuncelle={(yeniSepet) => setSepet1(yeniSepet)}
+                />
+              </div>
+
+              {/* 2. ALTERNATİF SEPET TABLOSU */}
+              <div style={{ marginBottom: '30px' }}>
+                <h3 style={{ color: '#d97706', borderBottom: '2px solid #d97706', paddingBottom: '8px', marginBottom: '15px' }}>
+                  ⚡ 2. Alternatif Seçenek (İkinci Sepet)
+                </h3>
+                <SepetTablosu 
+                  sepet={sepet2} 
+                  onTemizle={() => setSepet2([])} 
+                  onSil={(index) => sepettenUrunSil(index, 2)} 
+                  onDuzenle={(index, satir) => {
+                    setIslemVerisi({ tip: "duzenle", index, satir, sepetNo: 2 });
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }}
+                  onTekrarEt={(satir) => {
+                    setIslemVerisi({ tip: "tekrar", satir, sepetNo: 2 });
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }}
+                  onTopluFiyatGuncelle={(yeniSepet) => setSepet2(yeniSepet)}
+                />
+              </div>
+
+              {/* PDF'e her iki sepeti de gönderiyoruz */}
+              <CiktiButonu teklif={teklif} sepet={sepet1} sepet2={sepet2} />
+
+              {/* GEÇMİŞ TEKLİFLER VE SEPETİ GERİ GETİRME KÖPRÜSÜ */}
+              <GecmisTeklifler 
+                kullaniciRolu={kullaniciRolu} 
+                onSepetiYukle={(yuklenenTeklif, yuklenenSepet1, yuklenenSepet2) => {
+                  setTeklif({
+                    musteriAdi: yuklenenTeklif.musteri_adi || "",
+                    ilgiliKisi: yuklenenTeklif.ilgili_kisi || "",
+                    projeAdi: yuklenenTeklif.proje_adi || "",
+                    notlar: yuklenenTeklif.notlar || "",
+                    tarih: new Date()
+                  });
+                  setSepet1(yuklenenSepet1 || []);
+                  setSepet2(yuklenenSepet2 || []);
                   window.scrollTo({ top: 0, behavior: 'smooth' });
                 }}
-                onTekrarEt={(satir) => {
-                  setIslemVerisi({ tip: "tekrar", satir });
-                  window.scrollTo({ top: 0, behavior: 'smooth' });
-                }}
-                onTopluFiyatGuncelle={(yeniSepet) => setSepet(yeniSepet)}
               />
-
-              <CiktiButonu teklif={teklif} sepet={sepet} />
-
-              <GecmisTeklifler kullaniciRolu={kullaniciRolu} />
             </main>
           </>
         )}

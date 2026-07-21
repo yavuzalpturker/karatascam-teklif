@@ -8,16 +8,19 @@ export default function Login({ onLogin }) {
   const girisYap = (e) => {
     e.preventDefault();
     
-    // Ayarlardan kaydedilen şifreleri çek, yoksa varsayılan olarak 1234 kullan
+    // Tarayıcı hafızasındaki güncel ayarları çek. Eğer hiç ayar yapılmamışsa varsayılanları (karatas/1234) kullan.
     const kayitliSifreler = JSON.parse(localStorage.getItem('karatas_sifreler')) || {
+      adminKadi: 'karatas',
       admin: '1234',
+      personelKadi: 'personel',
       personel: '1234'
     };
     
-    if (kullaniciAdi === 'karatas' && sifre === kayitliSifreler.admin) {
+    // Sabit metinler yerine Ayarlar'dan gelen dinamik verilerle karşılaştır
+    if (kullaniciAdi === kayitliSifreler.adminKadi && sifre === kayitliSifreler.admin) {
       // Yönetici girişi
       onLogin(true, 'admin');
-    } else if (kullaniciAdi === 'personel' && sifre === kayitliSifreler.personel) {
+    } else if (kullaniciAdi === kayitliSifreler.personelKadi && sifre === kayitliSifreler.personel) {
       // Normal çalışan girişi
       onLogin(true, 'calisan');
     } else {
@@ -37,7 +40,6 @@ export default function Login({ onLogin }) {
       position: 'relative',
       overflow: 'hidden'
     }}>
-      {/* SİHİRLİ ANİMASYON KODLARI BURADA GİZLİ */}
       <style>
         {`
           @keyframes fadeUp {
@@ -70,7 +72,6 @@ export default function Login({ onLogin }) {
         `}
       </style>
 
-      {/* ARKA PLANDA UÇUŞAN YARI SAYDAM CAM PANELLER */}
       <div style={{
         position: 'absolute', top: '10%', left: '15%', width: '150px', height: '150px',
         background: 'rgba(255, 255, 255, 0.05)', backdropFilter: 'blur(10px)',
@@ -83,14 +84,7 @@ export default function Login({ onLogin }) {
         borderRadius: '30px', border: '1px solid rgba(255,255,255,0.05)',
         animation: 'float2 10s infinite ease-in-out'
       }}></div>
-      <div style={{
-        position: 'absolute', top: '40%', right: '5%', width: '80px', height: '80px',
-        background: 'rgba(255, 255, 255, 0.08)', backdropFilter: 'blur(12px)',
-        borderRadius: '50%', border: '1px solid rgba(255,255,255,0.15)',
-        animation: 'float1 6s infinite ease-in-out', animationDelay: '1s'
-      }}></div>
 
-      {/* ANA GİRİŞ KARTI */}
       <div style={{
         backgroundColor: '#ffffff',
         padding: '0 50px 40px 50px',
@@ -106,7 +100,6 @@ export default function Login({ onLogin }) {
         marginTop: '60px' 
       }}>
         
-        {/* ROZET GİBİ YUKARI TAŞAN ŞIK LOGO ALANI */}
         <div style={{ 
           marginTop: '-60px', 
           marginBottom: '15px',
@@ -135,7 +128,6 @@ export default function Login({ onLogin }) {
         
         <h1 style={{ color: '#10375c', fontSize: '28px', margin: '0 0 10px 0', fontWeight: '900', letterSpacing: '-0.5px' }}>KARATAŞ CAM</h1>
         
-        {/* SİSTEM BİLGİSİ ROZETİ */}
         <div style={{ 
           display: 'inline-block', backgroundColor: '#e9ecef', color: '#495057', 
           padding: '5px 12px', borderRadius: '20px', fontSize: '12px', fontWeight: '700', 
@@ -144,7 +136,6 @@ export default function Login({ onLogin }) {
           Teklif & Proforma Sistemi
         </div>
 
-        {/* YENİ EKLENEN KARŞILAMA METNİ */}
         <div style={{ marginBottom: '30px' }}>
           <h2 style={{ color: '#2b3035', fontSize: '18px', margin: '0 0 5px 0', fontWeight: '700' }}>Sisteme Hoş Geldiniz 👋</h2>
           <p style={{ color: '#6c757d', fontSize: '14px', margin: '0' }}>Devam etmek için lütfen giriş yapınız.</p>
@@ -158,7 +149,6 @@ export default function Login({ onLogin }) {
               className="input-focus"
               value={kullaniciAdi} 
               onChange={(e) => setKullaniciAdi(e.target.value)} 
-              placeholder=""
               style={{ 
                 width: '100%', padding: '14px 16px', borderRadius: '10px', 
                 border: '1px solid #dee2e6', fontSize: '15px', boxSizing: 'border-box',
