@@ -52,12 +52,19 @@ export default function SepetTablosu({ sepet, onTemizle, onSil, onDuzenle, onTek
 
         const yeniToplamTutar = urunM2 * m2BirimFiyati;
         const yeniMiktarDetay = `${urunM2.toFixed(2)} m² × ${m2BirimFiyati.toFixed(2)} ₺`;
+        
+        // KDV tutarlarını da yeni fiyata göre hesaplıyoruz
+        const kdvOrani = Number(satir.kdvOrani) || 20;
+        const yeniKdvTutari = (yeniToplamTutar * kdvOrani) / 100;
+        const yeniKdvliTutar = yeniToplamTutar + yeniKdvTutari;
 
         return {
           ...satir,
           miktarDetay: yeniMiktarDetay,
           birimFiyat: m2BirimFiyati,
-          toplamTutar: yeniToplamTutar
+          toplamTutar: yeniToplamTutar,
+          kdvTutari: yeniKdvTutari,     // KDV 0 görünme sorunu burayla çözülüyor
+          kdvliTutar: yeniKdvliTutar
         };
       });
 

@@ -120,7 +120,7 @@ export default function UrunEkleFormu({ urunler = [], yukleniyor, hata, onEkle, 
       if (enDegeri > 0 && boyDegeri > 0) {
         const tekCamM2 = (enDegeri * boyDegeri) / 1000000;
         toplamM2 = tekCamM2 * (Number(miktar) || 1);
-        ekstraAciklama = ` (${enDegeri}×{boyDegeri} mm - ${Number(miktar) || 1} Adet - Toplam: ${toplamM2.toFixed(2)} m²)`;
+        ekstraAciklama = ` (${enDegeri}×${boyDegeri} mm - ${Number(miktar) || 1} Adet - Toplam: ${toplamM2.toFixed(2)} m²)`;
       } else {
         ekstraAciklama = ` (${Number(miktar) || 1} Adet)`;
       }
