@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { satirHesapla } from "../utils/hesaplama";
 import { supabase } from "../lib/supabaseClient";
+import CamKombinasyonSihirbazi from "./CamKombinasyonSihirbazi";
 
 export default function UrunEkleFormu({ urunler = [], yukleniyor, hata, onEkle, islemVerisi, onGuncelle, onIptal }) {
   const [arama, setArama] = useState("");
@@ -25,17 +26,17 @@ export default function UrunEkleFormu({ urunler = [], yukleniyor, hata, onEkle, 
   useEffect(() => {
     if (islemVerisi && islemVerisi.satir && islemVerisi.satir.hamVeri) {
       const ham = islemVerisi.satir.hamVeri;
-      setArama(ham.arama);
-      setSecilenId(ham.secilenId);
-      setOzelAciklama(ham.ozelAciklama);
-      setEn(ham.en);
-      setBoy(ham.boy);
-      setMiktar(ham.miktar);
-      setSecilenBirim(ham.secilenBirim);
-      setFiyatAna(ham.fiyatAna);
-      setFiyatAdet(ham.fiyatAdet);
-      setParaBirimi(ham.paraBirimi);
-      setKdvOrani(ham.kdvOrani);
+      setArama(ham.arama || "");
+      setSecilenId(ham.secilenId || "");
+      setOzelAciklama(ham.ozelAciklama || "");
+      setEn(ham.en || "");
+      setBoy(ham.boy || "");
+      setMiktar(ham.miktar || "1");
+      setSecilenBirim(ham.secilenBirim || "m²");
+      setFiyatAna(ham.fiyatAna || "");
+      setFiyatAdet(ham.fiyatAdet || "");
+      setParaBirimi(ham.paraBirimi || "TRY");
+      setKdvOrani(ham.kdvOrani || "20");
     }
   }, [islemVerisi]);
 
@@ -55,9 +56,6 @@ export default function UrunEkleFormu({ urunler = [], yukleniyor, hata, onEkle, 
     ? { id: "ozel_urun", kodu: "ÖZEL", aciklama: arama.toLocaleUpperCase("tr-TR") }
     : tumUrunler.find((u) => u.id === secilenId);
 
-  // FİYAT KONTROLÜ KALDIRILDI: Artık fiyat girmek ZORUNLU DEĞİL. Sadece ürün seçilmesi yeterli!
-  const fiyatGecerliMi = true; 
-
   const handleAramaDegisimi = (e) => {
     setArama(e.target.value);
     setSecilenId("");
@@ -71,6 +69,12 @@ export default function UrunEkleFormu({ urunler = [], yukleniyor, hata, onEkle, 
   };
 
   const handleOzelUrunSec = () => {
+    setSecilenId("ozel_urun");
+    setListeAcik(false);
+  };
+
+  const handleSihirbazdanGelenUrun = (olusturulanIsim) => {
+    setArama(olusturulanIsim);
     setSecilenId("ozel_urun");
     setListeAcik(false);
   };
@@ -108,7 +112,7 @@ export default function UrunEkleFormu({ urunler = [], yukleniyor, hata, onEkle, 
 
     let hesaplananMiktar = Number(miktar) || 1;
     let ekstraAciklama = "";
-    let nihaiFiyat = Number(fiyatAna) || Number(fiyatAdet) || 0; // Fiyat boşsa 0 alır
+    let nihaiFiyat = Number(fiyatAna) || Number(fiyatAdet) || 0;
     let nihaiBirim = secilenBirim;
 
     if (secilenBirim === "m²" || secilenBirim === "ad") {
@@ -151,24 +155,40 @@ export default function UrunEkleFormu({ urunler = [], yukleniyor, hata, onEkle, 
 
     let sonKullanilacakUrun = { ...secilenUrun };
 
+    // --- ÖZEL ÜRÜN ÇİFT KAYIT ENGELLEYİCİ MANTIK ---
     if (secilenId === "ozel_urun") {
-      const yeniVeritabaniUrunu = {
-        kodu: "ÖZEL",
-        aciklama: arama.toLocaleUpperCase("tr-TR")
-      };
+      const arananAciklama = arama.toLocaleUpperCase("tr-TR").trim();
 
       try {
-        const { data, error } = await supabase
+        // 1. Önce veritabanında bu isimle tam eşleşen ürün var mı bakıyoruz
+        const { data: mevcutUrun, error: aramaHatasi } = await supabase
           .from("urunler")
-          .insert([yeniVeritabaniUrunu])
-          .select()
-          .single();
+          .select("*")
+          .ilike("aciklama", arananAciklama)
+          .maybeSingle();
 
-        if (error) {
-          console.error("Yeni ürün kaydedilemedi:", error);
-        } else if (data) {
-          sonKullanilacakUrun = data;
-          setEklenenOzelUrunler((prev) => [...prev, data]); 
+        if (mevcutUrun) {
+          // Zaten varsa yenisini ekleme, mevcut veritabanı ürününü kullan!
+          sonKullanilacakUrun = mevcutUrun;
+        } else {
+          // 2. Eğer veritabanında yoksa sıfırdan ekle
+          const yeniVeritabaniUrunu = {
+            kodu: "ÖZEL",
+            aciklama: arananAciklama
+          };
+
+          const { data, error } = await supabase
+            .from("urunler")
+            .insert([yeniVeritabaniUrunu])
+            .select()
+            .single();
+
+          if (error) {
+            console.error("Yeni ürün kaydedilemedi:", error);
+          } else if (data) {
+            sonKullanilacakUrun = data;
+            setEklenenOzelUrunler((prev) => [...prev, data]); 
+          }
         }
       } catch (err) {
         console.error("Supabase bağlantı hatası:", err);
@@ -233,7 +253,11 @@ export default function UrunEkleFormu({ urunler = [], yukleniyor, hata, onEkle, 
 
   return (
     <section className="panel">
-      <h2 className="panel__baslik">Ürün Ekleme Ekranı</h2>
+      <CamKombinasyonSihirbazi onKombinasyonSec={handleSihirbazdanGelenUrun} />
+
+      <h2 className="panel__baslik">
+        {islemVerisi?.tip === "duzenle" ? "✏️ Ürünü Düzenle" : "Ürün Ekleme Ekranı"}
+      </h2>
 
       <label className="alan">
         <span>Ürün Ara ve Seç (En az 3 harf giriniz)</span>
@@ -431,12 +455,12 @@ export default function UrunEkleFormu({ urunler = [], yukleniyor, hata, onEkle, 
         </div>
       </label>
 
-      <div style={{ display: "flex", gap: "10px" }}>
+      <div style={{ display: "flex", gap: "10px", marginTop: "15px" }}>
         <button 
           className="buton buton--birincil" 
           onClick={ekle} 
           disabled={!secilenUrun}
-          style={{ flex: 1, backgroundColor: islemVerisi?.tip === "duzenle" ? "#10b981" : "" }}
+          style={{ flex: 1, backgroundColor: islemVerisi?.tip === "duzenle" ? "#10b981" : "#0f2942" }}
         >
           {islemVerisi?.tip === "duzenle" ? "Değişikliği Kaydet" : "Listeye Ekle"}
         </button>
