@@ -79,6 +79,7 @@ export default function GecmisTeklifler({ kullaniciRolu, onSepetiYukle }) {
       projeAdi: t.proje_adi,
       ilgiliKisi: t.ilgili_kisi,
       notlar: t.notlar,
+      odemeSekli: t.odeme_sekli || "", // Ödeme şekli geçmişten aktarılıyor
       tarih: new Date(t.tarih)
     };
 
@@ -98,6 +99,7 @@ export default function GecmisTeklifler({ kullaniciRolu, onSepetiYukle }) {
       projeAdi: t.proje_adi,
       ilgiliKisi: t.ilgili_kisi,
       notlar: t.notlar,
+      odemeSekli: t.odeme_sekli || "", // Ödeme şekli geçmişten aktarılıyor
       tarih: new Date(t.tarih)
     };
 
@@ -199,7 +201,6 @@ export default function GecmisTeklifler({ kullaniciRolu, onSepetiYukle }) {
                   <td style={{ padding: "12px 16px", textAlign: "center", whiteSpace: "nowrap" }}>
                     <div style={{ display: "inline-flex", gap: "6px", justifyContent: "center" }}>
                       
-                      {/* KURUMSAL SEPETİ GETİR BUTONU */}
                       <button 
                         onClick={() => onSepetiYukle(t, t.sepet, t.sepet2)} 
                         title="Bu teklifin sepetini ve bilgilerini ana ekrana yükle"

@@ -140,6 +140,11 @@ function sepetIcerikOlustur(sepet, baslikMetni) {
     ];
   }).flat();
 
+  // Eğer 2. sepet yoksa başlık hiç basılmasın (Seçenek yazısı olmasın)
+  if (!baslikMetni) {
+    return [...urunSatirlari, ...genelToplamSatirlari];
+  }
+
   return [
     { text: baslikMetni, bold: true, fontSize: 12, color: '#0f2942', margin: [0, 10, 0, 5] },
     { canvas: [{ type: 'line', x1: 0, y1: 0, x2: 515, y2: 0, lineWidth: 1, lineColor: '#0f2942' }], margin: [0, 0, 0, 8] },
@@ -149,7 +154,7 @@ function sepetIcerikOlustur(sepet, baslikMetni) {
 }
 
 // ==========================================
-// 1. DÜZ METİN TEKLİF PDF'İ (IBAN ve Ödeme Şekli Eklendi)
+// 1. DÜZ METİN TEKLİF PDF'İ
 // ==========================================
 export async function teklifPdfIndir(teklif, sepet1, sepet2 = [], teklifNo, onizlemeMi = false) {
   const logoSisecam = await gorseliBase64eCevir("/sisecam.png");
@@ -159,10 +164,10 @@ export async function teklifPdfIndir(teklif, sepet1, sepet2 = [], teklifNo, oniz
   const bankaIban = "TR26 0006 4000 0014 2210 2141 37";
   const dinamikSartlar = SOZLESME_SARTLARI;
 
-  const birinciSecenekIcerik = sepetIcerikOlustur(sepet1, "1. SEÇENEK");
-  const ikinciSecenekIcerik = (sepet2 && sepet2.length > 0) 
-    ? sepetIcerikOlustur(sepet2, "2. SEÇENEK") 
-    : [];
+  const ikiliMi = sepet2 && sepet2.length > 0;
+
+  const birinciSecenekIcerik = sepetIcerikOlustur(sepet1, ikiliMi ? "1. SEÇENEK" : null);
+  const ikinciSecenekIcerik = ikiliMi ? sepetIcerikOlustur(sepet2, "2. SEÇENEK") : [];
 
   const tarihYazisi = teklif.tarih.toLocaleDateString("tr-TR");
   const belgeNo = teklifNo || siradakiProformaNoGetir(); 
@@ -269,7 +274,7 @@ function proformaTabloOlustur(sepet, baslikMetni) {
 
   const tabloGövdesi = [
     [
-      { text: `${baslikMetni} - MALIN CİNSİ`, bold: true, fillColor: '#eeeeee', margin: [5, 5, 0, 5], alignment: 'left', colSpan: 2 },
+      { text: baslikMetni ? `${baslikMetni} - MALIN CİNSİ` : 'MALIN CİNSİ', bold: true, fillColor: '#eeeeee', margin: [5, 5, 0, 5], alignment: 'left', colSpan: 2 },
       {},
       { text: 'ADET / METRAJ', bold: true, fillColor: '#eeeeee', margin: [0, 5, 0, 5], alignment: 'center' },
       { text: 'BİRİM FİYAT', bold: true, fillColor: '#eeeeee', margin: [0, 5, 0, 5], alignment: 'center' },
@@ -346,8 +351,10 @@ export async function proformaPdfIndir(teklif, sepet1, sepet2 = [], teklifNo, on
   const tarihYazisi = teklif.tarih.toLocaleDateString("tr-TR");
   const belgeNo = teklifNo || siradakiProformaNoGetir(); 
 
-  const sonuc1 = proformaTabloOlustur(sepet1, "1. SEÇENEK");
-  const sonuc2 = (sepet2 && sepet2.length > 0) ? proformaTabloOlustur(sepet2, "2. SEÇENEK") : null;
+  const ikiliMi = sepet2 && sepet2.length > 0;
+
+  const sonuc1 = proformaTabloOlustur(sepet1, ikiliMi ? "1. SEÇENEK" : null);
+  const sonuc2 = ikiliMi ? proformaTabloOlustur(sepet2, "2. SEÇENEK") : null;
 
   let kisi = (teklif.ilgiliKisi || "").toLocaleUpperCase("tr-TR");
   kisi = kisi.replace(/DİKKATİNE/g, "").replace(/[,;]/g, "").trim();
@@ -401,7 +408,7 @@ export async function proformaPdfIndir(teklif, sepet1, sepet2 = [], teklifNo, on
         vLineColor: function (i, node) { return '#aaaaaa'; },
       }
     },
-    { text: [ {text: 'YALNIZ (1. Seçenek): ', bold: true}, `${sonuc1.yalnizMetni}.` ], fontSize: 10, alignment: 'right', margin: [0, 4, 0, 20] }
+    { text: [ {text: ikiliMi ? 'YALNIZ (1. Seçenek): ' : 'YALNIZ: ', bold: true}, `${sonuc1.yalnizMetni}.` ], fontSize: 10, alignment: 'right', margin: [0, 4, 0, 20] }
   ];
 
   if (sonuc2 && sepet2.length > 0) {
