@@ -149,13 +149,14 @@ function sepetIcerikOlustur(sepet, baslikMetni) {
 }
 
 // ==========================================
-// 1. DÜZ METİN TEKLİF PDF'İ
+// 1. DÜZ METİN TEKLİF PDF'İ (IBAN ve Ödeme Şekli Eklendi)
 // ==========================================
 export async function teklifPdfIndir(teklif, sepet1, sepet2 = [], teklifNo, onizlemeMi = false) {
   const logoSisecam = await gorseliBase64eCevir("/sisecam.png");
   const logoIso = await gorseliBase64eCevir("/birinci-logo.jpg");
 
   const imzalayanKisi = teklif.imzalayan || "Sercan Temel";
+  const bankaIban = "TR26 0006 4000 0014 2210 2141 37";
   const dinamikSartlar = SOZLESME_SARTLARI;
 
   const birinciSecenekIcerik = sepetIcerikOlustur(sepet1, "1. SEÇENEK");
@@ -165,6 +166,21 @@ export async function teklifPdfIndir(teklif, sepet1, sepet2 = [], teklifNo, oniz
 
   const tarihYazisi = teklif.tarih.toLocaleDateString("tr-TR");
   const belgeNo = teklifNo || siradakiProformaNoGetir(); 
+
+  const bankaStack = [
+    { text: 'İŞBANKASI / SİTELER ŞUBESİ', bold: true, fontSize: 10, margin: [0, 0, 0, 3] },
+    { text: `IBAN NO : ${bankaIban}`, fontSize: 10, margin: [0, 0, 0, 3] }
+  ];
+
+  if (teklif.odemeSekli && teklif.odemeSekli.trim() !== "") {
+    bankaStack.unshift({ 
+      text: `ÖDEME ŞEKLİ : ${teklif.odemeSekli}`, 
+      bold: true, 
+      fontSize: 10, 
+      color: '#0f2942', 
+      margin: [0, 0, 0, 3] 
+    });
+  }
 
   const docDefinition = {
     pageMargins: [40, 100, 40, 60],
@@ -206,16 +222,22 @@ export async function teklifPdfIndir(teklif, sepet1, sepet2 = [], teklifNo, oniz
         fontSize: 9,
         margin: [2, 5, 0, 2],
       })) : []),
-      { 
-        stack: [
-          { text: "Saygılarımla,", italics: true, alignment: "right", margin: [0, 15, 0, 2] },
-          { 
-            text: `${imzalayanKisi}`, 
-            bold: true, 
-            alignment: "right", 
-            margin: [0, 0, 0, 15] 
+      
+      {
+        columns: [
+          {
+            stack: bankaStack,
+            alignment: 'left'
+          },
+          {
+            stack: [
+              { text: 'Saygılarımla,', italics: true, fontSize: 11, margin: [0, 0, 0, 2] },
+              { text: `${imzalayanKisi}`, bold: true, fontSize: 11 }
+            ],
+            alignment: 'right'
           }
-        ]
+        ],
+        margin: [0, 15, 0, 15]
       },
       
       { text: "Almış olduğunuz teklifin teyidi için mutlaka onay veriniz.", bold: true, fontSize: 10 },
@@ -334,6 +356,21 @@ export async function proformaPdfIndir(teklif, sepet1, sepet2 = [], teklifNo, on
   }
   const dikkatineSatiri = kisi ? `${kisi} Dikkatine;` : "";
 
+  const bankaStack = [
+    { text: 'İŞBANKASI / SİTELER ŞUBESİ', bold: true, fontSize: 10, margin: [0, 0, 0, 3] },
+    { text: `IBAN NO : ${bankaIban}`, fontSize: 10, margin: [0, 0, 0, 3] }
+  ];
+
+  if (teklif.odemeSekli && teklif.odemeSekli.trim() !== "") {
+    bankaStack.unshift({ 
+      text: `ÖDEME ŞEKLİ : ${teklif.odemeSekli}`, 
+      bold: true, 
+      fontSize: 10, 
+      color: '#0f2942', 
+      margin: [0, 0, 0, 3] 
+    });
+  }
+
   const icerikDizisi = [
     {
       columns: [
@@ -391,10 +428,7 @@ export async function proformaPdfIndir(teklif, sepet1, sepet2 = [], teklifNo, on
     {
       columns: [
         {
-          stack: [
-            { text: 'İŞBANKASI / SİTELER ŞUBESİ', bold: true, fontSize: 10, margin: [0, 0, 0, 5] },
-            { text: `IBAN NO : ${bankaIban}`, fontSize: 10 }
-          ],
+          stack: bankaStack,
           alignment: 'left'
         },
         {

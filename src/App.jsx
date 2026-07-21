@@ -54,7 +54,7 @@ export default function App() {
     tarih: new Date(),
   });
   
-  // İKİ AYRI SEPET STATE'İ (1. Seçenek ve 2. Alternatif Seçenek)
+  // İKİ AYRI SEPET STATE'İ (1. Seçenek ve 2. Seçenek)
   const [sepet1, setSepet1] = useState([]);
   const [sepet2, setSepet2] = useState([]);
   
@@ -179,12 +179,12 @@ export default function App() {
                     border: 'none',
                     backgroundColor: aktifSepetNumarasi === 1 ? '#0f2942' : 'transparent',
                     color: aktifSepetNumarasi === 1 ? 'white' : '#475569',
-                    fontWeight: 'bold',
+                    fontWeight: '600',
                     cursor: 'pointer',
                     transition: 'all 0.2s'
                   }}
                 >
-                  🛒 1. Seçenek (Ana Sepet) [{sepet1.length} Ürün]
+                  1. Seçenek [{sepet1.length} Ürün]
                 </button>
                 <button
                   type="button"
@@ -196,12 +196,12 @@ export default function App() {
                     border: 'none',
                     backgroundColor: aktifSepetNumarasi === 2 ? '#0f2942' : 'transparent',
                     color: aktifSepetNumarasi === 2 ? 'white' : '#475569',
-                    fontWeight: 'bold',
+                    fontWeight: '600',
                     cursor: 'pointer',
                     transition: 'all 0.2s'
                   }}
                 >
-                  ⚡ 2. Alternatif Seçenek [{sepet2.length} Ürün]
+                  2. Seçenek [{sepet2.length} Ürün]
                 </button>
               </div>
 
@@ -224,10 +224,10 @@ export default function App() {
                 onIptal={() => setIslemVerisi(null)}
               />
 
-              {/* 1. SEPET TABLOSU */}
+              {/* 1. SEÇENEK TABLOSU */}
               <div style={{ marginBottom: '30px' }}>
-                <h3 style={{ color: '#0f2942', borderBottom: '2px solid #0f2942', paddingBottom: '8px', marginBottom: '15px' }}>
-                  📦 1. Seçenek (Ana Sepet)
+                <h3 style={{ color: '#0f2942', borderBottom: '2px solid #0f2942', paddingBottom: '8px', marginBottom: '15px', fontSize: '16px', fontWeight: '700' }}>
+                  1. Seçenek
                 </h3>
                 <SepetTablosu 
                   sepet={sepet1} 
@@ -245,10 +245,10 @@ export default function App() {
                 />
               </div>
 
-              {/* 2. ALTERNATİF SEPET TABLOSU */}
+              {/* 2. SEÇENEK TABLOSU */}
               <div style={{ marginBottom: '30px' }}>
-                <h3 style={{ color: '#d97706', borderBottom: '2px solid #d97706', paddingBottom: '8px', marginBottom: '15px' }}>
-                  ⚡ 2. Alternatif Seçenek (İkinci Sepet)
+                <h3 style={{ color: '#0f2942', borderBottom: '2px solid #0f2942', paddingBottom: '8px', marginBottom: '15px', fontSize: '16px', fontWeight: '700' }}>
+                  2. Seçenek
                 </h3>
                 <SepetTablosu 
                   sepet={sepet2} 

@@ -64,6 +64,17 @@ export default function TeklifBilgileriForm({ teklif, onDegistir }) {
           placeholder="Sercan Temel"
         />
       </label>
+
+      {/* YENİ EKLENEN ÖDEME ŞEKLİ ALANI */}
+      <label className="alan" style={{ marginTop: "10px" }}>
+        <span>Ödeme Şekli</span>
+        <input
+          type="text"
+          value={teklif.odemeSekli || ""}
+          onChange={(e) => alanGuncelle("odemeSekli", e.target.value)}
+          placeholder="Örn: Peşin / 30 Gün Vadeli"
+        />
+      </label>
     </aside>
   );
 }
