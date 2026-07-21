@@ -2,8 +2,9 @@ import { useState, useEffect } from "react";
 import { supabase } from "../lib/supabaseClient";
 import { teklifPdfIndir, proformaPdfIndir } from "../utils/pdfOlustur";
 
-export default function GecmisTeklifler() {
+export default function GecmisTeklifler({ kullaniciRolu }) {
   const [teklifler, setTeklifler] = useState([]);
+  const [secilenler, setSecilenler] = useState([]); // Seçilen teklif ID'lerini tutar
   const [yukleniyor, setYukleniyor] = useState(true);
   const [arama, setArama] = useState("");
 
@@ -31,13 +32,44 @@ export default function GecmisTeklifler() {
     setYukleniyor(false);
   }
 
-  // SİLME FONKSİYONU
+  const handleTekliSecim = (id) => {
+    if (secilenler.includes(id)) {
+      setSecilenler(secilenler.filter(item => item !== id));
+    } else {
+      setSecilenler([...secilenler, id]);
+    }
+  };
+
+  const topluSil = async () => {
+    if (secilenler.length === 0) {
+      alert("Lütfen silinecek en az bir teklif seçin!");
+      return;
+    }
+
+    const onay = window.confirm(`Seçilen ${secilenler.length} teklifi silmek istediğinize emin misiniz?`);
+    if (!onay) return;
+
+    try {
+      const { error } = await supabase.from('teklifler').delete().in('id', secilenler);
+      if (error) throw error;
+
+      setTeklifler(teklifler.filter(item => !secilenler.includes(item.id)));
+      setSecilenler([]);
+      alert("Seçilen teklifler başarıyla silindi!");
+    } catch (err) {
+      console.error("Silme hatası:", err);
+      alert("Silinirken bir hata oluştu: " + err.message);
+    }
+  };
+
+  // SİLME FONKSİYONU (TEKLİ)
   async function sil(id) {
     if (!window.confirm("Bu teklifi arşivden silmek istediğine emin misin?")) return;
     
     const { error } = await supabase.from("teklifler").delete().eq("id", id);
     if (!error) {
       setTeklifler(teklifler.filter((t) => t.id !== id));
+      setSecilenler(secilenler.filter(item => item !== id));
     } else {
       alert("Silme işlemi başarısız oldu.");
     }
@@ -54,13 +86,13 @@ export default function GecmisTeklifler() {
     };
 
     if (t.tur === "PROFORMA") {
-      proformaPdfIndir(teklifBilgisi, t.sepet, t.teklif_no, false); // false = indirme modu
+      proformaPdfIndir(teklifBilgisi, t.sepet, t.teklif_no, false);
     } else {
-      teklifPdfIndir(teklifBilgisi, t.sepet, t.teklif_no, false); // false = indirme modu
+      teklifPdfIndir(teklifBilgisi, t.sepet, t.teklif_no, false);
     }
   }
 
-  // YENİ: GÖRÜNTÜLEME (ÖNİZLEME) FONKSİYONU
+  // GÖRÜNTÜLEME (ÖNİZLEME) FONKSİYONU
   function onizle(t) {
     const teklifBilgisi = {
       musteriAdi: t.musteri_adi,
@@ -71,9 +103,9 @@ export default function GecmisTeklifler() {
     };
 
     if (t.tur === "PROFORMA") {
-      proformaPdfIndir(teklifBilgisi, t.sepet, t.teklif_no, true); // true = önizleme modu
+      proformaPdfIndir(teklifBilgisi, t.sepet, t.teklif_no, true);
     } else {
-      teklifPdfIndir(teklifBilgisi, t.sepet, t.teklif_no, true); // true = önizleme modu
+      teklifPdfIndir(teklifBilgisi, t.sepet, t.teklif_no, true);
     }
   }
 
@@ -87,7 +119,18 @@ export default function GecmisTeklifler() {
 
   return (
     <section className="panel" style={{ marginTop: "30px" }}>
-      <h2 className="panel__baslik">Geçmiş Teklif & Proforma Arşivi</h2>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "15px" }}>
+        <h2 className="panel__baslik" style={{ margin: 0 }}>Geçmiş Teklifler</h2>
+        {/* Sadece Yönetici İse Toplu Sil Butonunu Göster */}
+        {kullaniciRolu === 'admin' && secilenler.length > 0 && (
+          <button 
+            onClick={topluSil} 
+            style={{ backgroundColor: "#ef4444", color: "white", border: "none", padding: "8px 14px", borderRadius: "6px", cursor: "pointer", fontSize: "13px", fontWeight: "bold" }}
+          >
+            🗑️ Seçilenleri Sil ({secilenler.length})
+          </button>
+        )}
+      </div>
 
       <input
         type="text"
@@ -101,6 +144,23 @@ export default function GecmisTeklifler() {
         <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "14px" }}>
           <thead>
             <tr style={{ backgroundColor: "#f4f4f4", textAlign: "left" }}>
+              {/* Sadece Yönetici İse En Üstteki Kutucuğu Göster */}
+              {kullaniciRolu === 'admin' && (
+                <th style={{ padding: "12px", borderBottom: "2px solid #ccc", position: "sticky", top: 0, backgroundColor: "#eeeeee", zIndex: 1, width: "40px", textAlign: "center" }}>
+                  <input 
+                    type="checkbox" 
+                    onChange={(e) => {
+                      if (e.target.checked) {
+                        setSecilenler(filtrelenmisTeklifler.map(t => t.id));
+                      } else {
+                        setSecilenler([]);
+                      }
+                    }}
+                    checked={filtrelenmisTeklifler.length > 0 && secilenler.length === filtrelenmisTeklifler.length}
+                    style={{ cursor: "pointer", width: "16px", height: "16px" }}
+                  />
+                </th>
+              )}
               <th style={{ padding: "12px", borderBottom: "2px solid #ccc", position: "sticky", top: 0, backgroundColor: "#eeeeee", zIndex: 1 }}>NO</th>
               <th style={{ padding: "12px", borderBottom: "2px solid #ccc", position: "sticky", top: 0, backgroundColor: "#eeeeee", zIndex: 1 }}>TÜR</th>
               <th style={{ padding: "12px", borderBottom: "2px solid #ccc", position: "sticky", top: 0, backgroundColor: "#eeeeee", zIndex: 1 }}>MÜŞTERİ</th>
@@ -109,12 +169,23 @@ export default function GecmisTeklifler() {
           </thead>
           <tbody>
             {yukleniyor ? (
-              <tr><td colSpan="4" style={{ padding: "10px", textAlign: "center" }}>Yükleniyor...</td></tr>
+              <tr><td colSpan={kullaniciRolu === 'admin' ? "5" : "4"} style={{ padding: "10px", textAlign: "center" }}>Yükleniyor...</td></tr>
             ) : filtrelenmisTeklifler.length === 0 ? (
-              <tr><td colSpan="4" style={{ padding: "10px", textAlign: "center" }}>Kayıt bulunamadı.</td></tr>
+              <tr><td colSpan={kullaniciRolu === 'admin' ? "5" : "4"} style={{ padding: "10px", textAlign: "center" }}>Kayıt bulunamadı.</td></tr>
             ) : (
               filtrelenmisTeklifler.map((t) => (
                 <tr key={t.id} style={{ borderBottom: "1px solid #eee" }}>
+                  {/* Sadece Yönetici İse Satır Başı Kutucuğunu Göster */}
+                  {kullaniciRolu === 'admin' && (
+                    <td style={{ padding: "12px", textAlign: "center" }}>
+                      <input 
+                        type="checkbox" 
+                        checked={secilenler.includes(t.id)}
+                        onChange={() => handleTekliSecim(t.id)}
+                        style={{ cursor: "pointer", width: "16px", height: "16px" }}
+                      />
+                    </td>
+                  )}
                   <td style={{ padding: "12px", fontWeight: "bold" }}>{t.teklif_no}</td>
                   <td style={{ padding: "12px" }}>
                     <span style={{
@@ -127,7 +198,6 @@ export default function GecmisTeklifler() {
                   </td>
                   <td style={{ padding: "12px" }}>{t.musteri_adi}</td>
                   <td style={{ padding: "12px", textAlign: "center", whiteSpace: "nowrap" }}>
-                    
                     <button 
                       onClick={() => onizle(t)} 
                       title="Yeni Sekmede Görüntüle"
@@ -138,12 +208,15 @@ export default function GecmisTeklifler() {
 
                     <button onClick={() => tekrarIndir(t)} className="buton buton--birincil" style={{ cursor: "pointer", padding: "6px 12px", fontSize: "12px", margin: "0 5px 0 0" }}>İndir</button>
                     
-                    <button 
-                      onClick={() => sil(t.id)} 
-                      style={{ backgroundColor: "#ff4d4d", color: "white", border: "none", padding: "6px 12px", borderRadius: "4px", cursor: "pointer", fontSize: "12px" }}
-                    >
-                      Sil
-                    </button>
+                    {/* Sadece Yönetici İse Tekli Sil Butonunu Göster */}
+                    {kullaniciRolu === 'admin' && (
+                      <button 
+                        onClick={() => sil(t.id)} 
+                        style={{ backgroundColor: "#ff4d4d", color: "white", border: "none", padding: "6px 12px", borderRadius: "4px", cursor: "pointer", fontSize: "12px" }}
+                      >
+                        Sil
+                      </button>
+                    )}
                   </td>
                 </tr>
               ))

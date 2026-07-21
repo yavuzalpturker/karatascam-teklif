@@ -18,24 +18,32 @@ export default function App() {
 
   // --- ŞİFRE KORUMA SİSTEMİ BAŞLANGIÇ ---
   const [girisBasarili, setGirisBasarili] = useState(false);
+  const [kullaniciRolu, setKullaniciRolu] = useState(null); // 'admin' veya 'calisan'
 
   useEffect(() => {
     const oturum = localStorage.getItem('karatas_oturum');
-    if (oturum === 'aktif') {
+    const rol = localStorage.getItem('karatas_rol');
+    if (oturum === 'aktif' && rol) {
       setGirisBasarili(true);
+      setKullaniciRolu(rol);
     }
   }, []);
 
-  const handleLogin = (durum) => {
+  const handleLogin = (durum, rol) => {
     if (durum) {
       localStorage.setItem('karatas_oturum', 'aktif');
+      localStorage.setItem('karatas_rol', rol);
+      setKullaniciRolu(rol);
       setGirisBasarili(true);
     }
   };
 
   const cikisYap = () => {
     localStorage.removeItem('karatas_oturum');
+    localStorage.removeItem('karatas_rol');
     setGirisBasarili(false);
+    setKullaniciRolu(null);
+    setAktifSayfa("teklif"); // Çıkışta ana sayfaya at
   };
   // --- ŞİFRE KORUMA SİSTEMİ BİTİŞ ---
 
@@ -95,12 +103,14 @@ export default function App() {
                 {aktifSayfa === "m2hesapla" ? "📄 Teklif Ekranına Dön" : "📏 m² Fiyat Bul"}
               </button>
 
-              <button 
-                onClick={() => setAktifSayfa(aktifSayfa === "ayarlar" ? "teklif" : "ayarlar")} 
-                style={{ backgroundColor: '#fcd34d', color: '#1f2937', padding: '8px 14px', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}
-              >
-                {aktifSayfa === "ayarlar" ? "📄 Teklif Ekranına Dön" : "⚙️ Ayarlar"}
-              </button>
+              {kullaniciRolu === 'admin' && (
+                <button 
+                  onClick={() => setAktifSayfa(aktifSayfa === "ayarlar" ? "teklif" : "ayarlar")} 
+                  style={{ backgroundColor: '#fcd34d', color: '#1f2937', padding: '8px 14px', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}
+                >
+                  {aktifSayfa === "ayarlar" ? "📄 Teklif Ekranına Dön" : "⚙️ Ayarlar"}
+                </button>
+              )}
             </div>
 
             <button 
@@ -150,7 +160,7 @@ export default function App() {
 
               <CiktiButonu teklif={teklif} sepet={sepet} />
 
-              <GecmisTeklifler />
+              <GecmisTeklifler kullaniciRolu={kullaniciRolu} />
             </main>
           </>
         )}

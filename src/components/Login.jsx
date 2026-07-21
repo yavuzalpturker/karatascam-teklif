@@ -9,7 +9,11 @@ export default function Login({ onLogin }) {
     e.preventDefault();
     
     if (kullaniciAdi === 'karatas' && sifre === '1234') {
-      onLogin(true);
+      // Yönetici girişi
+      onLogin(true, 'admin');
+    } else if (kullaniciAdi === 'personel' && sifre === '1234') {
+      // Normal çalışan girişi
+      onLogin(true, 'calisan');
     } else {
       setHata('Kullanıcı adı veya şifre hatalı!');
     }
