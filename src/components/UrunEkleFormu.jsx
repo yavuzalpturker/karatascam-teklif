@@ -9,6 +9,7 @@ export default function UrunEkleFormu({ urunler = [], yukleniyor, hata, onEkle, 
   const [listeAcik, setListeAcik] = useState(false);
   
   const [ozelAciklama, setOzelAciklama] = useState("");
+  const [urunGorselBase64, setUrunGorselBase64] = useState(null); // GÖRSEL BASE64 STATE'İ
 
   const [en, setEn] = useState("");
   const [boy, setBoy] = useState("");
@@ -38,6 +39,7 @@ export default function UrunEkleFormu({ urunler = [], yukleniyor, hata, onEkle, 
       setArama(ham.arama || "");
       setSecilenId(ham.secilenId || "");
       setOzelAciklama(ham.ozelAciklama || "");
+      setUrunGorselBase64(islemVerisi.satir.gorsel || null);
       setEn(ham.en || "");
       setBoy(ham.boy || "");
       setMiktar(ham.miktar || "1");
@@ -89,6 +91,18 @@ export default function UrunEkleFormu({ urunler = [], yukleniyor, hata, onEkle, 
     setArama(olusturulanIsim);
     setSecilenId("ozel_urun");
     setListeAcik(false);
+  };
+
+  // GÖRSEL SEÇİLDİĞİNDE BASE64'E ÇEVİREN FONKSİYON
+  const handleGorselYukle = (e) => {
+    const dosya = e.target.files[0];
+    if (dosya) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setUrunGorselBase64(reader.result);
+      };
+      reader.readAsDataURL(dosya);
+    }
   };
 
   async function urunSil(silinecekUrun, e) {
@@ -218,6 +232,7 @@ export default function UrunEkleFormu({ urunler = [], yukleniyor, hata, onEkle, 
     // 1. ANA CAM SATIRINI HESAPLA VE EKLE
     const anaSatir = satirHesapla(duzeltilmisUrun, 100, 100, hesaplananMiktar, nihaiFiyat, paraBirimi, Number(kdvOrani), nihaiBirim);
     anaSatir.ozelAciklama = ozelAciklama + ekstraAciklama;
+    anaSatir.gorsel = urunGorselBase64; // GÖRSEL BİLGİSİ SATIRA EKLENDİ
     anaSatir.miktar = Number(hesaplananMiktar.toFixed(3)); 
     anaSatir.secilenBirim = nihaiBirim;
     anaSatir.birimFiyat = nihaiFiyat;
@@ -273,6 +288,7 @@ export default function UrunEkleFormu({ urunler = [], yukleniyor, hata, onEkle, 
     setArama("");
     setSecilenId("");
     setOzelAciklama(""); 
+    setUrunGorselBase64(null);
     setEn("");
     setBoy("");
     setMiktar("1"); 
@@ -359,18 +375,47 @@ export default function UrunEkleFormu({ urunler = [], yukleniyor, hata, onEkle, 
         </div>
       </label>
 
-      <label className="alan">
-        <span>Ürün Açıklaması / Detay (PDF'teki Açıklama Sütununa Yazılır)</span>
-        <input
-          type="text"
-          placeholder="Örn: Rodajlı, Bizoteli veya Özel İmalat..."
-          value={ozelAciklama}
-          onChange={(e) => setOzelAciklama(e.target.value)}
-          style={{ width: "100%", padding: "10px", borderRadius: "6px", border: "1px solid #ccc" }}
-        />
-      </label>
+      {/* ÖZEL AÇIKLAMA VE GÖRSEL YÜKLEME ALANI */}
+      <div style={{ display: "flex", gap: "10px", alignItems: "flex-end" }}>
+        <label className="alan" style={{ flex: 3 }}>
+          <span>Ürün Açıklaması / Detay (PDF'teki Açıklama Sütununa Yazılır)</span>
+          <input
+            type="text"
+            placeholder="Örn: Rodajlı, Bizoteli veya Özel İmalat..."
+            value={ozelAciklama}
+            onChange={(e) => setOzelAciklama(e.target.value)}
+            style={{ width: "100%", padding: "10px", borderRadius: "6px", border: "1px solid #ccc" }}
+          />
+        </label>
 
-      <div className="olcu-grid">
+        {/* GÖRSEL YÜKLEME INPUTI */}
+        <label className="alan" style={{ flex: 1 }}>
+          <span style={{ fontSize: "12px", fontWeight: "700", color: "#0f2942" }}>🖼️ Ürün Görseli Ekle</span>
+          <input
+            type="file"
+            accept="image/*"
+            onChange={handleGorselYukle}
+            style={{ fontSize: "11px", padding: "6px" }}
+          />
+        </label>
+      </div>
+
+      {/* YÜKLENEN GÖRSEL ÖNİZLEME */}
+      {urunGorselBase64 && (
+        <div style={{ marginTop: "10px", padding: "10px", backgroundColor: "#f1f5f9", borderRadius: "6px", display: "flex", alignItems: "center", gap: "10px" }}>
+          <img src={urunGorselBase64} alt="Önizleme" style={{ height: "60px", width: "auto", borderRadius: "4px", border: "1px solid #cbd5e1" }} />
+          <span style={{ fontSize: "12px", color: "#166534", fontWeight: "bold" }}>✓ PDF'e Eklenecek Görsel Seçildi</span>
+          <button 
+            type="button" 
+            onClick={() => setUrunGorselBase64(null)} 
+            style={{ marginLeft: "auto", backgroundColor: "#ef4444", color: "white", border: "none", padding: "4px 8px", borderRadius: "4px", fontSize: "11px", cursor: "pointer" }}
+          >
+            Görseli Kaldır
+          </button>
+        </div>
+      )}
+
+      <div className="olcu-grid" style={{ marginTop: "10px" }}>
         <label className="alan">
           <span>Birim Seçimi</span>
           <select value={secilenBirim} onChange={(e) => setSecilenBirim(e.target.value)}>

@@ -111,14 +111,26 @@ function sepetIcerikOlustur(sepet, baslikMetni) {
       baslik += ` - ${satir.ozelAciklama}`;
     }
 
-    return [
-      { text: baslik, bold: true, margin: [0, 6, 0, 2] },
-      {
-        text: `${satir.miktarDetay}  =  ${paraFormatla(satir.toplamTutar, satir.paraBirimi)} + KDV`,
-        alignment: "right",
-        margin: [0, 0, 0, 4],
-      },
+    const elemanlar = [
+      { text: baslik, bold: true, margin: [0, 6, 0, 2] }
     ];
+
+    // Ürün görseli varsa PDF'e dinamik olarak ekle
+    if (satir.gorsel) {
+      elemanlar.push({
+        image: satir.gorsel,
+        width: 130,
+        margin: [0, 4, 0, 6]
+      });
+    }
+
+    elemanlar.push({
+      text: `${satir.miktarDetay}  =  ${paraFormatla(satir.toplamTutar, satir.paraBirimi)} + KDV`,
+      alignment: "right",
+      margin: [0, 0, 0, 4],
+    });
+
+    return elemanlar;
   });
 
   const genelToplamlar = genelToplamHesapla(sepet);
@@ -294,9 +306,22 @@ function proformaTabloOlustur(sepet, baslikMetni) {
       birimFiyatMetni = parcalar[1].trim();
     }
 
+    // Özel açıklama hücresine metin ve varsa görseli ekleme
+    const ozelAciklamaStack = [
+      { text: satir.ozelAciklama || "-", fontSize: 9, margin: [0, 2, 0, 2] }
+    ];
+
+    if (satir.gorsel) {
+      ozelAciklamaStack.push({
+        image: satir.gorsel,
+        width: 90,
+        margin: [0, 4, 0, 2]
+      });
+    }
+
     tabloGövdesi.push([
       { text: satir.urunAciklamasi, fontSize: 9, margin: [5, 5, 0, 5], alignment: 'left' },
-      { text: satir.ozelAciklama || "-", fontSize: 9, margin: [5, 5, 0, 5], alignment: 'left' },
+      { stack: ozelAciklamaStack, margin: [5, 5, 0, 5], alignment: 'left' },
       { text: miktarMetni, fontSize: 9, alignment: 'center', margin: [0, 5, 0, 5] },
       { text: birimFiyatMetni, fontSize: 9, alignment: 'center', margin: [0, 5, 0, 5] },
       { text: `% ${satir.kdvOrani}`, fontSize: 9, alignment: 'center', margin: [0, 5, 0, 5] },
