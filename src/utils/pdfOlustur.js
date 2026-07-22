@@ -140,7 +140,6 @@ function sepetIcerikOlustur(sepet, baslikMetni) {
     ];
   }).flat();
 
-  // Eğer 2. sepet yoksa başlık hiç basılmasın (Seçenek yazısı olmasın)
   if (!baslikMetni) {
     return [...urunSatirlari, ...genelToplamSatirlari];
   }
@@ -169,8 +168,10 @@ export async function teklifPdfIndir(teklif, sepet1, sepet2 = [], teklifNo, oniz
   const birinciSecenekIcerik = sepetIcerikOlustur(sepet1, ikiliMi ? "1. SEÇENEK" : null);
   const ikinciSecenekIcerik = ikiliMi ? sepetIcerikOlustur(sepet2, "2. SEÇENEK") : [];
 
-  const tarihYazisi = teklif.tarih.toLocaleDateString("tr-TR");
-  const belgeNo = teklifNo || siradakiProformaNoGetir(); 
+  const tarihYazisi = teklif.tarih ? new Date(teklif.tarih).toLocaleDateString("tr-TR") : new Date().toLocaleDateString("tr-TR");
+  
+  // ÖNCELİK TEKLİF OBJESİNDEKİ TEKLİF_NO (REVİZELİ NUMARA)
+  const belgeNo = teklif.teklifNo || teklifNo || siradakiProformaNoGetir(); 
 
   const bankaStack = [
     { text: 'İŞBANKASI / SİTELER ŞUBESİ', bold: true, fontSize: 10, margin: [0, 0, 0, 3] },
@@ -210,7 +211,7 @@ export async function teklifPdfIndir(teklif, sepet1, sepet2 = [], teklifNo, oniz
           {
             stack: [
               { text: `Tarih: ${tarihYazisi}`, fontSize: 10 },
-              { text: `No: ${belgeNo}`, fontSize: 10 }
+              { text: `No: ${belgeNo}`, fontSize: 10, bold: true }
             ],
             alignment: 'right'
           }
@@ -260,7 +261,7 @@ export async function teklifPdfIndir(teklif, sepet1, sepet2 = [], teklifNo, oniz
     defaultStyle: { font: "Roboto" },
   };
 
-  const dosyaAdi = `Karatascam_Teklif_${teklif.musteriAdi}.pdf`;
+  const dosyaAdi = `Karatascam_Teklif_${teklif.musteriAdi || "Yeni"}_${belgeNo}.pdf`;
   const pdfDoc = pdfMake.createPdf(docDefinition);
   if (onizlemeMi) {
     pdfDoc.open();
@@ -348,8 +349,10 @@ export async function proformaPdfIndir(teklif, sepet1, sepet2 = [], teklifNo, on
   const bankaIban = "TR26 0006 4000 0014 2210 2141 37";
   const dinamikSartlar = SOZLESME_SARTLARI;
 
-  const tarihYazisi = teklif.tarih.toLocaleDateString("tr-TR");
-  const belgeNo = teklifNo || siradakiProformaNoGetir(); 
+  const tarihYazisi = teklif.tarih ? new Date(teklif.tarih).toLocaleDateString("tr-TR") : new Date().toLocaleDateString("tr-TR");
+  
+  // ÖNCELİK TEKLİF OBJESİNDEKİ TEKLİF_NO (REVİZELİ NUMARA)
+  const belgeNo = teklif.teklifNo || teklifNo || siradakiProformaNoGetir(); 
 
   const ikiliMi = sepet2 && sepet2.length > 0;
 
@@ -385,7 +388,7 @@ export async function proformaPdfIndir(teklif, sepet1, sepet2 = [], teklifNo, on
         {
           stack: [
             { text: `Tarih: ${tarihYazisi}`, fontSize: 10 },
-            { text: `No: ${belgeNo}`, fontSize: 10 }
+            { text: `No: ${belgeNo}`, fontSize: 10, bold: true }
           ],
           alignment: 'right'
         }
@@ -468,7 +471,7 @@ export async function proformaPdfIndir(teklif, sepet1, sepet2 = [], teklifNo, on
     defaultStyle: { font: "Roboto" },
   };
 
-  const dosyaAdi = `Proforma_Fatura_${teklif.musteriAdi}.pdf`;
+  const dosyaAdi = `Proforma_Fatura_${teklif.musteriAdi || "Yeni"}_${belgeNo}.pdf`;
   const pdfDoc = pdfMake.createPdf(docDefinition);
   if (onizlemeMi) {
     pdfDoc.open();

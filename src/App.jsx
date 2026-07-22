@@ -9,6 +9,24 @@ import Login from './components/Login';
 import M2FiyatHesaplayici from './components/M2FiyatHesaplayici';
 import Ayarlar from './components/Ayarlar';
 
+// REVİZYON NUMARASI OLUŞTURMA YARDIMCI FONKSİYONU (-R1, -R2 TESPİTİ)
+function teklifNoRevizeEt(mevcutTeklifNo) {
+  if (!mevcutTeklifNo) return "";
+
+  // Regex ile teklif nosunun sonunda zaten -R1, -R2 gibi bir ek var mı bakıyoruz
+  const revizyonMatch = mevcutTeklifNo.match(/^(.*?)-R(\d+)$/i);
+
+  if (revizyonMatch) {
+    // Zaten revizyonlu (Örn: T-2026-0012-R1) -> R sayısını 1 artır
+    const anaTeklifNo = revizyonMatch[1];
+    const mevcutRevizyonSayisi = parseInt(revizyonMatch[2], 10);
+    return `${anaTeklifNo}-R${mevcutRevizyonSayisi + 1}`;
+  } else {
+    // İlk defa revize ediliyor (Örn: T-2026-0012) -> -R1 ekle
+    return `${mevcutTeklifNo}-R1`;
+  }
+}
+
 export default function App() {
   
   const { urunler, yukleniyor, hata } = useUrunler();
@@ -51,6 +69,7 @@ export default function App() {
     musteriAdi: "",
     ilgiliKisi: "",
     projeAdi: "",
+    teklifNo: "", // Düzenlenen teklifin nosu
     tarih: new Date(),
   });
   
@@ -266,18 +285,22 @@ export default function App() {
                 />
               </div>
 
-              {/* PDF'e her iki sepeti de gönderiyoruz */}
+              {/* PDF'e her iki sepeti ve revize edilmiş teklif nosunu gönderiyoruz */}
               <CiktiButonu teklif={teklif} sepet={sepet1} sepet2={sepet2} />
 
               {/* GEÇMİŞ TEKLİFLER VE SEPETİ GERİ GETİRME KÖPRÜSÜ */}
               <GecmisTeklifler 
                 kullaniciRolu={kullaniciRolu} 
                 onSepetiYukle={(yuklenenTeklif, yuklenenSepet1, yuklenenSepet2) => {
+                  const eskiTeklifNo = yuklenenTeklif.teklif_no || yuklenenTeklif.teklifNo || "";
+                  const revizeTeklifNo = teklifNoRevizeEt(eskiTeklifNo);
+
                   setTeklif({
                     musteriAdi: yuklenenTeklif.musteri_adi || "",
                     ilgiliKisi: yuklenenTeklif.ilgili_kisi || "",
                     projeAdi: yuklenenTeklif.proje_adi || "",
                     notlar: yuklenenTeklif.notlar || "",
+                    teklifNo: revizeTeklifNo, // Otomatik -R1, -R2 eklenmiş teklif no
                     tarih: new Date()
                   });
                   setSepet1(yuklenenSepet1 || []);
