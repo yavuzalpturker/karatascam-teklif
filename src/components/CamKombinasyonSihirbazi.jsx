@@ -421,6 +421,7 @@ export default function CamKombinasyonSihirbazi({ onKombinasyonSec }) {
             <option>Tempersiz</option>
             <option>Temperli</option>
             <option>Yarı Temperli</option>
+            <option>Bombeli Temperli</option>
           </select>
         </div>
 
