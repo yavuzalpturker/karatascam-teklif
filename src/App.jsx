@@ -13,16 +13,13 @@ import Ayarlar from './components/Ayarlar';
 function teklifNoRevizeEt(mevcutTeklifNo) {
   if (!mevcutTeklifNo) return "";
 
-  // Regex ile teklif nosunun sonunda zaten -R1, -R2 gibi bir ek var mı bakıyoruz
   const revizyonMatch = mevcutTeklifNo.match(/^(.*?)-R(\d+)$/i);
 
   if (revizyonMatch) {
-    // Zaten revizyonlu (Örn: T-2026-0012-R1) -> R sayısını 1 artır
     const anaTeklifNo = revizyonMatch[1];
     const mevcutRevizyonSayisi = parseInt(revizyonMatch[2], 10);
     return `${anaTeklifNo}-R${mevcutRevizyonSayisi + 1}`;
   } else {
-    // İlk defa revize ediliyor (Örn: T-2026-0012) -> -R1 ekle
     return `${mevcutTeklifNo}-R1`;
   }
 }
@@ -31,12 +28,11 @@ export default function App() {
   
   const { urunler, yukleniyor, hata } = useUrunler();
 
-  // Sayfalar arası geçişi sağlayan state (teklif, ayarlar, m2hesapla)
   const [aktifSayfa, setAktifSayfa] = useState("teklif");
 
-  // --- ŞİFRE KORUMA SİSTEMİ BAŞLANGIÇ ---
+  // --- ŞİFRE KORUMA SİSTEMİ ---
   const [girisBasarili, setGirisBasarili] = useState(false);
-  const [kullaniciRolu, setKullaniciRolu] = useState(null); // 'admin' veya 'calisan'
+  const [kullaniciRolu, setKullaniciRolu] = useState(null);
 
   useEffect(() => {
     const oturum = localStorage.getItem('karatas_oturum');
@@ -61,26 +57,30 @@ export default function App() {
     localStorage.removeItem('karatas_rol');
     setGirisBasarili(false);
     setKullaniciRolu(null);
-    setAktifSayfa("teklif"); // Çıkışta ana sayfaya at
+    setAktifSayfa("teklif");
   };
-  // --- ŞİFRE KORUMA SİSTEMİ BİTİŞ ---
 
   const [teklif, setTeklif] = useState({
     musteriAdi: "",
     ilgiliKisi: "",
     projeAdi: "",
-    teklifNo: "", // Düzenlenen teklifin nosu
+    teklifNo: "",
     tarih: new Date(),
   });
   
-  // İKİ AYRI SEPET STATE'İ (1. Seçenek ve 2. Seçenek)
+  // İKİ AYRI SEPET STATE'İ
   const [sepet1, setSepet1] = useState([]);
   const [sepet2, setSepet2] = useState([]);
   
-  // Ürünün hangi sepete ekleneceğini seçmek için (1 veya 2)
   const [aktifSepetNumarasi, setAktifSepetNumarasi] = useState(1);
-
   const [islemVerisi, setIslemVerisi] = useState(null);
+
+  // 1. VE 2. SEÇENEĞİ BİRBİRİYLE YER DEĞİŞTİRME FONKSİYONU
+  const secenekleriYerDegistir = () => {
+    const geciciSepet = [...sepet1];
+    setSepet1([...sepet2]);
+    setSepet2(geciciSepet);
+  };
 
   // Silme işlemleri
   const sepettenUrunSil = (silinecekIndex, sepetNo) => {
@@ -110,45 +110,23 @@ export default function App() {
   return (
     <div className="sayfa">
       <header className="ust-bar" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '15px 20px' }}>
-        
         <div>
           <h1>KARATAŞCAM ŞİŞECAM</h1>
           <p>Kurumsal Fiyat Teklifi Oluşturma Sistemi</p>
         </div>
 
-        {/* SAĞ TARAF: Logo ve Butonlar */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
           <img 
             src="/logo3.jpg" 
             alt="Karataşcam Logo" 
-            style={{ 
-              height: '75px', 
-              width: 'auto', 
-              objectFit: 'contain', 
-              borderRadius: '4px',
-              boxShadow: '0 4px 6px rgba(0,0,0,0.1)'
-            }} 
+            style={{ height: '75px', width: 'auto', objectFit: 'contain', borderRadius: '4px', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }} 
           />
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', position: 'relative', zIndex: 9999, alignItems: 'flex-end' }}>
             {kullaniciRolu === 'admin' && (
               <button 
                 onClick={() => setAktifSayfa(aktifSayfa === "ayarlar" ? "teklif" : "ayarlar")} 
-                style={{ 
-                  backgroundColor: 'rgba(255, 255, 255, 0.95)', 
-                  color: '#0f2942',
-                  padding: '10px 20px', 
-                  border: '1px solid rgba(255, 255, 255, 0.5)', 
-                  borderRadius: '6px', 
-                  cursor: 'pointer', 
-                  fontWeight: '700',
-                  fontSize: '14px',
-                  boxShadow: '0 4px 15px rgba(0, 0, 0, 0.15)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                  transition: 'all 0.2s ease'
-                }}
+                style={{ backgroundColor: 'rgba(255, 255, 255, 0.95)', color: '#0f2942', padding: '10px 20px', border: '1px solid rgba(255, 255, 255, 0.5)', borderRadius: '6px', cursor: 'pointer', fontWeight: '700', fontSize: '14px', boxShadow: '0 4px 15px rgba(0, 0, 0, 0.15)', display: 'flex', alignItems: 'center', gap: '8px', transition: 'all 0.2s ease' }}
               >
                 {aktifSayfa === "ayarlar" ? "📄 Teklif Ekranına Dön" : "⚙️ Ayarlar"}
               </button>
@@ -156,18 +134,7 @@ export default function App() {
 
             <button 
               onClick={cikisYap} 
-              style={{ 
-                backgroundColor: 'rgba(255, 255, 255, 0.1)', 
-                color: 'white', 
-                padding: '8px 20px', 
-                border: '1px solid rgba(255, 255, 255, 0.2)', 
-                borderRadius: '6px', 
-                cursor: 'pointer', 
-                fontSize: '13px',
-                fontWeight: '500',
-                backdropFilter: 'blur(10px)',
-                transition: 'all 0.2s ease'
-              }}
+              style={{ backgroundColor: 'rgba(255, 255, 255, 0.1)', color: 'white', padding: '8px 20px', border: '1px solid rgba(255, 255, 255, 0.2)', borderRadius: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: '500', backdropFilter: 'blur(10px)', transition: 'all 0.2s ease' }}
             >
               Çıkış Yap 🚪
             </button>
@@ -186,8 +153,8 @@ export default function App() {
 
             <main className="ana-icerik">
               
-              {/* HANGİ SEPETE EKLECEĞİNİ SEÇME SEKMELERİ */}
-              <div style={{ display: 'flex', gap: '10px', marginBottom: '15px', backgroundColor: '#e2e8f0', padding: '6px', borderRadius: '8px' }}>
+              {/* HANGİ SEPETE EKLENECEĞİ & SEÇENEK YER DEĞİŞTİRME BUTONU */}
+              <div style={{ display: 'flex', gap: '10px', marginBottom: '15px', backgroundColor: '#e2e8f0', padding: '6px', borderRadius: '8px', alignItems: 'center' }}>
                 <button
                   type="button"
                   onClick={() => setAktifSepetNumarasi(1)}
@@ -205,6 +172,28 @@ export default function App() {
                 >
                   1. Seçenek [{sepet1.length} Ürün]
                 </button>
+
+                {/* YER DEĞİŞTİRME BUTONU */}
+                <button
+                  type="button"
+                  onClick={secenekleriYerDegistir}
+                  title="1. ve 2. Seçeneğin Yerini Değiştir"
+                  style={{
+                    backgroundColor: '#0284c7',
+                    color: 'white',
+                    border: 'none',
+                    padding: '10px 16px',
+                    borderRadius: '6px',
+                    fontSize: '13px',
+                    fontWeight: 'bold',
+                    cursor: 'pointer',
+                    whiteSpace: 'nowrap',
+                    boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                  }}
+                >
+                  ⇄ Seçenekleri Takas Et (1 ↔ 2)
+                </button>
+
                 <button
                   type="button"
                   onClick={() => setAktifSepetNumarasi(2)}
@@ -285,10 +274,8 @@ export default function App() {
                 />
               </div>
 
-              {/* PDF'e her iki sepeti ve revize edilmiş teklif nosunu gönderiyoruz */}
               <CiktiButonu teklif={teklif} sepet={sepet1} sepet2={sepet2} />
 
-              {/* GEÇMİŞ TEKLİFLER VE SEPETİ GERİ GETİRME KÖPRÜSÜ */}
               <GecmisTeklifler 
                 kullaniciRolu={kullaniciRolu} 
                 onSepetiYukle={(yuklenenTeklif, yuklenenSepet1, yuklenenSepet2) => {
@@ -300,7 +287,7 @@ export default function App() {
                     ilgiliKisi: yuklenenTeklif.ilgili_kisi || "",
                     projeAdi: yuklenenTeklif.proje_adi || "",
                     notlar: yuklenenTeklif.notlar || "",
-                    teklifNo: revizeTeklifNo, // Otomatik -R1, -R2 eklenmiş teklif no
+                    teklifNo: revizeTeklifNo,
                     tarih: new Date()
                   });
                   setSepet1(yuklenenSepet1 || []);
