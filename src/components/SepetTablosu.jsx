@@ -1,70 +1,207 @@
+import { useState } from "react";
 import { paraFormatla, genelToplamHesapla, genelKdvHesapla } from "../utils/hesaplama";
 
-export default function SepetTablosu({ sepet, onTemizle, onSil, onDuzenle, onTekrarEt, onTopluFiyatGuncelle }) {
+export default function SepetTablosu({ 
+  sepet = [], 
+  onTemizle, 
+  onSil, 
+  onDuzenle, 
+  onTekrarEt, 
+  onTopluFiyatGuncelle 
+}) {
+  const [modalAcik, setModalAcik] = useState(false);
+  const [hedefToplam, setHedefToplam] = useState("");
+
   if (!sepet || sepet.length === 0) {
     return (
-      <div style={{ padding: "20px", textAlign: "center", color: "#64748b", backgroundColor: "#f8fafc", borderRadius: "8px", border: "1px dashed #cbd5e1" }}>
-        Sepet boş. Yukarıdan ürün ekleyebilirsiniz.
+      <div style={{ padding: "15px", backgroundColor: "#f8fafc", borderRadius: "6px", border: "1px dashed #cbd5e1", textAlign: "center", color: "#64748b", fontSize: "13px" }}>
+        Sepette henüz ürün bulunmuyor.
       </div>
     );
   }
+
+  // HEDEF TOPLAM FİYATTAN HER KALEME m² BİRİM FİYATI DAĞITMA
+  const topluFiyatDagit = () => {
+    const girilenHedef = parseFloat(hedefToplam);
+    if (!girilenHedef || girilenHedef <= 0) {
+      alert("Lütfen geçerli bir hedef toplam tutar giriniz!");
+      return;
+    }
+
+    // Sepetteki Toplam Miktarı (m² veya Adet) Hesaplama
+    const toplamMiktar = sepet.reduce((toplam, item) => toplam + (Number(item.miktar) || 1), 0);
+
+    if (toplamMiktar <= 0) {
+      alert("Sepetteki ürün miktarı geçersiz!");
+      return;
+    }
+
+    // Hedef Tutara Göre Hesaplanan Yeni m² / Birim Fiyatı
+    const yeniBirimFiyat = girilenHedef / toplamMiktar;
+
+    // Tüm Sepeti Yeni Fiyatlarla Güncelleme
+    const yeniSepet = sepet.map((item) => {
+      const yeniToplamTutar = Number((item.miktar * yeniBirimFiyat).toFixed(2));
+      const birimFiyatStr = yeniBirimFiyat.toFixed(2);
+      
+      // Miktar Detay Metnini Güncelleme (Örn: 10.50 m² x 450.00 ₺)
+      let yeniMiktarDetay = `${item.miktar} ${item.secilenBirim || item.birim || 'm²'} x ${birimFiyatStr} ₺`;
+
+      return {
+        ...item,
+        birimFiyat: Number(birimFiyatStr),
+        toplamTutar: yeniToplamTutar,
+        miktarDetay: yeniMiktarDetay
+      };
+    });
+
+    if (onTopluFiyatGuncelle) {
+      onTopluFiyatGuncelle(yeniSepet);
+    }
+
+    setModalAcik(false);
+    setHedefToplam("");
+  };
 
   const genelToplamlar = genelToplamHesapla(sepet);
   const genelKdvler = genelKdvHesapla(sepet);
 
   return (
-    <div>
-      <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: "10px" }}>
-        <button 
+    <div style={{ backgroundColor: "white", borderRadius: "8px", border: "1px solid #cbd5e1", padding: "12px", boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }}>
+      
+      {/* TABLO ÜSTÜ BUTONLAR */}
+      <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px", marginBottom: "10px" }}>
+        
+        {/* TOPLU FİYAT DAĞITMA BUTONU */}
+        <button
+          type="button"
+          onClick={() => setModalAcik(true)}
+          style={{
+            backgroundColor: "#0284c7",
+            color: "white",
+            border: "none",
+            padding: "6px 14px",
+            borderRadius: "5px",
+            fontSize: "12px",
+            fontWeight: "600",
+            cursor: "pointer",
+            display: "flex",
+            alignItems: "center",
+            gap: "5px"
+          }}
+        >
+          💰 Toplu Fiyat / m² Dağıt
+        </button>
+
+        {/* SEPETİ TEMİZLE BUTONU */}
+        <button
+          type="button"
           onClick={onTemizle}
-          style={{ backgroundColor: "#475569", color: "white", border: "none", padding: "6px 14px", borderRadius: "6px", cursor: "pointer", fontSize: "12px", fontWeight: "600", transition: "background 0.2s" }}
+          style={{
+            backgroundColor: "#475569",
+            color: "white",
+            border: "none",
+            padding: "6px 14px",
+            borderRadius: "5px",
+            fontSize: "12px",
+            fontWeight: "600",
+            cursor: "pointer"
+          }}
         >
           🗑️ Sepeti Temizle
         </button>
       </div>
 
-      <div style={{ overflowX: "auto", border: "1px solid #cbd5e1", borderRadius: "8px", boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }}>
-        <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "14px", backgroundColor: "white" }}>
+      {/* DİNAMİK TOPLU FİYAT GİRİŞ MODALI */}
+      {modalAcik && (
+        <div style={{ backgroundColor: "#f0f9ff", border: "1px solid #0284c7", borderRadius: "6px", padding: "12px", marginBottom: "12px", display: "flex", alignItems: "center", gap: "10px" }}>
+          <span style={{ fontSize: "12px", fontWeight: "700", color: "#0369a1", whitespace: "nowrap" }}>
+            Hedef Toplam Tutar (KDV Hariç):
+          </span>
+          <input
+            type="number"
+            placeholder="Örn: 50000"
+            value={hedefToplam}
+            onChange={(e) => setHedefToplam(e.target.value)}
+            style={{ padding: "6px 10px", borderRadius: "4px", border: "1px solid #cbd5e1", fontSize: "13px", width: "160px" }}
+          />
+          <button
+            type="button"
+            onClick={topluFiyatDagit}
+            style={{ backgroundColor: "#0284c7", color: "white", border: "none", padding: "6px 12px", borderRadius: "4px", fontSize: "12px", fontWeight: "bold", cursor: "pointer" }}
+          >
+            m² Fiyatlarını Hesapla ve Dağıt
+          </button>
+          <button
+            type="button"
+            onClick={() => setModalAcik(false)}
+            style={{ backgroundColor: "#94a3b8", color: "white", border: "none", padding: "6px 10px", borderRadius: "4px", fontSize: "12px", cursor: "pointer" }}
+          >
+            İptal
+          </button>
+        </div>
+      )}
+
+      {/* SEPET TABLOSU */}
+      <div style={{ overflowX: "auto" }}>
+        <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "13px" }}>
           <thead>
-            <tr style={{ backgroundColor: "#0f2942", textAlign: "left", color: "white" }}>
-              <th style={{ padding: "12px 16px", fontWeight: "600", borderBottom: "2px solid #0b1d2e" }}>Ürün Açıklaması</th>
-              <th style={{ padding: "12px 16px", fontWeight: "600", borderBottom: "2px solid #0b1d2e" }}>Özel Açıklama</th>
-              <th style={{ padding: "12px 16px", fontWeight: "600", borderBottom: "2px solid #0b1d2e" }}>Ölçü / Miktar</th>
-              <th style={{ padding: "12px 16px", fontWeight: "600", borderBottom: "2px solid #0b1d2e" }}>KDV</th>
-              <th style={{ padding: "12px 16px", fontWeight: "600", borderBottom: "2px solid #0b1d2e" }}>Toplam Tutar</th>
-              <th style={{ padding: "12px 16px", fontWeight: "600", borderBottom: "2px solid #0b1d2e", textAlign: "center" }}>İşlemler</th>
+            <tr style={{ backgroundColor: "#0f2942", color: "white", textAlign: "left" }}>
+              <th style={{ padding: "10px", borderRadius: "4px 0 0 0" }}>Ürün Açıklaması</th>
+              <th style={{ padding: "10px" }}>Özel Açıklama</th>
+              <th style={{ padding: "10px", textAlign: "center" }}>Ölçü / Miktar</th>
+              <th style={{ padding: "10px", textAlign: "center" }}>KDV</th>
+              <th style={{ padding: "10px", textAlign: "right" }}>Toplam Tutar</th>
+              <th style={{ padding: "10px", textAlign: "center", borderRadius: "0 4px 0 0" }}>İşlemler</th>
             </tr>
           </thead>
           <tbody>
             {sepet.map((satir, index) => (
-              <tr key={index} style={{ borderBottom: "1px solid #e2e8f0", backgroundColor: index % 2 === 0 ? "#ffffff" : "#f8fafc" }}>
-                <td style={{ padding: "12px 16px", fontWeight: "500", color: "#1e293b" }}>{satir.urunAciklamasi}</td>
-                <td style={{ padding: "12px 16px", color: "#64748b" }}>{satir.ozelAciklama || "-"}</td>
-                <td style={{ padding: "12px 16px", color: "#334155", fontWeight: "500" }}>{satir.miktarDetay}</td>
-                <td style={{ padding: "12px 16px", color: "#475569" }}>%{satir.kdvOrani}</td>
-                <td style={{ padding: "12px 16px", fontWeight: "700", color: "#0f2942" }}>
+              <tr key={index} style={{ borderBottom: "1px solid #e2e8f0", backgroundColor: index % 2 === 0 ? "white" : "#f8fafc" }}>
+                <td style={{ padding: "10px", fontWeight: "600", color: "#1e293b" }}>
+                  {satir.urunAciklamasi}
+                </td>
+                <td style={{ padding: "10px", color: "#64748b", fontSize: "12px" }}>
+                  {satir.ozelAciklama || "-"}
+                </td>
+                <td style={{ padding: "10px", textAlign: "center", color: "#334155" }}>
+                  {satir.miktarDetay}
+                </td>
+                <td style={{ padding: "10px", textAlign: "center" }}>
+                  %{satir.kdvOrani}
+                </td>
+                <td style={{ padding: "10px", textAlign: "right", fontWeight: "700", color: "#0f2942" }}>
                   {paraFormatla(satir.toplamTutar, satir.paraBirimi)}
                 </td>
-                <td style={{ padding: "12px 16px", textAlign: "center", whiteSpace: "nowrap" }}>
-                  <div style={{ display: "inline-flex", gap: "6px", justifyContent: "center" }}>
-                    <button 
-                      onClick={() => onDuzenle(index, satir)}
-                      style={{ backgroundColor: "#1e3a8a", color: "white", border: "none", padding: "5px 10px", borderRadius: "4px", cursor: "pointer", fontSize: "12px", fontWeight: "500" }}
-                    >
-                      Düzenle
-                    </button>
-                    <button 
-                      onClick={() => onTekrarEt(satir)}
-                      style={{ backgroundColor: "#334155", color: "white", border: "none", padding: "5px 10px", borderRadius: "4px", cursor: "pointer", fontSize: "12px", fontWeight: "500" }}
-                    >
-                      Tekrar
-                    </button>
-                    <button 
-                      onClick={() => onSil(index)}
-                      style={{ backgroundColor: "#991b1b", color: "white", border: "none", padding: "5px 10px", borderRadius: "4px", cursor: "pointer", fontSize: "12px", fontWeight: "500" }}
-                    >
-                      Sil
-                    </button>
+                <td style={{ padding: "10px", textAlign: "center" }}>
+                  <div style={{ display: "flex", gap: "4px", justifyContent: "center" }}>
+                    {onDuzenle && (
+                      <button
+                        type="button"
+                        onClick={() => onDuzenle(index, satir)}
+                        style={{ backgroundColor: "#1e40af", color: "white", border: "none", padding: "4px 8px", borderRadius: "4px", fontSize: "11px", cursor: "pointer" }}
+                      >
+                        Düzenle
+                      </button>
+                    )}
+                    {onTekrarEt && (
+                      <button
+                        type="button"
+                        onClick={() => onTekrarEt(satir)}
+                        style={{ backgroundColor: "#334155", color: "white", border: "none", padding: "4px 8px", borderRadius: "4px", fontSize: "11px", cursor: "pointer" }}
+                      >
+                        Tekrar
+                      </button>
+                    )}
+                    {onSil && (
+                      <button
+                        type="button"
+                        onClick={() => onSil(index)}
+                        style={{ backgroundColor: "#991b1b", color: "white", border: "none", padding: "4px 8px", borderRadius: "4px", fontSize: "11px", cursor: "pointer" }}
+                      >
+                        Sil
+                      </button>
+                    )}
                   </div>
                 </td>
               </tr>
@@ -73,19 +210,19 @@ export default function SepetTablosu({ sepet, onTemizle, onSil, onDuzenle, onTek
         </table>
       </div>
 
-      {/* KURUMSAL TOPLAM ALANI */}
-      <div style={{ marginTop: "15px", padding: "20px 24px", backgroundColor: "#f8fafc", borderRadius: "8px", border: "1px solid #cbd5e1", display: "flex", flexDirection: "column", gap: "10px", alignItems: "flex-end", boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }}>
+      {/* TOPLAM ALANI */}
+      <div style={{ marginTop: "15px", paddingTop: "10px", borderTop: "2px solid #0f2942", display: "flex", justifyContent: "flex-end", gap: "20px", flexWrap: "wrap", fontSize: "13px" }}>
         {Object.entries(genelToplamlar).map(([paraBirimi, tutar]) => {
           const kdvTutar = genelKdvler[paraBirimi] || 0;
           const kdvDahilToplam = tutar + kdvTutar;
 
           return (
-            <div key={paraBirimi} style={{ textAlign: "right", fontSize: "16px", color: "#334155", fontWeight: "600" }}>
-              <span>Ara Toplam ({paraBirimi}): {paraFormatla(tutar, paraBirimi)} + KDV</span>
-              <span style={{ margin: "0 15px", color: "#cbd5e1" }}>|</span>
-              <span>KDV: {paraFormatla(kdvTutar, paraBirimi)}</span>
-              <span style={{ margin: "0 15px", color: "#cbd5e1" }}>|</span>
-              <span style={{ fontSize: "19px", color: "#0f2942", fontWeight: "700" }}>KDV Dahil Toplam: {paraFormatla(kdvDahilToplam, paraBirimi)}</span>
+            <div key={paraBirimi} style={{ textAlign: "right" }}>
+              <span>Ara Toplam ({paraBirimi}): <strong>{paraFormatla(tutar, paraBirimi)} + KDV</strong></span>
+              <span style={{ margin: "0 10px", color: "#cbd5e1" }}>|</span>
+              <span>KDV: <strong>{paraFormatla(kdvTutar, paraBirimi)}</strong></span>
+              <span style={{ margin: "0 10px", color: "#cbd5e1" }}>|</span>
+              <span style={{ fontSize: "15px", color: "#0f2942" }}>KDV Dahil Toplam: <strong>{paraFormatla(kdvDahilToplam, paraBirimi)}</strong></span>
             </div>
           );
         })}
