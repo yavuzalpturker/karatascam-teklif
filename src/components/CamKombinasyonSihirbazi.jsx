@@ -27,66 +27,126 @@ const GAZ_TIPLERI = ["Hava", "Argon Gazı", "Kripton Gazı"];
 const PVB_TURLERI = [
   "Şeffaf PVB (0.38)", "Şeffaf PVB (0.76)", "Şeffaf PVB (1.52)", 
   "Akustik PVB (0.38)", "Akustik PVB (0.76)", "Opak PVB", "Füme PVB", "Bronz PVB", 
-  "Vanceva Renkli PVB", "SentryGlas (SG Ionoplast)"
+  "Vanceva Renkli PVB", "Mesh PVB (Metal Fileli)", "SentryGlas (SG Ionoplast)"
 ];
 
-// --- BÜYÜTÜLMÜŞ VE GENİŞLETİLMİŞ CAM KATMANI BİLEŞENİ ---
+// --- HER CAM KATMANI İÇİN ÖZEL İŞLEM SEÇİCİ BİLEŞEN ---
+const CamIslemleriPaneli = ({ kenar, setKenar, temper, setTemper, delik, setDelik, oygu, setOygu }) => (
+  <div style={{ marginTop: "8px", paddingTop: "8px", borderTop: "1px dashed #cbd5e1", display: "grid", gridTemplateColumns: "1fr 1fr", gap: "6px" }}>
+    <div>
+      <label style={{ display: "block", fontSize: "10px", fontWeight: "700", color: "#475569", marginBottom: "2px" }}>Kenar İşlemi</label>
+      <select value={kenar} onChange={e => setKenar(e.target.value)} style={{ width: "100%", padding: "4px", borderRadius: "4px", border: "1px solid #cbd5e1", fontSize: "11px", color: "#1e293b" }}>
+        <option>Düz Kesim (İşlemsiz)</option>
+        <option>Rodajlı</option>
+        <option>Bizoteli</option>
+        <option>Pahlı</option>
+      </select>
+    </div>
+    <div>
+      <label style={{ display: "block", fontSize: "10px", fontWeight: "700", color: "#475569", marginBottom: "2px" }}>Temper İşlemi</label>
+      <select value={temper} onChange={e => setTemper(e.target.value)} style={{ width: "100%", padding: "4px", borderRadius: "4px", border: "1px solid #cbd5e1", fontSize: "11px", color: "#1e293b" }}>
+        <option>Tempersiz</option>
+        <option>Temperli</option>
+        <option>Yarı Temperli</option>
+        <option>Bombeli Temperli</option>
+      </select>
+    </div>
+    <div>
+      <label style={{ display: "block", fontSize: "10px", fontWeight: "700", color: "#475569", marginBottom: "2px" }}>Delik İşlemi</label>
+      <select value={delik} onChange={e => setDelik(e.target.value)} style={{ width: "100%", padding: "4px", borderRadius: "4px", border: "1px solid #cbd5e1", fontSize: "11px", color: "#1e293b" }}>
+        <option>Delik Yok</option>
+        <option>Delik Var</option>
+      </select>
+    </div>
+    <div>
+      <label style={{ display: "block", fontSize: "10px", fontWeight: "700", color: "#475569", marginBottom: "2px" }}>Oygu İşlemi</label>
+      <select value={oygu} onChange={e => setOygu(e.target.value)} style={{ width: "100%", padding: "4px", borderRadius: "4px", border: "1px solid #cbd5e1", fontSize: "11px", color: "#1e293b" }}>
+        <option>Oygu Yok</option>
+        <option>Oygu Var</option>
+      </select>
+    </div>
+  </div>
+);
+
+// --- CAM KATMANI BİLEŞENİ (ÖZEL İŞLEMLER DÂHİL) ---
 const CamKatmaniSecici = ({ 
   title, bgColor, borderColor, 
   tip, setTip, kalinlik, setKalinlik, 
   lamK1, setLamK1, lamK2, setLamK2, lamPVB, setLamPVB, 
-  renk, setRenk, kaplama, setKaplama 
+  renk, setRenk, kaplama, setKaplama,
+  kenar, setKenar, temper, setTemper, delik, setDelik, oygu, setOygu
 }) => (
-  <div style={{ flex: 3, minWidth: "280px", padding: "12px", backgroundColor: bgColor, borderRadius: "8px", border: `1px solid ${borderColor}` }}>
+  <div style={{ flex: 3, minWidth: "270px", padding: "12px", backgroundColor: bgColor, borderRadius: "8px", border: `1px solid ${borderColor}` }}>
     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
       <label style={{ fontSize: "13px", fontWeight: "700", color: "#0f2942" }}>{title}</label>
-      <select value={tip} onChange={e => setTip(e.target.value)} style={{ fontSize: "12px", padding: "5px 10px", borderRadius: "5px", border: "1px solid #cbd5e1", backgroundColor: tip === "lamine" ? "#e0f2fe" : "white", fontWeight: "bold", color: "#1e293b", cursor: "pointer" }}>
-        <option value="tek">Tek Cam</option>
-        <option value="lamine">Lamine Cam</option>
-      </select>
+      {setTip && (
+        <select value={tip} onChange={e => setTip(e.target.value)} style={{ fontSize: "11px", padding: "4px 8px", borderRadius: "4px", border: "1px solid #cbd5e1", backgroundColor: tip === "lamine" ? "#e0f2fe" : "white", fontWeight: "bold", color: "#1e293b", cursor: "pointer" }}>
+          <option value="tek">Tek Cam</option>
+          <option value="lamine">Lamine Cam</option>
+        </select>
+      )}
     </div>
 
-    {tip === "tek" ? (
+    {tip === "tek" || !tip ? (
       <div style={{ display: "flex", gap: "6px", marginBottom: "8px" }}>
-        <select value={kalinlik} onChange={(e) => setKalinlik(e.target.value)} style={{ flex: 1, padding: "8px", borderRadius: "5px", border: "1px solid #cbd5e1", fontSize: "13px", color: "#1e293b" }}>{KALINLIKLAR.map(k => <option key={k} value={k}>{k}</option>)}</select>
-        <select value={renk} onChange={(e) => setRenk(e.target.value)} style={{ flex: 2, padding: "8px", borderRadius: "5px", border: "1px solid #cbd5e1", fontSize: "13px", color: "#1e293b" }}>{CAM_RENKLERI.map(r => <option key={r} value={r}>{r}</option>)}</select>
+        <select value={kalinlik} onChange={(e) => setKalinlik(e.target.value)} style={{ flex: 1, padding: "7px", borderRadius: "5px", border: "1px solid #cbd5e1", fontSize: "12px", color: "#1e293b" }}>{KALINLIKLAR.map(k => <option key={k} value={k}>{k}</option>)}</select>
+        <select value={renk} onChange={(e) => setRenk(e.target.value)} style={{ flex: 2, padding: "7px", borderRadius: "5px", border: "1px solid #cbd5e1", fontSize: "12px", color: "#1e293b" }}>{CAM_RENKLERI.map(r => <option key={r} value={r}>{r}</option>)}</select>
       </div>
     ) : (
       <div style={{ display: "flex", flexDirection: "column", gap: "6px", marginBottom: "8px" }}>
         <div style={{ display: "flex", gap: "6px", alignItems: "center" }}>
-          <select value={lamK1} onChange={(e) => setLamK1(e.target.value)} style={{ flex: 1, padding: "8px", borderRadius: "5px", border: "1px solid #cbd5e1", fontSize: "13px", color: "#1e293b" }}>{KALINLIKLAR.map(k => <option key={k} value={k}>{k}</option>)}</select>
-          <span style={{ fontWeight: "bold", color: "#64748b", fontSize: "16px" }}>+</span>
-          <select value={lamK2} onChange={(e) => setLamK2(e.target.value)} style={{ flex: 1, padding: "8px", borderRadius: "5px", border: "1px solid #cbd5e1", fontSize: "13px", color: "#1e293b" }}>{KALINLIKLAR.map(k => <option key={k} value={k}>{k}</option>)}</select>
+          <select value={lamK1} onChange={(e) => setLamK1(e.target.value)} style={{ flex: 1, padding: "7px", borderRadius: "5px", border: "1px solid #cbd5e1", fontSize: "12px", color: "#1e293b" }}>{KALINLIKLAR.map(k => <option key={k} value={k}>{k}</option>)}</select>
+          <span style={{ fontWeight: "bold", color: "#64748b", fontSize: "14px" }}>+</span>
+          <select value={lamK2} onChange={(e) => setLamK2(e.target.value)} style={{ flex: 1, padding: "7px", borderRadius: "5px", border: "1px solid #cbd5e1", fontSize: "12px", color: "#1e293b" }}>{KALINLIKLAR.map(k => <option key={k} value={k}>{k}</option>)}</select>
         </div>
-        <select value={lamPVB} onChange={(e) => setLamPVB(e.target.value)} style={{ width: "100%", padding: "8px", borderRadius: "5px", border: "1px solid #cbd5e1", fontSize: "12px", color: "#1e293b" }}>{PVB_TURLERI.map(p => <option key={p} value={p}>{p}</option>)}</select>
-        <select value={renk} onChange={(e) => setRenk(e.target.value)} style={{ width: "100%", padding: "8px", borderRadius: "5px", border: "1px solid #cbd5e1", fontSize: "12px", color: "#1e293b" }}>{CAM_RENKLERI.map(r => <option key={r} value={r}>{r}</option>)}</select>
+        <select value={lamPVB} onChange={(e) => setLamPVB(e.target.value)} style={{ width: "100%", padding: "6px", borderRadius: "5px", border: "1px solid #cbd5e1", fontSize: "11px", color: "#1e293b" }}>{PVB_TURLERI.map(p => <option key={p} value={p}>{p}</option>)}</select>
+        <select value={renk} onChange={(e) => setRenk(e.target.value)} style={{ width: "100%", padding: "6px", borderRadius: "5px", border: "1px solid #cbd5e1", fontSize: "11px", color: "#1e293b" }}>{CAM_RENKLERI.map(r => <option key={r} value={r}>{r}</option>)}</select>
       </div>
     )}
-    <select value={kaplama} onChange={(e) => setKaplama(e.target.value)} style={{ width: "100%", padding: "8px", borderRadius: "5px", border: "1px solid #cbd5e1", fontSize: "13px", color: "#1e293b" }}>{KAPLAMA_TURLERI.map(kp => <option key={kp} value={kp}>{kp}</option>)}</select>
+    <select value={kaplama} onChange={(e) => setKaplama(e.target.value)} style={{ width: "100%", padding: "7px", borderRadius: "5px", border: "1px solid #cbd5e1", fontSize: "12px", color: "#1e293b" }}>{KAPLAMA_TURLERI.map(kp => <option key={kp} value={kp}>{kp}</option>)}</select>
+
+    {/* HER CAM İÇİN AYRI İŞLEM ALANI */}
+    <CamIslemleriPaneli 
+      kenar={kenar} setKenar={setKenar} 
+      temper={temper} setTemper={setTemper} 
+      delik={delik} setDelik={setDelik} 
+      oygu={oygu} setOygu={setOygu} 
+    />
   </div>
 );
-
 
 export default function CamKombinasyonSihirbazi({ onKombinasyonSec }) {
   const [camTuru, setCamTuru] = useState("isicam");
 
-  const [kenarIslemi, setKenarIslemi] = useState("Düz Kesim (İşlemsiz)");
-  const [temperIslemi, setTemperIslemi] = useState("Tempersiz");
-  const [delikIslemi, setDelikIslemi] = useState("Delik Yok");
-  const [oyguIslemi, setOyguIslemi] = useState("Oygu Yok");
-
+  // --- 1. TEK CAM STATE'LERİ ---
   const [tekCamKalinlik, setTekCamKalinlik] = useState("6 mm");
   const [tekCamRenk, setTekCamRenk] = useState("Clear (Şeffaf)");
   const [tekCamKaplama, setTekCamKaplama] = useState("Kaplamasız (Düzcam)");
+  const [tekKenar, setTekKenar] = useState("Düz Kesim (İşlemsiz)");
+  const [tekTemper, setTekTemper] = useState("Tempersiz");
+  const [tekDelik, setTekDelik] = useState("Delik Yok");
+  const [tekOygu, setTekOygu] = useState("Oygu Yok");
 
-  const [lamineCam1Kalinlik, setLamineCam1Kalinlik] = useState("4 mm");
-  const [lamineCam1Renk, setLamineCam1Renk] = useState("Clear (Şeffaf)");
-  const [lamineCam1Kaplama, setLamineCam1Kaplama] = useState("Kaplamasız (Düzcam)");
+  // --- 2. LAMİNE CAM STATE'LERİ ---
+  const [lam1Kalinlik, setLam1Kalinlik] = useState("4 mm");
+  const [lam1Renk, setLam1Renk] = useState("Clear (Şeffaf)");
+  const [lam1Kaplama, setLam1Kaplama] = useState("Kaplamasız (Düzcam)");
+  const [lam1Kenar, setLam1Kenar] = useState("Düz Kesim (İşlemsiz)");
+  const [lam1Temper, setLam1Temper] = useState("Tempersiz");
+  const [lam1Delik, setLam1Delik] = useState("Delik Yok");
+  const [lam1Oygu, setLam1Oygu] = useState("Oygu Yok");
+
   const [pvbTuru, setPvbTuru] = useState("Şeffaf PVB (0.38)");
-  const [lamineCam2Kalinlik, setLamineCam2Kalinlik] = useState("4 mm");
-  const [lamineCam2Renk, setLamineCam2Renk] = useState("Clear (Şeffaf)");
-  const [lamineCam2Kaplama, setLamineCam2Kaplama] = useState("Kaplamasız (Düzcam)");
 
+  const [lam2Kalinlik, setLam2Kalinlik] = useState("4 mm");
+  const [lam2Renk, setLam2Renk] = useState("Clear (Şeffaf)");
+  const [lam2Kaplama, setLam2Kaplama] = useState("Kaplamasız (Düzcam)");
+  const [lam2Kenar, setLam2Kenar] = useState("Düz Kesim (İşlemsiz)");
+  const [lam2Temper, setLam2Temper] = useState("Tempersiz");
+  const [lam2Delik, setLam2Delik] = useState("Delik Yok");
+  const [lam2Oygu, setLam2Oygu] = useState("Oygu Yok");
+
+  // --- 3. ISICAM (ÇİFT CAM) STATE'LERİ ---
   const [disCamTipi, setDisCamTipi] = useState("tek");
   const [disCamKalinlik, setDisCamKalinlik] = useState("4 mm");
   const [disCamLamK1, setDisCamLamK1] = useState("4 mm");
@@ -94,6 +154,10 @@ export default function CamKombinasyonSihirbazi({ onKombinasyonSec }) {
   const [disCamLamPVB, setDisCamLamPVB] = useState("Şeffaf PVB (0.38)");
   const [disCamRenk, setDisCamRenk] = useState("Clear (Şeffaf)");
   const [disCamKaplama, setDisCamKaplama] = useState("Duosol T 70");
+  const [disKenar, setDisKenar] = useState("Düz Kesim (İşlemsiz)");
+  const [disTemper, setDisTemper] = useState("Tempersiz");
+  const [disDelik, setDisDelik] = useState("Delik Yok");
+  const [disOygu, setDisOygu] = useState("Oygu Yok");
 
   const [citaKalinlik, setCitaKalinlik] = useState("20 mm");
   const [citaTipi, setCitaTipi] = useState("Warm Edge (Sıcak Kenar Çıta)");
@@ -106,7 +170,12 @@ export default function CamKombinasyonSihirbazi({ onKombinasyonSec }) {
   const [icCamLamPVB, setIcCamLamPVB] = useState("Şeffaf PVB (0.38)");
   const [icCamRenk, setIcCamRenk] = useState("Clear (Şeffaf)");
   const [icCamKaplama, setIcCamKaplama] = useState("Kaplamasız (Düzcam)");
+  const [icKenar, setIcKenar] = useState("Düz Kesim (İşlemsiz)");
+  const [icTemper, setIcTemper] = useState("Tempersiz");
+  const [icDelik, setIcDelik] = useState("Delik Yok");
+  const [icOygu, setIcOygu] = useState("Oygu Yok");
 
+  // --- 4. ÜÇLÜ ISICAM STATE'LERİ ---
   const [uDisCamTipi, setUDisCamTipi] = useState("tek");
   const [uDisCamKalinlik, setUDisCamKalinlik] = useState("4 mm");
   const [uDisLamK1, setUDisLamK1] = useState("4 mm");
@@ -114,6 +183,10 @@ export default function CamKombinasyonSihirbazi({ onKombinasyonSec }) {
   const [uDisLamPVB, setUDisLamPVB] = useState("Şeffaf PVB (0.38)");
   const [uDisCamRenk, setUDisCamRenk] = useState("Clear (Şeffaf)");
   const [uDisCamKaplama, setUDisCamKaplama] = useState("Duosol T 70");
+  const [uDisKenar, setUDisKenar] = useState("Düz Kesim (İşlemsiz)");
+  const [uDisTemper, setUDisTemper] = useState("Tempersiz");
+  const [uDisDelik, setUDisDelik] = useState("Delik Yok");
+  const [uDisOygu, setUDisOygu] = useState("Oygu Yok");
 
   const [uCita1Kalinlik, setUCita1Kalinlik] = useState("16 mm");
   const [uCita1Tipi, setUCita1Tipi] = useState("Warm Edge (Sıcak Kenar Çıta)");
@@ -126,6 +199,10 @@ export default function CamKombinasyonSihirbazi({ onKombinasyonSec }) {
   const [uOrtaLamPVB, setUOrtaLamPVB] = useState("Şeffaf PVB (0.38)");
   const [uOrtaCamRenk, setUOrtaCamRenk] = useState("Clear (Şeffaf)");
   const [uOrtaCamKaplama, setUOrtaCamKaplama] = useState("Kaplamasız (Düzcam)");
+  const [uOrtaKenar, setUOrtaKenar] = useState("Düz Kesim (İşlemsiz)");
+  const [uOrtaTemper, setUOrtaTemper] = useState("Tempersiz");
+  const [uOrtaDelik, setUOrtaDelik] = useState("Delik Yok");
+  const [uOrtaOygu, setUOrtaOygu] = useState("Oygu Yok");
 
   const [uCita2Kalinlik, setUCita2Kalinlik] = useState("16 mm");
   const [uCita2Tipi, setUCita2Tipi] = useState("Warm Edge (Sıcak Kenar Çıta)");
@@ -138,78 +215,80 @@ export default function CamKombinasyonSihirbazi({ onKombinasyonSec }) {
   const [uIcLamPVB, setUIcLamPVB] = useState("Şeffaf PVB (0.38)");
   const [uIcCamRenk, setUIcCamRenk] = useState("Clear (Şeffaf)");
   const [uIcCamKaplama, setUIcCamKaplama] = useState("Climax T 71");
+  const [uIcKenar, setUIcKenar] = useState("Düz Kesim (İşlemsiz)");
+  const [uIcTemper, setUIcTemper] = useState("Tempersiz");
+  const [uIcDelik, setUIcDelik] = useState("Delik Yok");
+  const [uIcOygu, setUIcOygu] = useState("Oygu Yok");
 
   const [olusturulanIsim, setOlusturulanIsim] = useState("");
 
-  const formatPane = (tip, kal, lamK1, lamK2, pvb, renk, kap) => {
+  // Cam Katmanı ve İşlemlerini Metne Çevirici
+  const formatPane = (tip, kal, lamK1, lamK2, pvb, renk, kap, kenar, temper, delik, oygu) => {
     const kapStr = kap !== "Kaplamasız (Düzcam)" ? ` ${kap}` : "";
+    let base = "";
     if (tip === "lamine") {
       const l1 = lamK1.replace(" mm", "");
       const l2 = lamK2.replace(" mm", "");
-      return `${l1}+${l2} mm ${renk} Lamine (${pvb})${kapStr}`;
+      base = `${l1}+${l2} mm ${renk} Lamine (${pvb})${kapStr}`;
+    } else {
+      base = `${kal} ${renk}${kapStr}`;
     }
-    return `${kal} ${renk}${kapStr}`;
+
+    let islemList = [];
+    if (kenar && kenar !== "Düz Kesim (İşlemsiz)") islemList.push(kenar);
+    if (temper && temper !== "Tempersiz") islemList.push(temper);
+    if (delik === "Delik Var") islemList.push("Delikli");
+    if (oygu === "Oygu Var") islemList.push("Oygulu");
+
+    if (islemList.length > 0) {
+      base += ` [ ${islemList.join(" - ")} ]`;
+    }
+
+    return base;
   };
 
   useEffect(() => {
     let isim = "";
 
     if (camTuru === "tek") {
-      const kaplamaYazisi = tekCamKaplama !== "Kaplamasız (Düzcam)" ? ` ${tekCamKaplama}` : "";
-      isim = `${tekCamKalinlik} ${tekCamRenk}${kaplamaYazisi} CAM`;
+      isim = formatPane("tek", tekCamKalinlik, "", "", "", tekCamRenk, tekCamKaplama, tekKenar, tekTemper, tekDelik, tekOygu) + " CAM";
     } 
     else if (camTuru === "lamine") {
-      const kaplama1 = lamineCam1Kaplama !== "Kaplamasız (Düzcam)" ? ` ${lamineCam1Kaplama}` : "";
-      const kaplama2 = lamineCam2Kaplama !== "Kaplamasız (Düzcam)" ? ` ${lamineCam2Kaplama}` : "";
-      const k1 = lamineCam1Kalinlik.replace(" mm", "");
-      const k2 = lamineCam2Kalinlik.replace(" mm", "");
-
-      if (lamineCam1Renk === lamineCam2Renk && kaplama1 === "" && kaplama2 === "") {
-        isim = `${k1}+${k2} mm ${lamineCam1Renk} LAMİNE CAM (${pvbTuru})`;
-      } else {
-        isim = `(${k1}mm ${lamineCam1Renk}${kaplama1}) + (${pvbTuru}) + (${k2}mm ${lamineCam2Renk}${kaplama2}) LAMİNE CAM`;
-      }
+      const cam1Str = formatPane("tek", lam1Kalinlik, "", "", "", lam1Renk, lam1Kaplama, lam1Kenar, lam1Temper, lam1Delik, lam1Oygu);
+      const cam2Str = formatPane("tek", lam2Kalinlik, "", "", "", lam2Renk, lam2Kaplama, lam2Kenar, lam2Temper, lam2Delik, lam2Oygu);
+      isim = `(${cam1Str}) + (${pvbTuru}) + (${cam2Str}) LAMİNE CAM`;
     } 
     else if (camTuru === "isicam") {
-      const disCamStr = formatPane(disCamTipi, disCamKalinlik, disCamLamK1, disCamLamK2, disCamLamPVB, disCamRenk, disCamKaplama);
-      const icCamStr = formatPane(icCamTipi, icCamKalinlik, icCamLamK1, icCamLamK2, icCamLamPVB, icCamRenk, icCamKaplama);
+      const disCamStr = formatPane(disCamTipi, disCamKalinlik, disCamLamK1, disCamLamK2, disCamLamPVB, disCamRenk, disCamKaplama, disKenar, disTemper, disDelik, disOygu);
+      const icCamStr = formatPane(icCamTipi, icCamKalinlik, icCamLamK1, icCamLamK2, icCamLamPVB, icCamRenk, icCamKaplama, icKenar, icTemper, icDelik, icOygu);
       const boslukStr = `${citaKalinlik} ${citaTipi} (${gazTipi})`;
 
       isim = `(${disCamStr}) + (${boslukStr}) + (${icCamStr}) ISICAM`;
     }
     else if (camTuru === "ucIliIsicam") {
-      const disCamStr = formatPane(uDisCamTipi, uDisCamKalinlik, uDisLamK1, uDisLamK2, uDisLamPVB, uDisCamRenk, uDisCamKaplama);
-      const ortaCamStr = formatPane(uOrtaCamTipi, uOrtaCamKalinlik, uOrtaLamK1, uOrtaLamK2, uOrtaLamPVB, uOrtaCamRenk, uOrtaCamKaplama);
-      const icCamStr = formatPane(uIcCamTipi, uIcCamKalinlik, uIcLamK1, uIcLamK2, uIcLamPVB, uIcCamRenk, uIcCamKaplama);
+      const disCamStr = formatPane(uDisCamTipi, uDisCamKalinlik, uDisLamK1, uDisLamK2, uDisLamPVB, uDisCamRenk, uDisCamKaplama, uDisKenar, uDisTemper, uDisDelik, uDisOygu);
+      const ortaCamStr = formatPane(uOrtaCamTipi, uOrtaCamKalinlik, uOrtaLamK1, uOrtaLamK2, uOrtaLamPVB, uOrtaCamRenk, uOrtaCamKaplama, uOrtaKenar, uOrtaTemper, uOrtaDelik, uOrtaOygu);
+      const icCamStr = formatPane(uIcCamTipi, uIcCamKalinlik, uIcLamK1, uIcLamK2, uIcLamPVB, uIcCamRenk, uIcCamKaplama, uIcKenar, uIcTemper, uIcDelik, uIcOygu);
       const bosluk1Str = `${uCita1Kalinlik} ${uCita1Tipi} (${uGaz1Tipi})`;
       const bosluk2Str = `${uCita2Kalinlik} ${uCita2Tipi} (${uGaz2Tipi})`;
 
       isim = `(${disCamStr}) + (${bosluk1Str}) + (${ortaCamStr}) + (${bosluk2Str}) + (${icCamStr}) ÜÇLÜ ISICAM`;
     }
 
-    let islemEkleri = [];
-    if (kenarIslemi !== "Düz Kesim (İşlemsiz)") islemEkleri.push(kenarIslemi);
-    if (temperIslemi !== "Tempersiz") islemEkleri.push(temperIslemi);
-    if (delikIslemi === "Delik Var") islemEkleri.push("Delikli");
-    if (oyguIslemi === "Oygu Var") islemEkleri.push("Oygulu");
-
-    if (islemEkleri.length > 0) {
-      isim = `${isim} [ ${islemEkleri.join(" - ")} ]`;
-    }
-
     setOlusturulanIsim(isim);
   }, [
-    camTuru, tekCamKalinlik, tekCamRenk, tekCamKaplama,
-    lamineCam1Kalinlik, lamineCam1Renk, lamineCam1Kaplama, pvbTuru, lamineCam2Kalinlik, lamineCam2Renk, lamineCam2Kaplama,
-    disCamTipi, disCamKalinlik, disCamLamK1, disCamLamK2, disCamLamPVB, disCamRenk, disCamKaplama,
+    camTuru, 
+    tekCamKalinlik, tekCamRenk, tekCamKaplama, tekKenar, tekTemper, tekDelik, tekOygu,
+    lam1Kalinlik, lam1Renk, lam1Kaplama, lam1Kenar, lam1Temper, lam1Delik, lam1Oygu, pvbTuru,
+    lam2Kalinlik, lam2Renk, lam2Kaplama, lam2Kenar, lam2Temper, lam2Delik, lam2Oygu,
+    disCamTipi, disCamKalinlik, disCamLamK1, disCamLamK2, disCamLamPVB, disCamRenk, disCamKaplama, disKenar, disTemper, disDelik, disOygu,
     citaKalinlik, citaTipi, gazTipi,
-    icCamTipi, icCamKalinlik, icCamLamK1, icCamLamK2, icCamLamPVB, icCamRenk, icCamKaplama,
-    uDisCamTipi, uDisCamKalinlik, uDisLamK1, uDisLamK2, uDisLamPVB, uDisCamRenk, uDisCamKaplama,
+    icCamTipi, icCamKalinlik, icCamLamK1, icCamLamK2, icCamLamPVB, icCamRenk, icCamKaplama, icKenar, icTemper, icDelik, icOygu,
+    uDisCamTipi, uDisCamKalinlik, uDisLamK1, uDisLamK2, uDisLamPVB, uDisCamRenk, uDisCamKaplama, uDisKenar, uDisTemper, uDisDelik, uDisOygu,
     uCita1Kalinlik, uCita1Tipi, uGaz1Tipi,
-    uOrtaCamTipi, uOrtaCamKalinlik, uOrtaLamK1, uOrtaLamK2, uOrtaLamPVB, uOrtaCamRenk, uOrtaCamKaplama,
+    uOrtaCamTipi, uOrtaCamKalinlik, uOrtaLamK1, uOrtaLamK2, uOrtaLamPVB, uOrtaCamRenk, uOrtaCamKaplama, uOrtaKenar, uOrtaTemper, uOrtaDelik, uOrtaOygu,
     uCita2Kalinlik, uCita2Tipi, uGaz2Tipi,
-    uIcCamTipi, uIcCamKalinlik, uIcLamK1, uIcLamK2, uIcLamPVB, uIcCamRenk, uIcCamKaplama,
-    kenarIslemi, temperIslemi, delikIslemi, oyguIslemi
+    uIcCamTipi, uIcCamKalinlik, uIcLamK1, uIcLamK2, uIcLamPVB, uIcCamRenk, uIcCamKaplama, uIcKenar, uIcTemper, uIcDelik, uIcOygu
   ]);
 
   const aktar = () => {
@@ -248,81 +327,58 @@ export default function CamKombinasyonSihirbazi({ onKombinasyonSec }) {
         ))}
       </div>
 
-      {/* KATMAN SEÇİMLERİ (GENİŞLETİLMİŞ) */}
-      <div style={{ display: "flex", flexWrap: "wrap", gap: "14px", alignItems: "flex-start", backgroundColor: "white", padding: "16px", borderRadius: "6px", border: "1px solid #e2e8f0" }}>
+      {/* KATMAN SEÇİMLERİ */}
+      <div style={{ display: "flex", flexWrap: "wrap", gap: "12px", alignItems: "stretch", backgroundColor: "white", padding: "14px", borderRadius: "6px", border: "1px solid #e2e8f0" }}>
         
         {/* 1. TEK CAM ALANI */}
         {camTuru === "tek" && (
-          <div style={{ display: "flex", gap: "10px", width: "100%", alignItems: "center" }}>
-            <div style={{ flex: 2 }}>
-              <label style={{ display: "block", fontSize: "12px", fontWeight: "700", color: "#475569", marginBottom: "6px" }}>Cam Kalınlığı</label>
-              <select value={tekCamKalinlik} onChange={(e) => setTekCamKalinlik(e.target.value)} style={{ width: "100%", padding: "9px", borderRadius: "5px", border: "1px solid #cbd5e1", color: "#1e293b", fontSize: "13px" }}>
-                {KALINLIKLAR.map(k => <option key={k} value={k}>{k}</option>)}
-              </select>
-            </div>
-            <div style={{ flex: 3 }}>
-              <label style={{ display: "block", fontSize: "12px", fontWeight: "700", color: "#475569", marginBottom: "6px" }}>Cam Rengi</label>
-              <select value={tekCamRenk} onChange={(e) => setTekCamRenk(e.target.value)} style={{ width: "100%", padding: "9px", borderRadius: "5px", border: "1px solid #cbd5e1", color: "#1e293b", fontSize: "13px" }}>
-                {CAM_RENKLERI.map(r => <option key={r} value={r}>{r}</option>)}
-              </select>
-            </div>
-            <div style={{ flex: 4 }}>
-              <label style={{ display: "block", fontSize: "12px", fontWeight: "700", color: "#475569", marginBottom: "6px" }}>Kaplama Tipi (Tüm Şişecam Serisi)</label>
-              <select value={tekCamKaplama} onChange={(e) => setTekCamKaplama(e.target.value)} style={{ width: "100%", padding: "9px", borderRadius: "5px", border: "1px solid #cbd5e1", color: "#1e293b", fontSize: "13px" }}>
-                {KAPLAMA_TURLERI.map(kp => <option key={kp} value={kp}>{kp}</option>)}
-              </select>
-            </div>
-          </div>
+          <CamKatmaniSecici 
+            title="Tek Cam Katmanı" bgColor="#f8fafc" borderColor="#e2e8f0"
+            kalinlik={tekCamKalinlik} setKalinlik={setTekCamKalinlik}
+            renk={tekCamRenk} setRenk={setTekCamRenk}
+            kaplama={tekCamKaplama} setKaplama={setTekCamKaplama}
+            kenar={tekKenar} setKenar={setTekKenar}
+            temper={tekTemper} setTemper={setTekTemper}
+            delik={tekDelik} setDelik={setTekDelik}
+            oygu={tekOygu} setOygu={setTekOygu}
+          />
         )}
 
-        {/* 2. LAMİNE CAM ALANI (YATAY GENİŞ, BÜYÜK VE FERAH) */}
+        {/* 2. LAMİNE CAM ALANI */}
         {camTuru === "lamine" && (
-          <div style={{ display: "flex", gap: "12px", width: "100%", alignItems: "center", flexWrap: "nowrap" }}>
-            
-            {/* 1. Dış Cam */}
-            <div style={{ flex: 4, padding: "12px", backgroundColor: "#f8fafc", borderRadius: "8px", border: "1px solid #cbd5e1" }}>
-              <label style={{ display: "block", fontSize: "12px", fontWeight: "700", color: "#0f2942", marginBottom: "8px" }}>1. Dış Cam Katmanı</label>
-              <div style={{ display: "flex", gap: "8px", marginBottom: "8px" }}>
-                <select value={lamineCam1Kalinlik} onChange={(e) => setLamineCam1Kalinlik(e.target.value)} style={{ flex: 1, padding: "8px", borderRadius: "5px", border: "1px solid #cbd5e1", fontSize: "13px", color: "#1e293b" }}>
-                  {KALINLIKLAR.map(k => <option key={k} value={k}>{k}</option>)}
-                </select>
-                <select value={lamineCam1Renk} onChange={(e) => setLamineCam1Renk(e.target.value)} style={{ flex: 2, padding: "8px", borderRadius: "5px", border: "1px solid #cbd5e1", fontSize: "13px", color: "#1e293b" }}>
-                  {CAM_RENKLERI.map(r => <option key={r} value={r}>{r}</option>)}
-                </select>
-              </div>
-              <select value={lamineCam1Kaplama} onChange={(e) => setLamineCam1Kaplama(e.target.value)} style={{ width: "100%", padding: "8px", borderRadius: "5px", border: "1px solid #cbd5e1", fontSize: "13px", color: "#1e293b" }}>
-                {KAPLAMA_TURLERI.map(kp => <option key={kp} value={kp}>{kp}</option>)}
-              </select>
-            </div>
+          <div style={{ display: "flex", gap: "10px", width: "100%", alignItems: "center", flexWrap: "nowrap" }}>
+            <CamKatmaniSecici 
+              title="1. Dış Cam Katmanı" bgColor="#f8fafc" borderColor="#cbd5e1"
+              kalinlik={lam1Kalinlik} setKalinlik={setLam1Kalinlik}
+              renk={lam1Renk} setRenk={setLam1Renk}
+              kaplama={lam1Kaplama} setKaplama={setLam1Kaplama}
+              kenar={lam1Kenar} setKenar={setLam1Kenar}
+              temper={lam1Temper} setTemper={setLam1Temper}
+              delik={lam1Delik} setDelik={setLam1Delik}
+              oygu={lam1Oygu} setOygu={setLam1Oygu}
+            />
 
-            <div style={{ fontWeight: "bold", color: "#64748b", fontSize: "20px" }}>+</div>
+            <div style={{ fontWeight: "bold", color: "#64748b", fontSize: "18px" }}>+</div>
 
-            {/* Ara Katman (PVB) */}
-            <div style={{ flex: 3, padding: "12px", backgroundColor: "#f1f5f9", borderRadius: "8px", border: "1px solid #cbd5e1" }}>
+            <div style={{ flex: 2, padding: "12px", backgroundColor: "#f1f5f9", borderRadius: "8px", border: "1px solid #cbd5e1", alignSelf: "stretch", display: "flex", flexDirection: "column", justifyContent: "center" }}>
               <label style={{ display: "block", fontSize: "12px", fontWeight: "700", color: "#334155", marginBottom: "8px" }}>Ara Katman (PVB Film)</label>
-              <select value={pvbTuru} onChange={(e) => setPvbTuru(e.target.value)} style={{ width: "100%", padding: "14px 8px", borderRadius: "5px", border: "1px solid #cbd5e1", fontSize: "13px", color: "#1e293b" }}>
+              <select value={pvbTuru} onChange={(e) => setPvbTuru(e.target.value)} style={{ width: "100%", padding: "10px", borderRadius: "5px", border: "1px solid #cbd5e1", fontSize: "12px", color: "#1e293b" }}>
                 {PVB_TURLERI.map(p => <option key={p} value={p}>{p}</option>)}
               </select>
             </div>
 
-            <div style={{ fontWeight: "bold", color: "#64748b", fontSize: "20px" }}>+</div>
+            <div style={{ fontWeight: "bold", color: "#64748b", fontSize: "18px" }}>+</div>
 
-            {/* 2. İç Cam */}
-            <div style={{ flex: 4, padding: "12px", backgroundColor: "#f8fafc", borderRadius: "8px", border: "1px solid #cbd5e1" }}>
-              <label style={{ display: "block", fontSize: "12px", fontWeight: "700", color: "#0f2942", marginBottom: "8px" }}>2. İç Cam Katmanı</label>
-              <div style={{ display: "flex", gap: "8px", marginBottom: "8px" }}>
-                <select value={lamineCam2Kalinlik} onChange={(e) => setLamineCam2Kalinlik(e.target.value)} style={{ flex: 1, padding: "8px", borderRadius: "5px", border: "1px solid #cbd5e1", fontSize: "13px", color: "#1e293b" }}>
-                  {KALINLIKLAR.map(k => <option key={k} value={k}>{k}</option>)}
-                </select>
-                <select value={lamineCam2Renk} onChange={(e) => setLamineCam2Renk(e.target.value)} style={{ flex: 2, padding: "8px", borderRadius: "5px", border: "1px solid #cbd5e1", fontSize: "13px", color: "#1e293b" }}>
-                  {CAM_RENKLERI.map(r => <option key={r} value={r}>{r}</option>)}
-                </select>
-              </div>
-              <select value={lamineCam2Kaplama} onChange={(e) => setLamineCam2Kaplama(e.target.value)} style={{ width: "100%", padding: "8px", borderRadius: "5px", border: "1px solid #cbd5e1", fontSize: "13px", color: "#1e293b" }}>
-                {KAPLAMA_TURLERI.map(kp => <option key={kp} value={kp}>{kp}</option>)}
-              </select>
-            </div>
-
+            <CamKatmaniSecici 
+              title="2. İç Cam Katmanı" bgColor="#f8fafc" borderColor="#cbd5e1"
+              kalinlik={lam2Kalinlik} setKalinlik={setLam2Kalinlik}
+              renk={lam2Renk} setRenk={setLam2Renk}
+              kaplama={lam2Kaplama} setKaplama={setLam2Kaplama}
+              kenar={lam2Kenar} setKenar={setLam2Kenar}
+              temper={lam2Temper} setTemper={setLam2Temper}
+              delik={lam2Delik} setDelik={setLam2Delik}
+              oygu={lam2Oygu} setOygu={setLam2Oygu}
+            />
           </div>
         )}
 
@@ -334,21 +390,23 @@ export default function CamKombinasyonSihirbazi({ onKombinasyonSec }) {
               tip={disCamTipi} setTip={setDisCamTipi} kalinlik={disCamKalinlik} setKalinlik={setDisCamKalinlik}
               lamK1={disCamLamK1} setLamK1={setDisCamLamK1} lamK2={disCamLamK2} setLamK2={setDisCamLamK2} lamPVB={disCamLamPVB} setLamPVB={setDisCamLamPVB}
               renk={disCamRenk} setRenk={setDisCamRenk} kaplama={disCamKaplama} setKaplama={setDisCamKaplama}
+              kenar={disKenar} setKenar={setDisKenar} temper={disTemper} setTemper={setDisTemper}
+              delik={disDelik} setDelik={setDisDelik} oygu={disOygu} setOygu={setDisOygu}
             />
             
             <div style={{ fontWeight: "bold", color: "#94a3b8", fontSize: "18px" }}>+</div>
             
-            <div style={{ flex: 2, padding: "10px", backgroundColor: "#f1f5f9", borderRadius: "8px", border: "1px solid #cbd5e1" }}>
+            <div style={{ flex: 2, padding: "10px", backgroundColor: "#f1f5f9", borderRadius: "8px", border: "1px solid #cbd5e1", alignSelf: "stretch", display: "flex", flexDirection: "column", justifyContent: "center" }}>
               <label style={{ display: "block", fontSize: "12px", fontWeight: "700", color: "#334155", marginBottom: "6px" }}>Ara Boşluk & Çıta</label>
               <div style={{ display: "flex", gap: "6px", marginBottom: "6px" }}>
-                <select value={citaKalinlik} onChange={(e) => setCitaKalinlik(e.target.value)} style={{ flex: 1, padding: "8px", borderRadius: "5px", border: "1px solid #cbd5e1", fontSize: "13px", color: "#1e293b" }}>
+                <select value={citaKalinlik} onChange={(e) => setCitaKalinlik(e.target.value)} style={{ flex: 1, padding: "8px", borderRadius: "5px", border: "1px solid #cbd5e1", fontSize: "12px", color: "#1e293b" }}>
                   {CITA_KALINLIKLARI.map(b => <option key={b} value={b}>{b}</option>)}
                 </select>
-                <select value={gazTipi} onChange={(e) => setGazTipi(e.target.value)} style={{ flex: 1, padding: "8px", borderRadius: "5px", border: "1px solid #cbd5e1", fontSize: "13px", color: "#1e293b" }}>
+                <select value={gazTipi} onChange={(e) => setGazTipi(e.target.value)} style={{ flex: 1, padding: "8px", borderRadius: "5px", border: "1px solid #cbd5e1", fontSize: "12px", color: "#1e293b" }}>
                   {GAZ_TIPLERI.map(g => <option key={g} value={g}>{g}</option>)}
                 </select>
               </div>
-              <select value={citaTipi} onChange={(e) => setCitaTipi(e.target.value)} style={{ width: "100%", padding: "8px", borderRadius: "5px", border: "1px solid #cbd5e1", fontSize: "13px", color: "#1e293b" }}>
+              <select value={citaTipi} onChange={(e) => setCitaTipi(e.target.value)} style={{ width: "100%", padding: "8px", borderRadius: "5px", border: "1px solid #cbd5e1", fontSize: "12px", color: "#1e293b" }}>
                 {CITA_TIPLERI.map(ct => <option key={ct} value={ct}>{ct}</option>)}
               </select>
             </div>
@@ -360,6 +418,8 @@ export default function CamKombinasyonSihirbazi({ onKombinasyonSec }) {
               tip={icCamTipi} setTip={setIcCamTipi} kalinlik={icCamKalinlik} setKalinlik={setIcCamKalinlik}
               lamK1={icCamLamK1} setLamK1={setIcCamLamK1} lamK2={icCamLamK2} setLamK2={setIcCamLamK2} lamPVB={icCamLamPVB} setLamPVB={setIcCamLamPVB}
               renk={icCamRenk} setRenk={setIcCamRenk} kaplama={icCamKaplama} setKaplama={setIcCamKaplama}
+              kenar={icKenar} setKenar={setIcKenar} temper={icTemper} setTemper={setIcTemper}
+              delik={icDelik} setDelik={setIcDelik} oygu={icOygu} setOygu={setIcOygu}
             />
           </div>
         )}
@@ -367,11 +427,18 @@ export default function CamKombinasyonSihirbazi({ onKombinasyonSec }) {
         {/* 4. ÜÇLÜ ISICAM ALANI */}
         {camTuru === "ucIliIsicam" && (
           <div style={{ display: "flex", gap: "8px", width: "100%", alignItems: "center" }}>
-            <CamKatmaniSecici title="1. Dış Cam" bgColor="#f8fafc" borderColor="#e2e8f0" tip={uDisCamTipi} setTip={setUDisCamTipi} kalinlik={uDisCamKalinlik} setKalinlik={setUDisCamKalinlik} lamK1={uDisLamK1} setLamK1={setUDisLamK1} lamK2={uDisLamK2} setLamK2={setUDisLamK2} lamPVB={uDisLamPVB} setLamPVB={setUDisLamPVB} renk={uDisCamRenk} setRenk={setUDisCamRenk} kaplama={uDisCamKaplama} setKaplama={setUDisCamKaplama} />
+            <CamKatmaniSecici 
+              title="1. Dış Cam" bgColor="#f8fafc" borderColor="#e2e8f0" 
+              tip={uDisCamTipi} setTip={setUDisCamTipi} kalinlik={uDisCamKalinlik} setKalinlik={setUDisCamKalinlik} 
+              lamK1={uDisLamK1} setLamK1={setUDisLamK1} lamK2={uDisLamK2} setLamK2={setUDisLamK2} lamPVB={uDisLamPVB} setLamPVB={setUDisLamPVB} 
+              renk={uDisCamRenk} setRenk={setUDisCamRenk} kaplama={uDisCamKaplama} setKaplama={setUDisCamKaplama} 
+              kenar={uDisKenar} setKenar={setUDisKenar} temper={uDisTemper} setTemper={setUDisTemper}
+              delik={uDisDelik} setDelik={setUDisDelik} oygu={uDisOygu} setOygu={setUDisOygu}
+            />
             
             <div style={{ fontWeight: "bold", color: "#94a3b8", fontSize: "14px" }}>+</div>
 
-            <div style={{ flex: 1.5, padding: "8px", backgroundColor: "#f1f5f9", borderRadius: "8px", border: "1px solid #cbd5e1" }}>
+            <div style={{ flex: 1.5, padding: "8px", backgroundColor: "#f1f5f9", borderRadius: "8px", border: "1px solid #cbd5e1", alignSelf: "stretch", display: "flex", flexDirection: "column", justifyContent: "center" }}>
               <label style={{ display: "block", fontSize: "11px", fontWeight: "700", color: "#334155", marginBottom: "4px" }}>1. Boşluk</label>
               <div style={{ display: "flex", gap: "4px", marginBottom: "4px" }}>
                 <select value={uCita1Kalinlik} onChange={(e) => setUCita1Kalinlik(e.target.value)} style={{ flex: 1, padding: "6px", borderRadius: "4px", border: "1px solid #cbd5e1", fontSize: "11px", color: "#1e293b" }}>{CITA_KALINLIKLARI.map(b => <option key={b} value={b}>{b}</option>)}</select>
@@ -382,11 +449,18 @@ export default function CamKombinasyonSihirbazi({ onKombinasyonSec }) {
 
             <div style={{ fontWeight: "bold", color: "#94a3b8", fontSize: "14px" }}>+</div>
 
-            <CamKatmaniSecici title="2. Orta Cam" bgColor="#f8fafc" borderColor="#e2e8f0" tip={uOrtaCamTipi} setTip={setUOrtaCamTipi} kalinlik={uOrtaCamKalinlik} setKalinlik={setUOrtaCamKalinlik} lamK1={uOrtaLamK1} setLamK1={setUOrtaLamK1} lamK2={uOrtaLamK2} setLamK2={setUOrtaLamK2} lamPVB={uOrtaLamPVB} setLamPVB={setUOrtaLamPVB} renk={uOrtaCamRenk} setRenk={setUOrtaCamRenk} kaplama={uOrtaCamKaplama} setKaplama={setUOrtaCamKaplama} />
+            <CamKatmaniSecici 
+              title="2. Orta Cam" bgColor="#f8fafc" borderColor="#e2e8f0" 
+              tip={uOrtaCamTipi} setTip={setUOrtaCamTipi} kalinlik={uOrtaCamKalinlik} setKalinlik={setUOrtaCamKalinlik} 
+              lamK1={uOrtaLamK1} setLamK1={setUOrtaLamK1} lamK2={uOrtaLamK2} setLamK2={setUOrtaLamK2} lamPVB={uOrtaLamPVB} setLamPVB={setUOrtaLamPVB} 
+              renk={uOrtaCamRenk} setRenk={setUOrtaCamRenk} kaplama={uOrtaCamKaplama} setKaplama={setUOrtaCamKaplama} 
+              kenar={uOrtaKenar} setKenar={setUOrtaKenar} temper={uOrtaTemper} setTemper={setUOrtaTemper}
+              delik={uOrtaDelik} setDelik={setUOrtaDelik} oygu={uOrtaOygu} setOygu={setUOrtaOygu}
+            />
             
             <div style={{ fontWeight: "bold", color: "#94a3b8", fontSize: "14px" }}>+</div>
 
-            <div style={{ flex: 1.5, padding: "8px", backgroundColor: "#f1f5f9", borderRadius: "8px", border: "1px solid #cbd5e1" }}>
+            <div style={{ flex: 1.5, padding: "8px", backgroundColor: "#f1f5f9", borderRadius: "8px", border: "1px solid #cbd5e1", alignSelf: "stretch", display: "flex", flexDirection: "column", justifyContent: "center" }}>
               <label style={{ display: "block", fontSize: "11px", fontWeight: "700", color: "#334155", marginBottom: "4px" }}>2. Boşluk</label>
               <div style={{ display: "flex", gap: "4px", marginBottom: "4px" }}>
                 <select value={uCita2Kalinlik} onChange={(e) => setUCita2Kalinlik(e.target.value)} style={{ flex: 1, padding: "6px", borderRadius: "4px", border: "1px solid #cbd5e1", fontSize: "11px", color: "#1e293b" }}>{CITA_KALINLIKLARI.map(b => <option key={b} value={b}>{b}</option>)}</select>
@@ -397,49 +471,16 @@ export default function CamKombinasyonSihirbazi({ onKombinasyonSec }) {
 
             <div style={{ fontWeight: "bold", color: "#94a3b8", fontSize: "14px" }}>+</div>
 
-            <CamKatmaniSecici title="3. İç Cam" bgColor="#f8fafc" borderColor="#e2e8f0" tip={uIcCamTipi} setTip={setUIcCamTipi} kalinlik={uIcCamKalinlik} setKalinlik={setUIcCamKalinlik} lamK1={uIcLamK1} setLamK1={setUIcLamK1} lamK2={uIcLamK2} setLamK2={setUIcLamK2} lamPVB={uIcLamPVB} setLamPVB={setUIcLamPVB} renk={uIcCamRenk} setRenk={setUIcCamRenk} kaplama={uIcCamKaplama} setKaplama={setUIcCamKaplama} />
+            <CamKatmaniSecici 
+              title="3. İç Cam" bgColor="#f8fafc" borderColor="#e2e8f0" 
+              tip={uIcCamTipi} setTip={setUIcCamTipi} kalinlik={uIcCamKalinlik} setKalinlik={setUIcCamKalinlik} 
+              lamK1={uIcLamK1} setLamK1={setUIcLamK1} lamK2={uIcLamK2} setLamK2={setUIcLamK2} lamPVB={uIcLamPVB} setLamPVB={setUIcLamPVB} 
+              renk={uIcCamRenk} setRenk={setUIcCamRenk} kaplama={uIcCamKaplama} setKaplama={setUIcCamKaplama} 
+              kenar={uIcKenar} setKenar={setUIcKenar} temper={uIcTemper} setTemper={setUIcTemper}
+              delik={uIcDelik} setDelik={setUIcDelik} oygu={uIcOygu} setOygu={setUIcOygu}
+            />
           </div>
         )}
-      </div>
-
-      {/* İŞLEM SEÇENEKLERİ (Kenar, Temper, Delik, Oygu) */}
-      <div style={{ display: "flex", gap: "10px", marginTop: "16px", padding: "12px", backgroundColor: "#f8fafc", border: "1px solid #cbd5e1", borderRadius: "6px", flexWrap: "wrap" }}>
-        
-        <div style={{ flex: 1, minWidth: "150px" }}>
-          <label style={{ display: "block", fontSize: "11px", fontWeight: "700", color: "#475569", marginBottom: "4px" }}>Kenar İşlemi</label>
-          <select value={kenarIslemi} onChange={(e) => setKenarIslemi(e.target.value)} style={{ width: "100%", padding: "7px", borderRadius: "4px", border: "1px solid #cbd5e1", fontSize: "12px", cursor: "pointer", color: "#1e293b", backgroundColor: "white" }}>
-            <option>Düz Kesim (İşlemsiz)</option>
-            <option>Rodajlı</option>
-            <option>Bizoteli</option>
-            <option>Pahlı</option>
-          </select>
-        </div>
-
-        <div style={{ flex: 1, minWidth: "150px" }}>
-          <label style={{ display: "block", fontSize: "11px", fontWeight: "700", color: "#475569", marginBottom: "4px" }}>Temper İşlemi</label>
-          <select value={temperIslemi} onChange={(e) => setTemperIslemi(e.target.value)} style={{ width: "100%", padding: "7px", borderRadius: "4px", border: "1px solid #cbd5e1", fontSize: "12px", cursor: "pointer", color: "#1e293b", backgroundColor: "white" }}>
-            <option>Tempersiz</option>
-            <option>Temperli</option>
-            <option>Yarı Temperli</option>
-            <option>Bombeli Temperli</option>
-          </select>
-        </div>
-
-        <div style={{ flex: 1, minWidth: "100px" }}>
-          <label style={{ display: "block", fontSize: "11px", fontWeight: "700", color: "#475569", marginBottom: "4px" }}>Delik İşlemi</label>
-          <select value={delikIslemi} onChange={(e) => setDelikIslemi(e.target.value)} style={{ width: "100%", padding: "7px", borderRadius: "4px", border: "1px solid #cbd5e1", fontSize: "12px", cursor: "pointer", color: "#1e293b", backgroundColor: "white" }}>
-            <option>Delik Yok</option>
-            <option>Delik Var</option>
-          </select>
-        </div>
-
-        <div style={{ flex: 1, minWidth: "100px" }}>
-          <label style={{ display: "block", fontSize: "11px", fontWeight: "700", color: "#475569", marginBottom: "4px" }}>Oygu İşlemi</label>
-          <select value={oyguIslemi} onChange={(e) => setOyguIslemi(e.target.value)} style={{ width: "100%", padding: "7px", borderRadius: "4px", border: "1px solid #cbd5e1", fontSize: "12px", cursor: "pointer", color: "#1e293b", backgroundColor: "white" }}>
-            <option>Oygu Yok</option>
-            <option>Oygu Var</option>
-          </select>
-        </div>
       </div>
 
       {/* ÖNİZLEME VE FORMA AKTARMA ALANI */}

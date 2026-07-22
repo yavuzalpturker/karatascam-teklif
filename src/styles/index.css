@@ -215,3 +215,24 @@ body {
   color: var(--renk-hata);
   font-size: 0.9rem;
 }
+/* Chrome, Safari, Edge, Opera için okları kaldırır */
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* Chrome, Safari, Edge, Opera için okları kaldırır */
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  appearance: none;
+  margin: 0;
+}
+
+/* Firefox ve Modern Tarayıcılar için okları kaldırır */
+input[type=number] {
+  -webkit-appearance: none;
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
