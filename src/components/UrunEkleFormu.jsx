@@ -18,6 +18,15 @@ export default function UrunEkleFormu({ urunler = [], yukleniyor, hata, onEkle, 
   const [fiyatAna, setFiyatAna] = useState(""); 
   const [fiyatAdet, setFiyatAdet] = useState(""); 
 
+  // --- DİNAMİK EKSTRA İŞLEM BEDELLERİ ---
+  const [ekstraIslemler, setEkstraIslemler] = useState({
+    kenarBedeli: "",  // Rodaj, Bizote, Pah Bedeli
+    temperBedeli: "", // Temper Bedeli
+    delikBedeli: "",  // Delik Bedeli
+    oyguBedeli: "",   // Oygu Bedeli
+    bondingBedeli: "" // Bonding / Strüktürel Bedeli
+  });
+
   const [paraBirimi, setParaBirimi] = useState("TRY");
   const [kdvOrani, setKdvOrani] = useState("20");
 
@@ -37,6 +46,9 @@ export default function UrunEkleFormu({ urunler = [], yukleniyor, hata, onEkle, 
       setFiyatAdet(ham.fiyatAdet || "");
       setParaBirimi(ham.paraBirimi || "TRY");
       setKdvOrani(ham.kdvOrani || "20");
+      if (ham.ekstraIslemler) {
+        setEkstraIslemler(ham.ekstraIslemler);
+      }
     }
   }, [islemVerisi]);
 
@@ -107,6 +119,14 @@ export default function UrunEkleFormu({ urunler = [], yukleniyor, hata, onEkle, 
     }
   }
 
+  // --- HANGİ EKSTRA FİYAT İNPUTLARININ GÖRÜNECEĞİNİ TESPİT ETME ---
+  const aramaUpper = arama.toLocaleUpperCase("tr-TR");
+  const varKenar = aramaUpper.includes("RODAJ") || aramaUpper.includes("BİZOTE") || aramaUpper.includes("PAH");
+  const varTemper = aramaUpper.includes("TEMPER");
+  const varDelik = aramaUpper.includes("DELİK");
+  const varOygu = aramaUpper.includes("OYGU");
+  const varBonding = aramaUpper.includes("ISICAM") || aramaUpper.includes("WARM EDGE") || aramaUpper.includes("BONDİNG") || aramaUpper.includes("SILIKON");
+
   async function ekle() {
     if (!secilenUrun) return;
 
@@ -118,7 +138,6 @@ export default function UrunEkleFormu({ urunler = [], yukleniyor, hata, onEkle, 
     if (secilenBirim === "m²" || secilenBirim === "ad") {
       const enDegeri = Number(en) || 0;
       const boyDegeri = Number(boy) || 0;
-      
       let toplamM2 = 0;
       
       if (enDegeri > 0 && boyDegeri > 0) {
@@ -155,23 +174,19 @@ export default function UrunEkleFormu({ urunler = [], yukleniyor, hata, onEkle, 
 
     let sonKullanilacakUrun = { ...secilenUrun };
 
-    // --- ÖZEL ÜRÜN ÇİFT KAYIT ENGELLEYİCİ MANTIK ---
     if (secilenId === "ozel_urun") {
       const arananAciklama = arama.toLocaleUpperCase("tr-TR").trim();
 
       try {
-        // 1. Önce veritabanında bu isimle tam eşleşen ürün var mı bakıyoruz
-        const { data: mevcutUrun, error: aramaHatasi } = await supabase
+        const { data: mevcutUrun } = await supabase
           .from("urunler")
           .select("*")
           .ilike("aciklama", arananAciklama)
           .maybeSingle();
 
         if (mevcutUrun) {
-          // Zaten varsa yenisini ekleme, mevcut veritabanı ürününü kullan!
           sonKullanilacakUrun = mevcutUrun;
         } else {
-          // 2. Eğer veritabanında yoksa sıfırdan ekle
           const yeniVeritabaniUrunu = {
             kodu: "ÖZEL",
             aciklama: arananAciklama
@@ -183,9 +198,7 @@ export default function UrunEkleFormu({ urunler = [], yukleniyor, hata, onEkle, 
             .select()
             .single();
 
-          if (error) {
-            console.error("Yeni ürün kaydedilemedi:", error);
-          } else if (data) {
+          if (!error && data) {
             sonKullanilacakUrun = data;
             setEklenenOzelUrunler((prev) => [...prev, data]); 
           }
@@ -202,27 +215,59 @@ export default function UrunEkleFormu({ urunler = [], yukleniyor, hata, onEkle, 
       Açıklama: aciklamaBul(sonKullanilacakUrun)
     };
 
-    const satir = satirHesapla(duzeltilmisUrun, 100, 100, hesaplananMiktar, nihaiFiyat, paraBirimi, Number(kdvOrani), nihaiBirim);
-
-    satir.ozelAciklama = ozelAciklama + ekstraAciklama;
-    satir.miktar = Number(hesaplananMiktar.toFixed(3)); 
-    satir.secilenBirim = nihaiBirim;
-    satir.birimFiyat = nihaiFiyat;
-    satir.birim = nihaiBirim; 
-    satir.Birim = nihaiBirim;
-
-    satir.hamVeri = {
-      arama, secilenId, ozelAciklama, en, boy, miktar, secilenBirim, fiyatAna, fiyatAdet, paraBirimi, kdvOrani
+    // 1. ANA CAM SATIRINI HESAPLA VE EKLE
+    const anaSatir = satirHesapla(duzeltilmisUrun, 100, 100, hesaplananMiktar, nihaiFiyat, paraBirimi, Number(kdvOrani), nihaiBirim);
+    anaSatir.ozelAciklama = ozelAciklama + ekstraAciklama;
+    anaSatir.miktar = Number(hesaplananMiktar.toFixed(3)); 
+    anaSatir.secilenBirim = nihaiBirim;
+    anaSatir.birimFiyat = nihaiFiyat;
+    anaSatir.birim = nihaiBirim; 
+    anaSatir.Birim = nihaiBirim;
+    anaSatir.hamVeri = {
+      arama, secilenId, ozelAciklama, en, boy, miktar, secilenBirim, fiyatAna, fiyatAdet, paraBirimi, kdvOrani, ekstraIslemler
     };
 
     if (islemVerisi && islemVerisi.tip === "duzenle") {
-      if (onGuncelle) onGuncelle(islemVerisi.index, satir);
+      if (onGuncelle) onGuncelle(islemVerisi.index, anaSatir);
       if (onIptal) onIptal();
     } else {
-      if (onEkle) onEkle(satir);
+      if (onEkle) onEkle(anaSatir);
+
+      // 2. EKSTRA İŞLEM BEDELLERİNİ AYRI BİRER KALEM OLARAK SEPETE EKLEME
+      const ekstraKalemler = [
+        { isim: "RODAJ / BİZOTE / PAH İŞLEM BEDELİ", bedel: Number(ekstraIslemler.kenarBedeli) },
+        { isim: "TEMPER İŞLEM BEDELİ", bedel: Number(ekstraIslemler.temperBedeli) },
+        { isim: "DELİK İŞLEM BEDELİ", bedel: Number(ekstraIslemler.delikBedeli) },
+        { isim: "OYGU İŞLEM BEDELİ", bedel: Number(ekstraIslemler.oyguBedeli) },
+        { isim: "BONDİNG / STRÜKTÜREL SİLİKON UYGULAMA BEDELİ", bedel: Number(ekstraIslemler.bondingBedeli) }
+      ];
+
+      ekstraKalemler.forEach((item) => {
+        if (item.bedel && item.bedel > 0) {
+          const ekstraUrunObj = {
+            id: "ekstra_islem",
+            kodu: "HİZMET",
+            aciklama: item.isim,
+            Açıklama: item.isim,
+            "Ana Birim": "AD"
+          };
+
+          const ekstraSatir = satirHesapla(ekstraUrunObj, 100, 100, Number(miktar) || 1, item.bedel, paraBirimi, Number(kdvOrani), "ad");
+          ekstraSatir.ozelAciklama = `(${aciklamaBul(sonKullanilacakUrun)} İçin Hizmet Bedeli)`;
+          ekstraSatir.miktar = Number(miktar) || 1;
+          ekstraSatir.secilenBirim = "ad";
+          ekstraSatir.birimFiyat = item.bedel;
+          ekstraSatir.birim = "ad";
+          ekstraSatir.Birim = "ad";
+
+          if (onEkle) onEkle(ekstraSatir);
+        }
+      });
+
       if (islemVerisi && islemVerisi.tip === "tekrar" && onIptal) onIptal(); 
     }
     
+    // Formu Sıfırlama
     setFiyatAna("");
     setFiyatAdet("");
     setArama("");
@@ -231,6 +276,7 @@ export default function UrunEkleFormu({ urunler = [], yukleniyor, hata, onEkle, 
     setEn("");
     setBoy("");
     setMiktar("1"); 
+    setEkstraIslemler({ kenarBedeli: "", temperBedeli: "", delikBedeli: "", oyguBedeli: "", bondingBedeli: "" });
   }
 
   if (yukleniyor) {
@@ -284,39 +330,14 @@ export default function UrunEkleFormu({ urunler = [], yukleniyor, hata, onEkle, 
                 filtrelenmisUrunler.map((urun) => (
                   <li 
                     key={urun.id}
-                    style={{ 
-                      display: "flex", 
-                      justifyContent: "space-between", 
-                      alignItems: "center", 
-                      padding: "10px", 
-                      borderBottom: "1px solid #eee", 
-                      cursor: "pointer", 
-                      fontSize: "14px" 
-                    }}
+                    style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px", borderBottom: "1px solid #eee", cursor: "pointer", fontSize: "14px" }}
                     onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "#f0f8ff"}
                     onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "white"}
                   >
                     <div onClick={() => handleUrunSec(urun)} style={{ flex: 1 }} onMouseDown={(e) => e.preventDefault()}>
                       <strong>{koduBul(urun)}</strong> - {aciklamaBul(urun)}
                     </div>
-
-                    <button
-                      onClick={(e) => urunSil(urun, e)}
-                      onMouseDown={(e) => e.preventDefault()}
-                      style={{
-                        background: 'transparent',
-                        border: 'none',
-                        color: '#ef4444',
-                        cursor: 'pointer',
-                        fontSize: '12px',
-                        padding: '4px 8px',
-                        borderRadius: '4px',
-                        fontWeight: 'bold'
-                      }}
-                      title="Bu ürünü veritabanından kalıcı olarak sil"
-                      onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "#fee2e2"}
-                      onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "transparent"}
-                    >
+                    <button onClick={(e) => urunSil(urun, e)} onMouseDown={(e) => e.preventDefault()} style={{ background: 'transparent', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: '12px', padding: '4px 8px', borderRadius: '4px', fontWeight: 'bold' }}>
                       ❌ Sil
                     </button>
                   </li>
@@ -326,17 +347,7 @@ export default function UrunEkleFormu({ urunler = [], yukleniyor, hata, onEkle, 
               {secilenId !== "ozel_urun" && (
                 <li 
                   onClick={handleOzelUrunSec}
-                  style={{ 
-                    padding: "12px 10px", 
-                    backgroundColor: "#e6fcff", 
-                    borderTop: "2px solid #b3e6ff", 
-                    cursor: "pointer", 
-                    color: "#007099", 
-                    fontWeight: "bold", 
-                    textAlign: "center",
-                    position: "sticky",
-                    bottom: 0
-                  }}
+                  style={{ padding: "12px 10px", backgroundColor: "#e6fcff", borderTop: "2px solid #b3e6ff", cursor: "pointer", color: "#007099", fontWeight: "bold", textAlign: "center", position: "sticky", bottom: 0 }}
                   onMouseEnter={(e) => e.target.style.backgroundColor = "#cceeff"}
                   onMouseLeave={(e) => e.target.style.backgroundColor = "#e6fcff"}
                 >
@@ -413,16 +424,16 @@ export default function UrunEkleFormu({ urunler = [], yukleniyor, hata, onEkle, 
         </label>
       </div>
 
+      {/* FIYATLANDIRMA ALANI */}
       <label className="alan">
-        <span>Fiyatlandırma (İsteğe bağlı - Boş bırakabilirsiniz)</span>
+        <span>Fiyatlandırma</span>
         <div style={{ display: "flex", gap: "8px" }}>
-          
           {((secilenBirim !== "m²" && secilenBirim !== "ad") || fiyatAdet === "") && (
             <input
               type="number"
               min="0"
               step="0.01"
-              placeholder={(secilenBirim === "m²" || secilenBirim === "ad") ? "m² Fiyatı (İsteğe bağlı)" : "Fiyat (İsteğe bağlı)"}
+              placeholder={(secilenBirim === "m²" || secilenBirim === "ad") ? "Ana Cam m² Fiyatı" : "Fiyat"}
               value={fiyatAna}
               onChange={(e) => {
                 setFiyatAna(e.target.value);
@@ -437,7 +448,7 @@ export default function UrunEkleFormu({ urunler = [], yukleniyor, hata, onEkle, 
               type="number"
               min="0"
               step="0.01"
-              placeholder="Adet Fiyatı (İsteğe bağlı)"
+              placeholder="Adet Fiyatı"
               value={fiyatAdet}
               onChange={(e) => {
                 setFiyatAdet(e.target.value);
@@ -454,6 +465,92 @@ export default function UrunEkleFormu({ urunler = [], yukleniyor, hata, onEkle, 
           </select>
         </div>
       </label>
+
+      {/* DİNAMİK EKSTRA İŞLEM BEDELLERİ */}
+      {(varKenar || varTemper || varDelik || varOygu || varBonding) && (
+        <div style={{ backgroundColor: "#f8fafc", padding: "12px", borderRadius: "6px", border: "1px solid #cbd5e1", marginBottom: "15px" }}>
+          <span style={{ fontSize: "12px", fontWeight: "700", color: "#0f2942", display: "block", marginBottom: "8px" }}>
+            Ekstra İşlem Bedelleri
+          </span>
+
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: "8px" }}>
+            {varKenar && (
+              <div>
+                <label style={{ fontSize: "11px", fontWeight: "600", color: "#475569" }}>Rodaj / Pah / Bizote Bedeli</label>
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  placeholder="0.00"
+                  value={ekstraIslemler.kenarBedeli}
+                  onChange={(e) => setEkstraIslemler({ ...ekstraIslemler, kenarBedeli: e.target.value })}
+                  style={{ width: "100%", padding: "6px", borderRadius: "4px", border: "1px solid #cbd5e1", fontSize: "12px" }}
+                />
+              </div>
+            )}
+
+            {varTemper && (
+              <div>
+                <label style={{ fontSize: "11px", fontWeight: "600", color: "#475569" }}>Temper Bedeli</label>
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  placeholder="0.00"
+                  value={ekstraIslemler.temperBedeli}
+                  onChange={(e) => setEkstraIslemler({ ...ekstraIslemler, temperBedeli: e.target.value })}
+                  style={{ width: "100%", padding: "6px", borderRadius: "4px", border: "1px solid #cbd5e1", fontSize: "12px" }}
+                />
+              </div>
+            )}
+
+            {varDelik && (
+              <div>
+                <label style={{ fontSize: "11px", fontWeight: "600", color: "#475569" }}>Delik Bedeli</label>
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  placeholder="0.00"
+                  value={ekstraIslemler.delikBedeli}
+                  onChange={(e) => setEkstraIslemler({ ...ekstraIslemler, delikBedeli: e.target.value })}
+                  style={{ width: "100%", padding: "6px", borderRadius: "4px", border: "1px solid #cbd5e1", fontSize: "12px" }}
+                />
+              </div>
+            )}
+
+            {varOygu && (
+              <div>
+                <label style={{ fontSize: "11px", fontWeight: "600", color: "#475569" }}>Oygu Bedeli</label>
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  placeholder="0.00"
+                  value={ekstraIslemler.oyguBedeli}
+                  onChange={(e) => setEkstraIslemler({ ...ekstraIslemler, oyguBedeli: e.target.value })}
+                  style={{ width: "100%", padding: "6px", borderRadius: "4px", border: "1px solid #cbd5e1", fontSize: "12px" }}
+                />
+              </div>
+            )}
+
+            {varBonding && (
+              <div>
+                <label style={{ fontSize: "11px", fontWeight: "600", color: "#475569" }}>Bonding / Silikon Bedeli</label>
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  placeholder="0.00"
+                  value={ekstraIslemler.bondingBedeli}
+                  onChange={(e) => setEkstraIslemler({ ...ekstraIslemler, bondingBedeli: e.target.value })}
+                  style={{ width: "100%", padding: "6px", borderRadius: "4px", border: "1px solid #cbd5e1", fontSize: "12px" }}
+                />
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       <div style={{ display: "flex", gap: "10px", marginTop: "15px" }}>
         <button 
