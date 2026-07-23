@@ -173,8 +173,10 @@ export default function SepetTablosu({
               </th>
               <th style={{ padding: "10px" }}>Ürün Açıklaması</th>
               <th style={{ padding: "10px" }}>Özel Açıklama</th>
-              {/* YEPYENİ AYRI EN x BOY SÜTUNU */}
+              {/* AYRI ÖLÇÜ SÜTUNU */}
               <th style={{ padding: "10px", textAlign: "center", color: "#38bdf8" }}>Ölçü (En x Boy)</th>
+              {/* AYRI ADET SÜTUNU */}
+              <th style={{ padding: "10px", textAlign: "center", color: "#38bdf8" }}>Adet</th>
               <th style={{ padding: "10px", textAlign: "center" }}>Ölçü / Miktar</th>
               <th style={{ padding: "10px", textAlign: "center" }}>KDV</th>
               <th style={{ padding: "10px", textAlign: "right" }}>Toplam Tutar</th>
@@ -183,10 +185,13 @@ export default function SepetTablosu({
           </thead>
           <tbody>
             {sepet.map((satir, index) => {
-              // Satırın içindeki metinden en ve boy değerlerini yakalayıp ayrı göstermek için ayıklıyoruz
               const tamMetin = `${satir.ozelAciklama || ""} ${satir.miktarDetay || ""} ${satir.urunAciklamasi || ""}`;
               const olcuMatch = tamMetin.match(/(\d+)\s*[xX×]\s*(\d+)/);
               const enBoyMetni = olcuMatch ? `${olcuMatch[1]} × ${olcuMatch[2]} mm` : "-";
+
+              // Adeti metinden veya satir objesinden güvenle çekiyoruz
+              const adetMatch = tamMetin.match(/(?:-\s*)?(\d+)\s*Adet/i);
+              const adetDegeri = satir.miktar && !String(satir.miktarDetay).includes("m²") ? satir.miktar : (adetMatch ? adetMatch[1] : "1");
 
               return (
                 <tr key={index} style={{ borderBottom: "1px solid #e2e8f0", backgroundColor: index % 2 === 0 ? "white" : "#f8fafc" }}>
@@ -206,9 +211,13 @@ export default function SepetTablosu({
                   <td style={{ padding: "10px", color: "#64748b", fontSize: "12px" }}>
                     {satir.ozelAciklama || "-"}
                   </td>
-                  {/* EN KONTROLÜ İÇİN BÜYÜK VE NET ÖLÇÜ SÜTUNU */}
+                  {/* BÜYÜK VE NET ÖLÇÜ SÜTUNU */}
                   <td style={{ padding: "10px", textAlign: "center", fontWeight: "800", color: "#0369a1", fontSize: "14px", backgroundColor: "#f0f9ff" }}>
                     {enBoyMetni}
+                  </td>
+                  {/* BÜYÜK VE NET ADET SÜTUNU */}
+                  <td style={{ padding: "10px", textAlign: "center", fontWeight: "800", color: "#0f2942", fontSize: "14px", backgroundColor: "#f8fafc" }}>
+                    {adetDegeri} Adet
                   </td>
                   <td style={{ padding: "10px", textAlign: "center", color: "#334155" }}>
                     {satir.miktarDetay}
