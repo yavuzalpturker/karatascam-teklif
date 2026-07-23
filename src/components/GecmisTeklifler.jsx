@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { supabase } from "../lib/supabaseClient";
 import { teklifPdfIndir, proformaPdfIndir } from "../utils/pdfOlustur";
+import { imalatPdfIndir } from "../utils/pdfImalatOlustur"; // İMALAT PDF FONKSİYONU EKLENDİ
 
 export default function GecmisTeklifler({ kullaniciRolu, onSepetiYukle }) {
   const [teklifler, setTeklifler] = useState([]);
@@ -79,7 +80,7 @@ export default function GecmisTeklifler({ kullaniciRolu, onSepetiYukle }) {
       projeAdi: t.proje_adi,
       ilgiliKisi: t.ilgili_kisi,
       notlar: t.notlar,
-      odemeSekli: t.odeme_sekli || "", // Ödeme şekli geçmişten aktarılıyor
+      odemeSekli: t.odeme_sekli || "", 
       tarih: new Date(t.tarih)
     };
 
@@ -88,6 +89,8 @@ export default function GecmisTeklifler({ kullaniciRolu, onSepetiYukle }) {
 
     if (t.tur === "PROFORMA") {
       proformaPdfIndir(teklifBilgisi, sepet1, sepet2, t.teklif_no, false);
+    } else if (t.tur === "İMALAT") {
+      imalatPdfIndir(teklifBilgisi, sepet1, sepet2, t.teklif_no, false);
     } else {
       teklifPdfIndir(teklifBilgisi, sepet1, sepet2, t.teklif_no, false);
     }
@@ -99,7 +102,7 @@ export default function GecmisTeklifler({ kullaniciRolu, onSepetiYukle }) {
       projeAdi: t.proje_adi,
       ilgiliKisi: t.ilgili_kisi,
       notlar: t.notlar,
-      odemeSekli: t.odeme_sekli || "", // Ödeme şekli geçmişten aktarılıyor
+      odemeSekli: t.odeme_sekli || "", 
       tarih: new Date(t.tarih)
     };
 
@@ -108,6 +111,8 @@ export default function GecmisTeklifler({ kullaniciRolu, onSepetiYukle }) {
 
     if (t.tur === "PROFORMA") {
       proformaPdfIndir(teklifBilgisi, sepet1, sepet2, t.teklif_no, true);
+    } else if (t.tur === "İMALAT") {
+      imalatPdfIndir(teklifBilgisi, sepet1, sepet2, t.teklif_no, true);
     } else {
       teklifPdfIndir(teklifBilgisi, sepet1, sepet2, t.teklif_no, true);
     }
@@ -191,8 +196,8 @@ export default function GecmisTeklifler({ kullaniciRolu, onSepetiYukle }) {
                   <td style={{ padding: "12px 16px" }}>
                     <span style={{
                       padding: "4px 10px", borderRadius: "4px", fontSize: "11px", fontWeight: "700", letterSpacing: "0.5px",
-                      backgroundColor: "#e2e8f0",
-                      color: "#334155"
+                      backgroundColor: t.tur === "İMALAT" ? "#fef3c7" : "#e2e8f0",
+                      color: t.tur === "İMALAT" ? "#92400e" : "#334155"
                     }}>
                       {t.tur}
                     </span>
