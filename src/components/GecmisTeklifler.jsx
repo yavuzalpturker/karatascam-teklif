@@ -1,13 +1,14 @@
 import { useState, useEffect } from "react";
 import { supabase } from "../lib/supabaseClient";
 import { teklifPdfIndir, proformaPdfIndir } from "../utils/pdfOlustur";
-import { imalatPdfIndir } from "../utils/pdfImalatOlustur"; // İMALAT PDF FONKSİYONU EKLENDİ
+import { imalatPdfIndir } from "../utils/pdfImalatOlustur";
 
 export default function GecmisTeklifler({ kullaniciRolu, onSepetiYukle }) {
   const [teklifler, setTeklifler] = useState([]);
   const [secilenler, setSecilenler] = useState([]);
   const [yukleniyor, setYukleniyor] = useState(true);
   const [arama, setArama] = useState("");
+  const [secilenTarih, setSecilenTarih] = useState("");
 
   useEffect(() => {
     fetchGecmisTeklifler();
@@ -120,10 +121,18 @@ export default function GecmisTeklifler({ kullaniciRolu, onSepetiYukle }) {
 
   const filtrelenmisTeklifler = teklifler.filter((t) => {
     const aramaMetni = arama.toLocaleLowerCase("tr-TR");
-    return (
+    
+    const metinUygun = 
       (t.teklif_no || "").toLocaleLowerCase("tr-TR").includes(aramaMetni) ||
-      (t.musteri_adi || "").toLocaleLowerCase("tr-TR").includes(aramaMetni)
-    );
+      (t.musteri_adi || "").toLocaleLowerCase("tr-TR").includes(aramaMetni);
+
+    let tarihUygun = true;
+    if (secilenTarih) {
+      const kayitTarihi = t.tarih ? new Date(t.tarih).toISOString().split("T")[0] : "";
+      tarihUygun = kayitTarihi === secilenTarih;
+    }
+
+    return metinUygun && tarihUygun;
   });
 
   return (
@@ -140,13 +149,33 @@ export default function GecmisTeklifler({ kullaniciRolu, onSepetiYukle }) {
         )}
       </div>
 
-      <input
-        type="text"
-        placeholder="Ara (No veya Müşteri Adı)..."
-        value={arama}
-        onChange={(e) => setArama(e.target.value)}
-        style={{ width: "100%", padding: "10px 14px", marginBottom: "15px", borderRadius: "6px", border: "1px solid #cbd5e1", outline: "none", fontSize: "14px" }}
-      />
+      <div style={{ display: "flex", gap: "10px", marginBottom: "15px", flexWrap: "wrap" }}>
+        <input
+          type="text"
+          placeholder="Ara (No veya Müşteri Adı)..."
+          value={arama}
+          onChange={(e) => setArama(e.target.value)}
+          style={{ flex: 2, minWidth: "200px", padding: "10px 14px", borderRadius: "6px", border: "1px solid #cbd5e1", outline: "none", fontSize: "14px" }}
+        />
+
+        <div style={{ display: "flex", gap: "6px", alignItems: "center", flex: 1, minWidth: "220px" }}>
+          <input
+            type="date"
+            value={secilenTarih}
+            onChange={(e) => setSecilenTarih(e.target.value)}
+            style={{ flex: 1, padding: "9px 12px", borderRadius: "6px", border: "1px solid #cbd5e1", outline: "none", fontSize: "14px", color: "#1e293b" }}
+            title="Tarihe Göre Süz"
+          />
+          {secilenTarih && (
+            <button
+              onClick={() => setSecilenTarih("")}
+              style={{ backgroundColor: "#64748b", color: "white", border: "none", padding: "10px 12px", borderRadius: "6px", cursor: "pointer", fontSize: "12px", fontWeight: "600", whiteSpace: "nowrap" }}
+            >
+              Tüm Tarihler
+            </button>
+          )}
+        </div>
+      </div>
 
       <div style={{ maxHeight: "400px", overflowY: "auto", overflowX: "auto", border: "1px solid #cbd5e1", borderRadius: "8px", boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }}>
         <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "14px", backgroundColor: "white" }}>
@@ -171,14 +200,15 @@ export default function GecmisTeklifler({ kullaniciRolu, onSepetiYukle }) {
               <th style={{ padding: "12px 16px", borderBottom: "2px solid #0b1d2e", position: "sticky", top: 0, backgroundColor: "#0f2942", zIndex: 1, fontWeight: "600" }}>NO</th>
               <th style={{ padding: "12px 16px", borderBottom: "2px solid #0b1d2e", position: "sticky", top: 0, backgroundColor: "#0f2942", zIndex: 1, fontWeight: "600" }}>TÜR</th>
               <th style={{ padding: "12px 16px", borderBottom: "2px solid #0b1d2e", position: "sticky", top: 0, backgroundColor: "#0f2942", zIndex: 1, fontWeight: "600" }}>MÜŞTERİ</th>
+              <th style={{ padding: "12px 16px", borderBottom: "2px solid #0b1d2e", position: "sticky", top: 0, backgroundColor: "#0f2942", zIndex: 1, fontWeight: "600" }}>TARİH</th>
               <th style={{ padding: "12px 16px", borderBottom: "2px solid #0b1d2e", textAlign: "center", position: "sticky", top: 0, backgroundColor: "#0f2942", zIndex: 1, fontWeight: "600" }}>İŞLEM</th>
             </tr>
           </thead>
           <tbody>
             {yukleniyor ? (
-              <tr><td colSpan={kullaniciRolu === 'admin' ? "5" : "4"} style={{ padding: "20px", textAlign: "center", color: "#64748b" }}>Yükleniyor...</td></tr>
+              <tr><td colSpan={kullaniciRolu === 'admin' ? "6" : "5"} style={{ padding: "20px", textAlign: "center", color: "#64748b" }}>Yükleniyor...</td></tr>
             ) : filtrelenmisTeklifler.length === 0 ? (
-              <tr><td colSpan={kullaniciRolu === 'admin' ? "5" : "4"} style={{ padding: "20px", textAlign: "center", color: "#64748b" }}>Kayıt bulunamadı.</td></tr>
+              <tr><td colSpan={kullaniciRolu === 'admin' ? "6" : "5"} style={{ padding: "20px", textAlign: "center", color: "#64748b" }}>Kayıt bulunamadı.</td></tr>
             ) : (
               filtrelenmisTeklifler.map((t, index) => (
                 <tr key={t.id} style={{ borderBottom: "1px solid #e2e8f0", backgroundColor: index % 2 === 0 ? "#ffffff" : "#f8fafc" }}>
@@ -203,6 +233,9 @@ export default function GecmisTeklifler({ kullaniciRolu, onSepetiYukle }) {
                     </span>
                   </td>
                   <td style={{ padding: "12px 16px", color: "#334155", fontWeight: "500" }}>{t.musteri_adi}</td>
+                  <td style={{ padding: "12px 16px", color: "#64748b", fontSize: "13px" }}>
+                    {t.tarih ? new Date(t.tarih).toLocaleDateString("tr-TR") : "-"}
+                  </td>
                   <td style={{ padding: "12px 16px", textAlign: "center", whiteSpace: "nowrap" }}>
                     <div style={{ display: "inline-flex", gap: "6px", justifyContent: "center" }}>
                       

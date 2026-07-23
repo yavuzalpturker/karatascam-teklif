@@ -20,7 +20,7 @@ export default function SepetTablosu({
     );
   }
 
-  // --- İMALAT İÇİN HEPSİNİ SEÇ / HEPSİNİ KALDIR İŞLEMİ ---
+  // İMALAT İÇİN HEPSİNİ SEÇ / HEPSİNİ KALDIR İŞLEMİ
   const tumunuSecVeyaKaldir = (durum) => {
     const yeniSepet = sepet.map(item => ({ ...item, secili: durum }));
     if (onTopluFiyatGuncelle) {
@@ -28,7 +28,7 @@ export default function SepetTablosu({
     }
   };
 
-  // --- İMALAT İÇİN TEK KART SEÇİM İŞLEMİ ---
+  // İMALAT İÇİN TEK KART SEÇİM İŞLEMİ
   const tekliSecimDegistir = (index, durum) => {
     const yeniSepet = [...sepet];
     yeniSepet[index] = { ...yeniSepet[index], secili: durum };
@@ -78,7 +78,6 @@ export default function SepetTablosu({
 
   const genelToplamlar = genelToplamHesapla(sepet);
   const genelKdvler = genelKdvHesapla(sepet);
-
   const hepsiSeciliMi = sepet.length > 0 && sepet.every(item => item.secili !== false);
 
   return (

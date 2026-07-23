@@ -65,6 +65,7 @@ export default function App() {
     ilgiliKisi: "",
     projeAdi: "",
     teklifNo: "",
+    odemeSekli: "",
     tarih: new Date(),
   });
   
@@ -276,6 +277,7 @@ export default function App() {
 
               <CiktiButonu teklif={teklif} sepet={sepet1} sepet2={sepet2} />
 
+              {/* SADECE TEK BİR GEÇMİŞ TEKLİFLER BİLEŞENİ */}
               <GecmisTeklifler 
                 kullaniciRolu={kullaniciRolu} 
                 onSepetiYukle={(yuklenenTeklif, yuklenenSepet1, yuklenenSepet2) => {
@@ -287,6 +289,7 @@ export default function App() {
                     ilgiliKisi: yuklenenTeklif.ilgili_kisi || "",
                     projeAdi: yuklenenTeklif.proje_adi || "",
                     notlar: yuklenenTeklif.notlar || "",
+                    odemeSekli: yuklenenTeklif.odeme_sekli || "",
                     teklifNo: revizeTeklifNo,
                     tarih: new Date()
                   });
@@ -301,4 +304,4 @@ export default function App() {
       </div>
     </div>
   );
-} 
+}
