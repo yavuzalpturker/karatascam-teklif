@@ -26,7 +26,7 @@ async function gorseliBase64eCevir(yol) {
 }
 
 function imalatTabloOlustur(sepet, baslikMetni) {
-  if (!sepet || sepet.length === 0) return { tabloGövdesi: [], toplamM2: 0, toplamMtul: 0 };
+  if (!sepet || sepet.length === 0) return { tabloGövdesi: [], toplamAdet: 0, toplamM2: 0, toplamMtul: 0 };
 
   const tabloGövdesi = [
     [
@@ -40,6 +40,7 @@ function imalatTabloOlustur(sepet, baslikMetni) {
     ]
   ];
 
+  let genelToplamAdet = 0;
   let genelToplamM2 = 0;
   let genelToplamMtul = 0;
 
@@ -51,22 +52,26 @@ function imalatTabloOlustur(sepet, baslikMetni) {
     let adetDegeri = 1;
     let miktarM2 = 0;
 
+    // 1. En ve Boy'u Çek
     const olcuMatch = tamMetin.match(/(\d+)\s*[xX×]\s*(\d+)/);
     if (olcuMatch) {
       en = parseFloat(olcuMatch[1]);
       boy = parseFloat(olcuMatch[2]);
     }
 
+    // 2. Adeti Çek
     const adetMatch = tamMetin.match(/(?:-\s*)?(\d+)\s*Adet/i);
     if (adetMatch) {
       adetDegeri = parseInt(adetMatch[1], 10);
     }
 
+    // 3. Metrekareyi Çek
     const m2Match = tamMetin.match(/(?:Toplam:\s*)?([\d.]+)\s*m²/i);
     if (m2Match) {
       miktarM2 = parseFloat(m2Match[1]);
     }
 
+    // 4. Metretül Hesapla
     let metretul = 0;
     let metretulYazi = "-";
 
@@ -75,20 +80,37 @@ function imalatTabloOlustur(sepet, baslikMetni) {
       metretulYazi = `${metretul.toFixed(2)}`;
     }
 
+    genelToplamAdet += adetDegeri;
     genelToplamM2 += miktarM2;
     genelToplamMtul += metretul;
 
-    const ozelAciklamaStack = [
-      { text: satir.ozelAciklama || "-", fontSize: 9, margin: [0, 0, 0, 6], alignment: 'left' }
-    ];
+    // Özel açıklamadan ölçü/m2 bilgilerini temizleyip sadece notu bırakma
+    let temizAciklama = satir.ozelAciklama || "";
+    temizAciklama = temizAciklama
+      .replace(/\(\s*\d+\s*[xX×]\s*\d+\s*mm[^)]*\)/gi, "")
+      .replace(/\d+\s*[xX×]\s*\d+\s*mm/gi, "")
+      .replace(/\d+\s*Adet/gi, "")
+      .replace(/Toplam:\s*[\d.]+\s*m²/gi, "")
+      .replace(/[-–—]/g, " ")
+      .trim();
+
+    const ozelAciklamaStack = [];
+
+    if (temizAciklama.length > 0) {
+      ozelAciklamaStack.push({ text: temizAciklama, fontSize: 9, margin: [0, 0, 0, 6], alignment: 'left' });
+    }
 
     if (satir.gorsel) {
       ozelAciklamaStack.push({
         image: satir.gorsel,
         width: 120, 
         alignment: 'center',
-        margin: [0, 6, 0, 4]
+        margin: [0, 4, 0, 4]
       });
+    }
+
+    if (ozelAciklamaStack.length === 0) {
+      ozelAciklamaStack.push({ text: "-", fontSize: 9, alignment: 'left' });
     }
 
     tabloGövdesi.push([
@@ -102,17 +124,21 @@ function imalatTabloOlustur(sepet, baslikMetni) {
     ]);
   });
 
+  // TAMAMEN DÜZELTİLMİŞ EN ALT TOPLAM SATIRI
+  // 1 (GENEL TOPLAM colSpan:4) + 3 boşluk objesi + 1 ADET + 1 M² + 1 MTÜL = TOPLAM 7 SÜTUN
   tabloGövdesi.push([
-    { text: 'GENEL TOPLAM', colSpan: 5, alignment: 'right', bold: true, fillColor: '#f5f5f5', margin: [0, 5, 5, 5] },
-    {}, {}, {}, {},
-    { text: `${genelToplamM2.toFixed(2)} m²`, alignment: 'center', bold: true, fillColor: '#f5f5f5', margin: [0, 5, 0, 5] },
-    { text: `${genelToplamMtul.toFixed(2)} mtül`, alignment: 'center', bold: true, fillColor: '#f5f5f5', margin: [0, 5, 0, 5] }
+    { text: 'GENEL TOPLAM', colSpan: 4, alignment: 'right', bold: true, fillColor: '#f5f5f5', margin: [0, 5, 5, 5] },
+    {}, 
+    {}, 
+    {},
+    { text: `${genelToplamAdet}\nAdet`, alignment: 'center', bold: true, fillColor: '#f5f5f5', margin: [0, 5, 0, 5] },
+    { text: `${genelToplamM2.toFixed(2)}\nm²`, alignment: 'center', bold: true, fillColor: '#f5f5f5', margin: [0, 5, 0, 5] },
+    { text: `${genelToplamMtul.toFixed(2)}\nmtül`, alignment: 'center', bold: true, fillColor: '#f5f5f5', margin: [0, 5, 0, 5] }
   ]);
 
-  return { tabloGövdesi, toplamM2: genelToplamM2, toplamMtul: genelToplamMtul };
+  return { tabloGövdesi, toplamAdet: genelToplamAdet, toplamM2: genelToplamM2, toplamMtul: genelToplamMtul };
 }
 
-// BURAYA onizlemeMi PARAMETRESİ EKLENDİ
 export async function imalatPdfIndir(teklif, sepet1, sepet2 = [], teklifNo, onizlemeMi = false) {
   const logoSisecam = await gorseliBase64eCevir("/sisecam.png");
   const logoIso = await gorseliBase64eCevir("/birinci-logo.jpg");
@@ -197,7 +223,7 @@ export async function imalatPdfIndir(teklif, sepet1, sepet2 = [], teklifNo, oniz
     {
       table: {
         headerRows: 1,
-        widths: ['*', 125, 30, 30, 30, 45, 50],
+        widths: ['*', 125, 30, 30, 40, 45, 50],
         body: sonuc1.tabloGövdesi
       },
       layout: {
@@ -215,7 +241,7 @@ export async function imalatPdfIndir(teklif, sepet1, sepet2 = [], teklifNo, oniz
       {
         table: {
           headerRows: 1,
-          widths: ['*', 125, 30, 30, 30, 45, 50],
+          widths: ['*', 125, 30, 30, 40, 45, 50],
           body: sonuc2.tabloGövdesi
         },
         layout: {
@@ -247,7 +273,6 @@ export async function imalatPdfIndir(teklif, sepet1, sepet2 = [], teklifNo, oniz
 
   const dosyaAdi = `Imalat_Listesi_${teklif.musteriAdi || "Yeni"}_${belgeNo}.pdf`;
   
-  // BURADA ÖNİZLEME (OPEN) VEYA İNDİRME (DOWNLOAD) KARARI VERİLİYOR
   const pdfDoc = pdfMake.createPdf(docDefinition);
   if (onizlemeMi) {
     pdfDoc.open();

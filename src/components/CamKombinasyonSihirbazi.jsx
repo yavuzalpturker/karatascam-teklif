@@ -22,7 +22,8 @@ const KAPLAMA_TURLERI = [
 
 const KALINLIKLAR = ["2 mm", "3 mm", "4 mm", "5 mm", "6 mm", "8 mm", "10 mm", "12 mm", "15 mm", "19 mm"];
 const CITA_KALINLIKLARI = ["6 mm", "8 mm", "9 mm", "10 mm", "12 mm", "14 mm", "15 mm", "16 mm", "18 mm", "20 mm", "22 mm", "24 mm"];
-const CITA_TIPLERI = ["Alüminyum Çıta", "Warm Edge (Sıcak Kenar Çıta)"];
+// ALÜMİNYUM SİYAH ÇITA BURAYA EKLENDİ
+const CITA_TIPLERI = ["Alüminyum Çıta", "Alüminyum Siyah Çıta", "Warm Edge (Sıcak Kenar Çıta)"];
 const GAZ_TIPLERI = ["Hava", "Argon Gazı", "Kripton Gazı"];
 const PVB_TURLERI = [
   "Şeffaf PVB (0.38)", "Şeffaf PVB (0.76)", "Şeffaf PVB (1.52)", 

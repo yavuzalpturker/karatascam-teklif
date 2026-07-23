@@ -8,7 +8,7 @@ export default function CiktiButonu({ teklif, sepet, sepet2 = [] }) {
 
   if (sepet.length === 0 && sepet2.length === 0) return null;
 
-  const supabaseKaydet = async (tur) => {
+  const supabaseKaydet = async (tur, imalatSepet1 = sepet, imalatSepet2 = sepet2) => {
     let sayac = parseInt(localStorage.getItem("proforma_sayac") || "1", 10);
     const yil = new Date().getFullYear();
     const belgeNo = `${yil}/${sayac.toString().padStart(3, "0")}`;
@@ -22,8 +22,9 @@ export default function CiktiButonu({ teklif, sepet, sepet2 = [] }) {
       notlar: teklif.notlar || "",
       odeme_sekli: teklif.odemeSekli || "", 
       tarih: new Date().toISOString(),
-      sepet: sepet,
-      sepet2: sepet2
+      // İmalat ise sadece seçilen ürünler arşive kaydedilir
+      sepet: imalatSepet1,
+      sepet2: imalatSepet2
     };
 
     const { error } = await supabase.from("teklifler").insert([yeniKayit]);
@@ -42,15 +43,25 @@ export default function CiktiButonu({ teklif, sepet, sepet2 = [] }) {
   async function islemYap(tur, onizlemeMi) {
     setIslemDurumu(tur);
     try {
-      // Artık tüm türler (TEKLİF, PROFORMA, İMALAT) aynı mantıkla arşive kaydediliyor
-      const belgeNo = await supabaseKaydet(tur);
-      
-      if (tur === "TEKLİF") {
-        await teklifPdfIndir(teklif, sepet, sepet2, belgeNo, onizlemeMi);
-      } else if (tur === "PROFORMA") {
-        await proformaPdfIndir(teklif, sepet, sepet2, belgeNo, onizlemeMi);
-      } else if (tur === "İMALAT") {
-        await imalatPdfIndir(teklif, sepet, sepet2, belgeNo, onizlemeMi);
+      if (tur === "İMALAT") {
+        // Sadece tikli (seçili) olan ürünleri filtrele
+        const seciliSepet1 = sepet.filter(item => item.secili !== false);
+        const seciliSepet2 = sepet2.filter(item => item.secili !== false);
+
+        if (seciliSepet1.length === 0 && seciliSepet2.length === 0) {
+          alert("Lütfen imalat listesine eklemek için en az 1 ürün seçin (checkbox)!");
+          return;
+        }
+
+        const belgeNo = await supabaseKaydet(tur, seciliSepet1, seciliSepet2);
+        await imalatPdfIndir(teklif, seciliSepet1, seciliSepet2, belgeNo, onizlemeMi);
+      } else {
+        const belgeNo = await supabaseKaydet(tur, sepet, sepet2);
+        if (tur === "TEKLİF") {
+          await teklifPdfIndir(teklif, sepet, sepet2, belgeNo, onizlemeMi);
+        } else {
+          await proformaPdfIndir(teklif, sepet, sepet2, belgeNo, onizlemeMi);
+        }
       }
     } finally {
       setIslemDurumu(null);
@@ -91,14 +102,14 @@ export default function CiktiButonu({ teklif, sepet, sepet2 = [] }) {
             disabled={islemDurumu !== null}
             style={{ backgroundColor: "#d97706", color: "white", fontWeight: "bold" }}
           >
-            {islemDurumu === "İMALAT" ? "Hazırlanıyor…" : "İmalat Listesini Kaydet & İndir"}
+            {islemDurumu === "İMALAT" ? "Hazırlanıyor…" : "🛠️ Seçilenlerin İmalatını İndir"}
           </button>
           <button 
             className="buton buton--ikincil" 
             onClick={() => islemYap("İMALAT", true)} 
             disabled={islemDurumu !== null}
           >
-            İmalat Listesini Önizle
+            Seçilenlerin İmalatını Önizle
           </button>
         </div>
 

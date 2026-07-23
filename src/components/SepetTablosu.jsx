@@ -20,6 +20,23 @@ export default function SepetTablosu({
     );
   }
 
+  // --- İMALAT İÇİN HEPSİNİ SEÇ / HEPSİNİ KALDIR İŞLEMİ ---
+  const tumunuSecVeyaKaldir = (durum) => {
+    const yeniSepet = sepet.map(item => ({ ...item, secili: durum }));
+    if (onTopluFiyatGuncelle) {
+      onTopluFiyatGuncelle(yeniSepet);
+    }
+  };
+
+  // --- İMALAT İÇİN TEK KART SEÇİM İŞLEMİ ---
+  const tekliSecimDegistir = (index, durum) => {
+    const yeniSepet = [...sepet];
+    yeniSepet[index] = { ...yeniSepet[index], secili: durum };
+    if (onTopluFiyatGuncelle) {
+      onTopluFiyatGuncelle(yeniSepet);
+    }
+  };
+
   // HEDEF TOPLAM FİYATTAN HER KALEME m² BİRİM FİYATI DAĞITMA
   const topluFiyatDagit = () => {
     const girilenHedef = parseFloat(hedefToplam);
@@ -28,7 +45,6 @@ export default function SepetTablosu({
       return;
     }
 
-    // Sepetteki Toplam Miktarı (m² veya Adet) Hesaplama
     const toplamMiktar = sepet.reduce((toplam, item) => toplam + (Number(item.miktar) || 1), 0);
 
     if (toplamMiktar <= 0) {
@@ -36,15 +52,12 @@ export default function SepetTablosu({
       return;
     }
 
-    // Hedef Tutara Göre Hesaplanan Yeni m² / Birim Fiyatı
     const yeniBirimFiyat = girilenHedef / toplamMiktar;
 
-    // Tüm Sepeti Yeni Fiyatlarla Güncelleme
     const yeniSepet = sepet.map((item) => {
       const yeniToplamTutar = Number((item.miktar * yeniBirimFiyat).toFixed(2));
       const birimFiyatStr = yeniBirimFiyat.toFixed(2);
       
-      // Miktar Detay Metnini Güncelleme (Örn: 10.50 m² x 450.00 ₺)
       let yeniMiktarDetay = `${item.miktar} ${item.secilenBirim || item.birim || 'm²'} x ${birimFiyatStr} ₺`;
 
       return {
@@ -65,6 +78,8 @@ export default function SepetTablosu({
 
   const genelToplamlar = genelToplamHesapla(sepet);
   const genelKdvler = genelKdvHesapla(sepet);
+
+  const hepsiSeciliMi = sepet.length > 0 && sepet.every(item => item.secili !== false);
 
   return (
     <div style={{ backgroundColor: "white", borderRadius: "8px", border: "1px solid #cbd5e1", padding: "12px", boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }}>
@@ -147,7 +162,17 @@ export default function SepetTablosu({
         <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "13px" }}>
           <thead>
             <tr style={{ backgroundColor: "#0f2942", color: "white", textAlign: "left" }}>
-              <th style={{ padding: "10px", borderRadius: "4px 0 0 0" }}>Ürün Açıklaması</th>
+              {/* İMALAT SEÇİM CHECKBOX SÜTUNU */}
+              <th style={{ padding: "10px", textAlign: "center", width: "40px", borderRadius: "4px 0 0 0" }}>
+                <input 
+                  type="checkbox"
+                  checked={hepsiSeciliMi}
+                  onChange={(e) => tumunuSecVeyaKaldir(e.target.checked)}
+                  title="İmalat Listesi İçin Tümünü Seç / Kaldır"
+                  style={{ cursor: "pointer", width: "16px", height: "16px" }}
+                />
+              </th>
+              <th style={{ padding: "10px" }}>Ürün Açıklaması</th>
               <th style={{ padding: "10px" }}>Özel Açıklama</th>
               <th style={{ padding: "10px", textAlign: "center" }}>Ölçü / Miktar</th>
               <th style={{ padding: "10px", textAlign: "center" }}>KDV</th>
@@ -158,6 +183,16 @@ export default function SepetTablosu({
           <tbody>
             {sepet.map((satir, index) => (
               <tr key={index} style={{ borderBottom: "1px solid #e2e8f0", backgroundColor: index % 2 === 0 ? "white" : "#f8fafc" }}>
+                {/* TEKLİ SEÇİM KUTUSU */}
+                <td style={{ padding: "10px", textAlign: "center" }}>
+                  <input 
+                    type="checkbox"
+                    checked={satir.secili !== false}
+                    onChange={(e) => tekliSecimDegistir(index, e.target.checked)}
+                    title="İmalat Listesine Ekle"
+                    style={{ cursor: "pointer", width: "16px", height: "16px" }}
+                  />
+                </td>
                 <td style={{ padding: "10px", fontWeight: "600", color: "#1e293b" }}>
                   {satir.urunAciklamasi}
                 </td>
