@@ -206,7 +206,8 @@ export async function imalatPdfIndir(teklif, sepet1, sepet2 = [], teklifNo, oniz
           stack: [
             { text: `Tarih: ${tarihYazisi}`, fontSize: 10 },
             { text: `No: ${belgeNo}`, fontSize: 10, bold: true },
-            siparisNoMetni ? { text: siparisNoMetni, fontSize: 9, bold: true, color: '#0369a1', margin: [0, 2, 0, 0] } : null
+            // SİPARİŞ NUMARASI RENGİ KOYU SİYAH YAPILDI VE BOYUTU BÜYÜTÜLDÜ
+            siparisNoMetni ? { text: siparisNoMetni, fontSize: 10, bold: true, color: '#000000', margin: [0, 3, 0, 0] } : null
           ].filter(Boolean),
           alignment: 'right'
         }
@@ -218,7 +219,7 @@ export async function imalatPdfIndir(teklif, sepet1, sepet2 = [], teklifNo, oniz
     {
       table: {
         headerRows: 1,
-        widths: [35, '*', 70, 40, 40, 30, 45, 45], // Malın Cinsi (*) genişletildi, Açıklama sütunu (70) daraltıldı
+        widths: [35, '*', 70, 40, 40, 30, 45, 45],
         body: sonuc1.tabloGövdesi
       },
       layout: {
