@@ -173,6 +173,8 @@ export default function SepetTablosu({
               </th>
               <th style={{ padding: "10px" }}>Ürün Açıklaması</th>
               <th style={{ padding: "10px" }}>Özel Açıklama</th>
+              {/* YEPYENİ AYRI EN x BOY SÜTUNU */}
+              <th style={{ padding: "10px", textAlign: "center", color: "#38bdf8" }}>Ölçü (En x Boy)</th>
               <th style={{ padding: "10px", textAlign: "center" }}>Ölçü / Miktar</th>
               <th style={{ padding: "10px", textAlign: "center" }}>KDV</th>
               <th style={{ padding: "10px", textAlign: "right" }}>Toplam Tutar</th>
@@ -180,66 +182,77 @@ export default function SepetTablosu({
             </tr>
           </thead>
           <tbody>
-            {sepet.map((satir, index) => (
-              <tr key={index} style={{ borderBottom: "1px solid #e2e8f0", backgroundColor: index % 2 === 0 ? "white" : "#f8fafc" }}>
-                {/* TEKLİ SEÇİM KUTUSU */}
-                <td style={{ padding: "10px", textAlign: "center" }}>
-                  <input 
-                    type="checkbox"
-                    checked={satir.secili !== false}
-                    onChange={(e) => tekliSecimDegistir(index, e.target.checked)}
-                    title="İmalat Listesine Ekle"
-                    style={{ cursor: "pointer", width: "16px", height: "16px" }}
-                  />
-                </td>
-                <td style={{ padding: "10px", fontWeight: "600", color: "#1e293b" }}>
-                  {satir.urunAciklamasi}
-                </td>
-                <td style={{ padding: "10px", color: "#64748b", fontSize: "12px" }}>
-                  {satir.ozelAciklama || "-"}
-                </td>
-                <td style={{ padding: "10px", textAlign: "center", color: "#334155" }}>
-                  {satir.miktarDetay}
-                </td>
-                <td style={{ padding: "10px", textAlign: "center" }}>
-                  %{satir.kdvOrani}
-                </td>
-                <td style={{ padding: "10px", textAlign: "right", fontWeight: "700", color: "#0f2942" }}>
-                  {paraFormatla(satir.toplamTutar, satir.paraBirimi)}
-                </td>
-                <td style={{ padding: "10px", textAlign: "center" }}>
-                  <div style={{ display: "flex", gap: "4px", justifyContent: "center" }}>
-                    {onDuzenle && (
-                      <button
-                        type="button"
-                        onClick={() => onDuzenle(index, satir)}
-                        style={{ backgroundColor: "#1e40af", color: "white", border: "none", padding: "4px 8px", borderRadius: "4px", fontSize: "11px", cursor: "pointer" }}
-                      >
-                        Düzenle
-                      </button>
-                    )}
-                    {onTekrarEt && (
-                      <button
-                        type="button"
-                        onClick={() => onTekrarEt(satir)}
-                        style={{ backgroundColor: "#334155", color: "white", border: "none", padding: "4px 8px", borderRadius: "4px", fontSize: "11px", cursor: "pointer" }}
-                      >
-                        Tekrar
-                      </button>
-                    )}
-                    {onSil && (
-                      <button
-                        type="button"
-                        onClick={() => onSil(index)}
-                        style={{ backgroundColor: "#991b1b", color: "white", border: "none", padding: "4px 8px", borderRadius: "4px", fontSize: "11px", cursor: "pointer" }}
-                      >
-                        Sil
-                      </button>
-                    )}
-                  </div>
-                </td>
-              </tr>
-            ))}
+            {sepet.map((satir, index) => {
+              // Satırın içindeki metinden en ve boy değerlerini yakalayıp ayrı göstermek için ayıklıyoruz
+              const tamMetin = `${satir.ozelAciklama || ""} ${satir.miktarDetay || ""} ${satir.urunAciklamasi || ""}`;
+              const olcuMatch = tamMetin.match(/(\d+)\s*[xX×]\s*(\d+)/);
+              const enBoyMetni = olcuMatch ? `${olcuMatch[1]} × ${olcuMatch[2]} mm` : "-";
+
+              return (
+                <tr key={index} style={{ borderBottom: "1px solid #e2e8f0", backgroundColor: index % 2 === 0 ? "white" : "#f8fafc" }}>
+                  {/* TEKLİ SEÇİM KUTUSU */}
+                  <td style={{ padding: "10px", textAlign: "center" }}>
+                    <input 
+                      type="checkbox"
+                      checked={satir.secili !== false}
+                      onChange={(e) => tekliSecimDegistir(index, e.target.checked)}
+                      title="İmalat Listesine Ekle"
+                      style={{ cursor: "pointer", width: "16px", height: "16px" }}
+                    />
+                  </td>
+                  <td style={{ padding: "10px", fontWeight: "600", color: "#1e293b" }}>
+                    {satir.urunAciklamasi}
+                  </td>
+                  <td style={{ padding: "10px", color: "#64748b", fontSize: "12px" }}>
+                    {satir.ozelAciklama || "-"}
+                  </td>
+                  {/* EN KONTROLÜ İÇİN BÜYÜK VE NET ÖLÇÜ SÜTUNU */}
+                  <td style={{ padding: "10px", textAlign: "center", fontWeight: "800", color: "#0369a1", fontSize: "14px", backgroundColor: "#f0f9ff" }}>
+                    {enBoyMetni}
+                  </td>
+                  <td style={{ padding: "10px", textAlign: "center", color: "#334155" }}>
+                    {satir.miktarDetay}
+                  </td>
+                  <td style={{ padding: "10px", textAlign: "center" }}>
+                    %{satir.kdvOrani}
+                  </td>
+                  <td style={{ padding: "10px", textAlign: "right", fontWeight: "700", color: "#0f2942" }}>
+                    {paraFormatla(satir.toplamTutar, satir.paraBirimi)}
+                  </td>
+                  <td style={{ padding: "10px", textAlign: "center" }}>
+                    <div style={{ display: "flex", gap: "4px", justifyContent: "center" }}>
+                      {onDuzenle && (
+                        <button
+                          type="button"
+                          onClick={() => onDuzenle(index, satir)}
+                          style={{ backgroundColor: "#1e40af", color: "white", border: "none", padding: "4px 8px", borderRadius: "4px", fontSize: "11px", cursor: "pointer" }}
+                        >
+                          Düzenle
+                        </button>
+                      )}
+                      {onTekrarEt && (
+                        <button
+                          type="button"
+                          onClick={() => onTekrarEt(satir)}
+                          style={{ backgroundColor: "#334155", color: "white", border: "none", padding: "4px 8px", borderRadius: "4px", fontSize: "11px", cursor: "pointer" }}
+                        >
+                          Tekrar
+                        </button>
+                      )}
+                      {onSil && (
+                        <button
+                          type="button"
+                          onClick={() => onSil(index)}
+                          style={{ backgroundColor: "#991b1b", color: "white", border: "none", padding: "4px 8px", borderRadius: "4px", fontSize: "11px", cursor: "pointer" }}
+                        >
+                          Sil
+                        </button>
+                      )}
+                    </div>
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>

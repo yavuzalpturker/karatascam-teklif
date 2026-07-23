@@ -42,6 +42,8 @@ export default function CiktiButonu({ teklif, sepet, sepet2 = [] }) {
   async function islemYap(tur, onizlemeMi) {
     setIslemDurumu(tur);
     try {
+      let belgeNo = teklif.teklifNo || "";
+
       if (tur === "İMALAT") {
         const seciliSepet1 = sepet.filter(item => item.secili !== false);
         const seciliSepet2 = sepet2.filter(item => item.secili !== false);
@@ -51,10 +53,18 @@ export default function CiktiButonu({ teklif, sepet, sepet2 = [] }) {
           return;
         }
 
-        const belgeNo = await supabaseKaydet(tur, seciliSepet1, seciliSepet2);
+        // SADECE İNDİR / KAYDET İŞLEMİNDE ARŞİVE KAYIT ATILIR, ÖNİZLEMEDE ATILMAZ
+        if (!onizlemeMi) {
+          belgeNo = await supabaseKaydet(tur, seciliSepet1, seciliSepet2);
+        }
+
         await imalatPdfIndir(teklif, seciliSepet1, seciliSepet2, belgeNo, onizlemeMi);
       } else {
-        const belgeNo = await supabaseKaydet(tur, sepet, sepet2);
+        // SADECE İNDİR / KAYDET İŞLEMİNDE ARŞİVE KAYIT ATILIR, ÖNİZLEMEDE ATILMAZ
+        if (!onizlemeMi) {
+          belgeNo = await supabaseKaydet(tur, sepet, sepet2);
+        }
+
         if (tur === "TEKLİF") {
           await teklifPdfIndir(teklif, sepet, sepet2, belgeNo, onizlemeMi);
         } else {
@@ -92,7 +102,7 @@ export default function CiktiButonu({ teklif, sepet, sepet2 = [] }) {
           </button>
         </div>
 
-        {/* İMALAT / KESİM LİSTESİ BUTONLARI (KURUMSAL TEMAYA UYARLANDI) */}
+        {/* İMALAT / KESİM LİSTESİ BUTONLARI */}
         <div style={{ display: "flex", flexDirection: "column", gap: "5px" }}>
           <button 
             className="buton" 
