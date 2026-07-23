@@ -35,6 +35,17 @@ export default function TeklifBilgileriForm({ teklif, onDegistir }) {
         />
       </label>
 
+      {/* SİPARİŞ NUMARASI ALANI EKLENDİ */}
+      <label className="alan">
+        <span>Sipariş No</span>
+        <input
+          type="text"
+          value={teklif.siparisNo || ""}
+          onChange={(e) => alanGuncelle("siparisNo", e.target.value)}
+          placeholder="Örn: SIP-2026-001"
+        />
+      </label>
+
       <label className="alan">
         <span>Teklif Tarihi</span>
         <input
@@ -65,7 +76,6 @@ export default function TeklifBilgileriForm({ teklif, onDegistir }) {
         />
       </label>
 
-      {/* YENİ EKLENEN ÖDEME ŞEKLİ ALANI */}
       <label className="alan" style={{ marginTop: "10px" }}>
         <span>Ödeme Şekli</span>
         <input

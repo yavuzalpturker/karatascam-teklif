@@ -8,7 +8,7 @@ export default function UrunEkleFormu({ urunler = [], yukleniyor, hata, onEkle, 
   const [secilenId, setSecilenId] = useState("");
   const [listeAcik, setListeAcik] = useState(false);
   
-  const [pozNo, setPozNo] = useState(""); // POZ NO STATE'İ EKLENDİ
+  const [pozNo, setPozNo] = useState(""); 
   const [ozelAciklama, setOzelAciklama] = useState("");
   const [urunGorselBase64, setUrunGorselBase64] = useState(null); 
 
@@ -38,7 +38,7 @@ export default function UrunEkleFormu({ urunler = [], yukleniyor, hata, onEkle, 
       const ham = islemVerisi.satir.hamVeri;
       setArama(ham.arama || "");
       setSecilenId(ham.secilenId || "");
-      setPozNo(ham.pozNo || ""); // POZ NO GERİ YÜKLEME
+      setPozNo(ham.pozNo || ""); 
       setOzelAciklama(ham.ozelAciklama || "");
       setUrunGorselBase64(islemVerisi.satir.gorsel || null);
       setEn(ham.en || "");
@@ -133,13 +133,6 @@ export default function UrunEkleFormu({ urunler = [], yukleniyor, hata, onEkle, 
     }
   }
 
-  const aramaUpper = arama.toLocaleUpperCase("tr-TR");
-  const varKenar = aramaUpper.includes("RODAJ") || aramaUpper.includes("BİZOTE") || aramaUpper.includes("PAH");
-  const varTemper = aramaUpper.includes("TEMPER");
-  const varDelik = aramaUpper.includes("DELİK");
-  const varOygu = aramaUpper.includes("OYGU");
-  const varBonding = aramaUpper.includes("ISICAM") || aramaUpper.includes("WARM EDGE") || aramaUpper.includes("BONDİNG") || aramaUpper.includes("SILIKON");
-
   async function ekle() {
     if (!secilenUrun) return;
 
@@ -229,7 +222,7 @@ export default function UrunEkleFormu({ urunler = [], yukleniyor, hata, onEkle, 
     };
 
     const anaSatir = satirHesapla(duzeltilmisUrun, 100, 100, hesaplananMiktar, nihaiFiyat, paraBirimi, Number(kdvOrani), nihaiBirim);
-    anaSatir.pozNo = pozNo; // POZ NO SATIRA EKLENDİ
+    anaSatir.pozNo = pozNo; 
     anaSatir.ozelAciklama = ozelAciklama + ekstraAciklama;
     anaSatir.gorsel = urunGorselBase64; 
     anaSatir.miktar = Number(hesaplananMiktar.toFixed(3)); 
@@ -266,7 +259,7 @@ export default function UrunEkleFormu({ urunler = [], yukleniyor, hata, onEkle, 
           };
 
           const ekstraSatir = satirHesapla(ekstraUrunObj, 100, 100, Number(miktar) || 1, item.bedel, paraBirimi, Number(kdvOrani), "ad");
-          ekstraSatir.pozNo = pozNo; // HİZMET BEDELİNE DE AYNI POZ NO'YU VERİYORUZ
+          ekstraSatir.pozNo = pozNo; 
           ekstraSatir.ozelAciklama = `(${aciklamaBul(sonKullanilacakUrun)} İçin Hizmet Bedeli)`;
           ekstraSatir.miktar = Number(miktar) || 1;
           ekstraSatir.secilenBirim = "ad";
@@ -285,7 +278,7 @@ export default function UrunEkleFormu({ urunler = [], yukleniyor, hata, onEkle, 
     setFiyatAdet("");
     setArama("");
     setSecilenId("");
-    setPozNo(""); // EKLENDİKTEN SONRA POZ NO'YU SIFIRLA
+    setPozNo(""); 
     setOzelAciklama(""); 
     setUrunGorselBase64(null);
     setEn("");
@@ -522,91 +515,79 @@ export default function UrunEkleFormu({ urunler = [], yukleniyor, hata, onEkle, 
         </div>
       </label>
 
-      {/* DİNAMİK EKSTRA İŞLEM BEDELLERİ */}
-      {(varKenar || varTemper || varDelik || varOygu || varBonding) && (
-        <div style={{ backgroundColor: "#f8fafc", padding: "12px", borderRadius: "6px", border: "1px solid #cbd5e1", marginBottom: "15px" }}>
-          <span style={{ fontSize: "12px", fontWeight: "700", color: "#0f2942", display: "block", marginBottom: "8px" }}>
-            Ekstra İşlem Bedelleri
-          </span>
+      {/* EKSTRA İŞLEM BEDELLERİ (TÜMÜ ARTIK HER ZAMAN GÖRÜNÜR) */}
+      <div style={{ backgroundColor: "#f8fafc", padding: "12px", borderRadius: "6px", border: "1px solid #cbd5e1", marginBottom: "15px" }}>
+        <span style={{ fontSize: "12px", fontWeight: "700", color: "#0f2942", display: "block", marginBottom: "8px" }}>
+          Ekstra İşlem Bedelleri
+        </span>
 
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: "8px" }}>
-            {varKenar && (
-              <div>
-                <label style={{ fontSize: "11px", fontWeight: "600", color: "#475569" }}>Rodaj / Pah / Bizote Bedeli</label>
-                <input
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  placeholder="0.00"
-                  value={ekstraIslemler.kenarBedeli}
-                  onChange={(e) => setEkstraIslemler({ ...ekstraIslemler, kenarBedeli: e.target.value })}
-                  style={{ width: "100%", padding: "6px", borderRadius: "4px", border: "1px solid #cbd5e1", fontSize: "12px" }}
-                />
-              </div>
-            )}
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: "8px" }}>
+          <div>
+            <label style={{ fontSize: "11px", fontWeight: "600", color: "#475569" }}>Rodaj / Pah / Bizote Bedeli</label>
+            <input
+              type="number"
+              min="0"
+              step="0.01"
+              placeholder="0.00"
+              value={ekstraIslemler.kenarBedeli}
+              onChange={(e) => setEkstraIslemler({ ...ekstraIslemler, kenarBedeli: e.target.value })}
+              style={{ width: "100%", padding: "6px", borderRadius: "4px", border: "1px solid #cbd5e1", fontSize: "12px" }}
+            />
+          </div>
 
-            {varTemper && (
-              <div>
-                <label style={{ fontSize: "11px", fontWeight: "600", color: "#475569" }}>Temper Bedeli</label>
-                <input
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  placeholder="0.00"
-                  value={ekstraIslemler.temperBedeli}
-                  onChange={(e) => setEkstraIslemler({ ...ekstraIslemler, temperBedeli: e.target.value })}
-                  style={{ width: "100%", padding: "6px", borderRadius: "4px", border: "1px solid #cbd5e1", fontSize: "12px" }}
-                />
-              </div>
-            )}
+          <div>
+            <label style={{ fontSize: "11px", fontWeight: "600", color: "#475569" }}>Temper Bedeli</label>
+            <input
+              type="number"
+              min="0"
+              step="0.01"
+              placeholder="0.00"
+              value={ekstraIslemler.temperBedeli}
+              onChange={(e) => setEkstraIslemler({ ...ekstraIslemler, temperBedeli: e.target.value })}
+              style={{ width: "100%", padding: "6px", borderRadius: "4px", border: "1px solid #cbd5e1", fontSize: "12px" }}
+            />
+          </div>
 
-            {varDelik && (
-              <div>
-                <label style={{ fontSize: "11px", fontWeight: "600", color: "#475569" }}>Delik Bedeli</label>
-                <input
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  placeholder="0.00"
-                  value={ekstraIslemler.delikBedeli}
-                  onChange={(e) => setEkstraIslemler({ ...ekstraIslemler, delikBedeli: e.target.value })}
-                  style={{ width: "100%", padding: "6px", borderRadius: "4px", border: "1px solid #cbd5e1", fontSize: "12px" }}
-                />
-              </div>
-            )}
+          <div>
+            <label style={{ fontSize: "11px", fontWeight: "600", color: "#475569" }}>Delik Bedeli</label>
+            <input
+              type="number"
+              min="0"
+              step="0.01"
+              placeholder="0.00"
+              value={ekstraIslemler.delikBedeli}
+              onChange={(e) => setEkstraIslemler({ ...ekstraIslemler, delikBedeli: e.target.value })}
+              style={{ width: "100%", padding: "6px", borderRadius: "4px", border: "1px solid #cbd5e1", fontSize: "12px" }}
+            />
+          </div>
 
-            {varOygu && (
-              <div>
-                <label style={{ fontSize: "11px", fontWeight: "600", color: "#475569" }}>Oygu Bedeli</label>
-                <input
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  placeholder="0.00"
-                  value={ekstraIslemler.oyguBedeli}
-                  onChange={(e) => setEkstraIslemler({ ...ekstraIslemler, oyguBedeli: e.target.value })}
-                  style={{ width: "100%", padding: "6px", borderRadius: "4px", border: "1px solid #cbd5e1", fontSize: "12px" }}
-                />
-              </div>
-            )}
+          <div>
+            <label style={{ fontSize: "11px", fontWeight: "600", color: "#475569" }}>Oygu Bedeli</label>
+            <input
+              type="number"
+              min="0"
+              step="0.01"
+              placeholder="0.00"
+              value={ekstraIslemler.oyguBedeli}
+              onChange={(e) => setEkstraIslemler({ ...ekstraIslemler, oyguBedeli: e.target.value })}
+              style={{ width: "100%", padding: "6px", borderRadius: "4px", border: "1px solid #cbd5e1", fontSize: "12px" }}
+            />
+          </div>
 
-            {varBonding && (
-              <div>
-                <label style={{ fontSize: "11px", fontWeight: "600", color: "#475569" }}>Bonding / Silikon Bedeli</label>
-                <input
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  placeholder="0.00"
-                  value={ekstraIslemler.bondingBedeli}
-                  onChange={(e) => setEkstraIslemler({ ...ekstraIslemler, bondingBedeli: e.target.value })}
-                  style={{ width: "100%", padding: "6px", borderRadius: "4px", border: "1px solid #cbd5e1", fontSize: "12px" }}
-                />
-              </div>
-            )}
+          <div>
+            <label style={{ fontSize: "11px", fontWeight: "600", color: "#475569" }}>Bonding / Silikon Bedeli</label>
+            <input
+              type="number"
+              min="0"
+              step="0.01"
+              placeholder="0.00"
+              value={ekstraIslemler.bondingBedeli}
+              onChange={(e) => setEkstraIslemler({ ...ekstraIslemler, bondingBedeli: e.target.value })}
+              style={{ width: "100%", padding: "6px", borderRadius: "4px", border: "1px solid #cbd5e1", fontSize: "12px" }}
+            />
           </div>
         </div>
-      )}
+      </div>
 
       <div style={{ display: "flex", gap: "10px", marginTop: "15px" }}>
         <button 

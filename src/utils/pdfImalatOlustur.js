@@ -106,7 +106,7 @@ function imalatTabloOlustur(sepet, baslikMetni) {
     }
 
     if (ozelAciklamaStack.length === 0) {
-      ozelAciklamaStack.push({ text: "-", fontSize: 9, alignment: 'left' });
+      ozelAciklamaStack.push({ text: "-", fontSize: 9, alignment: 'left', color: '#94a3b8' });
     }
 
     tabloGövdesi.push([
@@ -115,12 +115,13 @@ function imalatTabloOlustur(sepet, baslikMetni) {
       { stack: ozelAciklamaStack, margin: [5, 5, 5, 5] },
       { text: en > 0 ? `${en}` : "-", fontSize: 12, bold: true, alignment: 'center', margin: [0, 5, 0, 5] },
       { text: boy > 0 ? `${boy}` : "-", fontSize: 12, bold: true, alignment: 'center', margin: [0, 5, 0, 5] },
-      { text: `${adetDegeri}`, fontSize: 10, bold: true, alignment: 'center', margin: [0, 5, 0, 5] },
+      { text: `${adetDegeri}`, fontSize: 11, bold: true, alignment: 'center', margin: [0, 5, 0, 5] },
       { text: miktarM2 > 0 ? `${miktarM2.toFixed(2)}` : "-", fontSize: 9, bold: true, alignment: 'center', margin: [0, 5, 0, 5] },
       { text: metretulYazi, fontSize: 9, bold: true, alignment: 'center', margin: [0, 5, 0, 5] }
     ]);
   });
 
+  // Toplam satırı sabit 8 sütun yapısına göre güvenle ayarlandı
   tabloGövdesi.push([
     { text: 'GENEL TOPLAM', colSpan: 5, alignment: 'right', bold: true, fillColor: '#f5f5f5', margin: [0, 5, 5, 5] },
     {}, {}, {}, {}, 
@@ -138,6 +139,7 @@ export async function imalatPdfIndir(teklif, sepet1, sepet2 = [], teklifNo, oniz
   
   const tarihYazisi = teklif.tarih ? new Date(teklif.tarih).toLocaleDateString("tr-TR") : new Date().toLocaleDateString("tr-TR");
   const belgeNo = teklif.teklifNo || teklifNo || "İMALAT-LİSTESİ"; 
+  const siparisNoMetni = teklif.siparisNo ? `Sipariş No: ${teklif.siparisNo}` : null;
 
   const ikiliMi = sepet2 && sepet2.length > 0;
 
@@ -204,8 +206,9 @@ export async function imalatPdfIndir(teklif, sepet1, sepet2 = [], teklifNo, oniz
         {
           stack: [
             { text: `Tarih: ${tarihYazisi}`, fontSize: 10 },
-            { text: `No: ${belgeNo}`, fontSize: 10, bold: true }
-          ],
+            { text: `No: ${belgeNo}`, fontSize: 10, bold: true },
+            siparisNoMetni ? { text: siparisNoMetni, fontSize: 9, bold: true, color: '#0369a1', margin: [0, 2, 0, 0] } : null
+          ].filter(Boolean),
           alignment: 'right'
         }
       ],
@@ -216,7 +219,7 @@ export async function imalatPdfIndir(teklif, sepet1, sepet2 = [], teklifNo, oniz
     {
       table: {
         headerRows: 1,
-        widths: [45, '*', 100, 45, 45, 30, 45, 45],
+        widths: [45, '*', 100, 45, 45, 35, 45, 45],
         body: sonuc1.tabloGövdesi
       },
       layout: {
@@ -234,7 +237,7 @@ export async function imalatPdfIndir(teklif, sepet1, sepet2 = [], teklifNo, oniz
       {
         table: {
           headerRows: 1,
-          widths: [45, '*', 100, 45, 45, 30, 45, 45],
+          widths: [45, '*', 100, 45, 45, 35, 45, 45],
           body: sonuc2.tabloGövdesi
         },
         layout: {
