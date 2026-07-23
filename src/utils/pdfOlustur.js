@@ -466,7 +466,13 @@ export async function proformaPdfIndir(teklif, sepet1, sepet2 = [], teklifNo, on
   const icerikDizisi = [
     {
       columns: [
-        { text: `Proje Adı: ${teklif.projeAdi || ""}`, bold: true, fontSize: 10, alignment: 'left' },
+        {
+          stack: [
+            { text: teklif.musteriAdi || "", fontSize: 10, bold: true }, // MÜŞTERİ / FİRMA ADI BURAYA EKLENDİ
+            { text: `Proje Adı: ${teklif.projeAdi || ""}`, bold: true, fontSize: 10, margin: [0, 2, 0, 0] }
+          ],
+          alignment: 'left'
+        },
         {
           stack: [
             { text: `Tarih: ${tarihYazisi}`, fontSize: 10 },

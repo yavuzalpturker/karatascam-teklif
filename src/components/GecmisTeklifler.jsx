@@ -9,6 +9,7 @@ export default function GecmisTeklifler({ kullaniciRolu, onSepetiYukle }) {
   const [yukleniyor, setYukleniyor] = useState(true);
   const [arama, setArama] = useState("");
   const [secilenTarih, setSecilenTarih] = useState("");
+  const [secilenTur, setSecilenTur] = useState(""); // TÜR FİLTRESİ STATE'İ
 
   useEffect(() => {
     fetchGecmisTeklifler();
@@ -119,21 +120,41 @@ export default function GecmisTeklifler({ kullaniciRolu, onSepetiYukle }) {
     }
   }
 
+  // --- ÜÇLÜ FİLTRELEME: ARAMA METNİ + TARİH + TÜR ---
   const filtrelenmisTeklifler = teklifler.filter((t) => {
     const aramaMetni = arama.toLocaleLowerCase("tr-TR");
     
+    // 1. Metin Uyumu
     const metinUygun = 
       (t.teklif_no || "").toLocaleLowerCase("tr-TR").includes(aramaMetni) ||
       (t.musteri_adi || "").toLocaleLowerCase("tr-TR").includes(aramaMetni);
 
+    // 2. Tarih Uyumu
     let tarihUygun = true;
     if (secilenTarih) {
       const kayitTarihi = t.tarih ? new Date(t.tarih).toISOString().split("T")[0] : "";
       tarihUygun = kayitTarihi === secilenTarih;
     }
 
-    return metinUygun && tarihUygun;
+    // 3. Tür Uyumu (TEKLİF / PROFORMA / İMALAT)
+    let turUygun = true;
+    if (secilenTur) {
+      turUygun = t.tur === secilenTur;
+    }
+
+    return metinUygun && tarihUygun && turUygun;
   });
+
+  // TÜR ROZETLERİ İÇİN TEMİZ VE ŞIK RENKLER
+  const getTurRozetStili = (tur) => {
+    if (tur === "İMALAT") {
+      return { backgroundColor: "#ffedd5", color: "#c2410c", border: "1px solid #fed7aa" }; // Şık Turuncu/Amber
+    } else if (tur === "PROFORMA") {
+      return { backgroundColor: "#f3e8ff", color: "#6b21a8", border: "1px solid #e9d5ff" }; // Şık Mor
+    } else {
+      return { backgroundColor: "#e0f2fe", color: "#0369a1", border: "1px solid #bae6fd" }; // Şık Mavi (Teklif)
+    }
+  };
 
   return (
     <section className="panel" style={{ marginTop: "30px" }}>
@@ -149,16 +170,31 @@ export default function GecmisTeklifler({ kullaniciRolu, onSepetiYukle }) {
         )}
       </div>
 
-      <div style={{ display: "flex", gap: "10px", marginBottom: "15px", flexWrap: "wrap" }}>
+      {/* ARAMA + TÜR FİLTRESİ + TARİH FİLTRESİ ALANI */}
+      <div style={{ display: "flex", gap: "10px", marginBottom: "15px", flexWrap: "wrap", alignItems: "center" }}>
+        {/* METİN ARAMA */}
         <input
           type="text"
           placeholder="Ara (No veya Müşteri Adı)..."
           value={arama}
           onChange={(e) => setArama(e.target.value)}
-          style={{ flex: 2, minWidth: "200px", padding: "10px 14px", borderRadius: "6px", border: "1px solid #cbd5e1", outline: "none", fontSize: "14px" }}
+          style={{ flex: 2, minWidth: "180px", padding: "10px 14px", borderRadius: "6px", border: "1px solid #cbd5e1", outline: "none", fontSize: "14px" }}
         />
 
-        <div style={{ display: "flex", gap: "6px", alignItems: "center", flex: 1, minWidth: "220px" }}>
+        {/* TÜR SEÇİM DROPDOWN */}
+        <select
+          value={secilenTur}
+          onChange={(e) => setSecilenTur(e.target.value)}
+          style={{ flex: 1, minWidth: "130px", padding: "9.5px 12px", borderRadius: "6px", border: "1px solid #cbd5e1", outline: "none", fontSize: "14px", color: "#1e293b", backgroundColor: "white", cursor: "pointer" }}
+        >
+          <option value="">Tüm Türler</option>
+          <option value="TEKLİF">Teklif</option>
+          <option value="PROFORMA">Proforma</option>
+          <option value="İMALAT">İmalat</option>
+        </select>
+
+        {/* TARİH SEÇİMİ */}
+        <div style={{ display: "flex", gap: "6px", alignItems: "center", flex: 1, minWidth: "200px" }}>
           <input
             type="date"
             value={secilenTarih}
@@ -166,12 +202,12 @@ export default function GecmisTeklifler({ kullaniciRolu, onSepetiYukle }) {
             style={{ flex: 1, padding: "9px 12px", borderRadius: "6px", border: "1px solid #cbd5e1", outline: "none", fontSize: "14px", color: "#1e293b" }}
             title="Tarihe Göre Süz"
           />
-          {secilenTarih && (
+          {(secilenTarih || secilenTur || arama) && (
             <button
-              onClick={() => setSecilenTarih("")}
+              onClick={() => { setSecilenTarih(""); setSecilenTur(""); setArama(""); }}
               style={{ backgroundColor: "#64748b", color: "white", border: "none", padding: "10px 12px", borderRadius: "6px", cursor: "pointer", fontSize: "12px", fontWeight: "600", whiteSpace: "nowrap" }}
             >
-              Tüm Tarihler
+              Filtreleri Temizle
             </button>
           )}
         </div>
@@ -225,9 +261,8 @@ export default function GecmisTeklifler({ kullaniciRolu, onSepetiYukle }) {
                   <td style={{ padding: "12px 16px", fontWeight: "600", color: "#1e293b" }}>{t.teklif_no}</td>
                   <td style={{ padding: "12px 16px" }}>
                     <span style={{
-                      padding: "4px 10px", borderRadius: "4px", fontSize: "11px", fontWeight: "700", letterSpacing: "0.5px",
-                      backgroundColor: t.tur === "İMALAT" ? "#fef3c7" : "#e2e8f0",
-                      color: t.tur === "İMALAT" ? "#92400e" : "#334155"
+                      padding: "4px 10px", borderRadius: "5px", fontSize: "11px", fontWeight: "700", letterSpacing: "0.5px",
+                      ...getTurRozetStili(t.tur)
                     }}>
                       {t.tur}
                     </span>

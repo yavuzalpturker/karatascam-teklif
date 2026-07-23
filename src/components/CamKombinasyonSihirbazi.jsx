@@ -3,7 +3,8 @@ import { useState, useEffect } from "react";
 // --- ŞİŞECAM GENİŞ CAM RENK VE TİP LİSTESİ ---
 const CAM_RENKLERI = [
   "Clear (Şeffaf)", "Extra Clear", "Ultra Clear", "Füme", "Bronz", "Mavi", "Yeşil", 
-  "Koyu Füme", "Derin Füme", "Açık Füme", "Turkuaz", "Ara Yeşil"
+  "Koyu Füme", "Derin Füme", "Açık Füme", "Turkuaz", "Ara Yeşil",
+  "Düz Ayna", "Füme Ayna", "Bronz Ayna", "Eskitme Ayna"
 ];
 
 // --- ŞİŞECAM GLASSTOOL TÜM KAPLAMA SERİLERİ ---

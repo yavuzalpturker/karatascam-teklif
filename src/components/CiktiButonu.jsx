@@ -22,7 +22,6 @@ export default function CiktiButonu({ teklif, sepet, sepet2 = [] }) {
       notlar: teklif.notlar || "",
       odeme_sekli: teklif.odemeSekli || "", 
       tarih: new Date().toISOString(),
-      // İmalat ise sadece seçilen ürünler arşive kaydedilir
       sepet: imalatSepet1,
       sepet2: imalatSepet2
     };
@@ -44,7 +43,6 @@ export default function CiktiButonu({ teklif, sepet, sepet2 = [] }) {
     setIslemDurumu(tur);
     try {
       if (tur === "İMALAT") {
-        // Sadece tikli (seçili) olan ürünleri filtrele
         const seciliSepet1 = sepet.filter(item => item.secili !== false);
         const seciliSepet2 = sepet2.filter(item => item.secili !== false);
 
@@ -94,13 +92,13 @@ export default function CiktiButonu({ teklif, sepet, sepet2 = [] }) {
           </button>
         </div>
 
-        {/* İMALAT / KESİM LİSTESİ BUTONLARI */}
+        {/* İMALAT / KESİM LİSTESİ BUTONLARI (KURUMSAL TEMAYA UYARLANDI) */}
         <div style={{ display: "flex", flexDirection: "column", gap: "5px" }}>
           <button 
             className="buton" 
             onClick={() => islemYap("İMALAT", false)} 
             disabled={islemDurumu !== null}
-            style={{ backgroundColor: "#d97706", color: "white", fontWeight: "bold" }}
+            style={{ backgroundColor: "#0f2942", color: "white", fontWeight: "bold", border: "1px solid #0f2942" }}
           >
             {islemDurumu === "İMALAT" ? "Hazırlanıyor…" : "🛠️ Seçilenlerin İmalatını İndir"}
           </button>
