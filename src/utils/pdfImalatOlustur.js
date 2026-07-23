@@ -99,7 +99,7 @@ function imalatTabloOlustur(sepet, baslikMetni) {
     if (satir.gorsel) {
       ozelAciklamaStack.push({
         image: satir.gorsel,
-        width: 120, 
+        width: 100, 
         alignment: 'center',
         margin: [0, 4, 0, 4]
       });
@@ -121,7 +121,6 @@ function imalatTabloOlustur(sepet, baslikMetni) {
     ]);
   });
 
-  // Toplam satırı sabit 8 sütun yapısına göre güvenle ayarlandı
   tabloGövdesi.push([
     { text: 'GENEL TOPLAM', colSpan: 5, alignment: 'right', bold: true, fillColor: '#f5f5f5', margin: [0, 5, 5, 5] },
     {}, {}, {}, {}, 
@@ -219,7 +218,7 @@ export async function imalatPdfIndir(teklif, sepet1, sepet2 = [], teklifNo, oniz
     {
       table: {
         headerRows: 1,
-        widths: [45, '*', 100, 45, 45, 35, 45, 45],
+        widths: [35, '*', 70, 40, 40, 30, 45, 45], // Malın Cinsi (*) genişletildi, Açıklama sütunu (70) daraltıldı
         body: sonuc1.tabloGövdesi
       },
       layout: {
@@ -237,7 +236,7 @@ export async function imalatPdfIndir(teklif, sepet1, sepet2 = [], teklifNo, oniz
       {
         table: {
           headerRows: 1,
-          widths: [45, '*', 100, 45, 45, 35, 45, 45],
+          widths: [35, '*', 70, 40, 40, 30, 45, 45],
           body: sonuc2.tabloGövdesi
         },
         layout: {
