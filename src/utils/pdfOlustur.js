@@ -4,26 +4,66 @@ import { paraFormatla, genelToplamHesapla, genelKdvHesapla, sayiyiYaziyaCevir } 
 
 pdfMake.vfs = pdfFonts?.pdfMake?.vfs || pdfFonts?.vfs || pdfFonts?.default?.pdfMake?.vfs || pdfFonts?.default?.vfs;
 
-async function gorseliBase64eCevir(yol) {
+/**
+ * Bir görsel kaynağını (dosya yolu VEYA data:image/... base64 metni fark etmez)
+ * <canvas> üzerinden yeniden çizip TEMİZ bir JPEG'e dönüştürür.
+ *
+ * Bunu neden yapıyoruz?
+ * Telefon/PC'den yüklenen fotoğraflar bazen CMYK renk uzayı, ICC renk profili
+ * veya "progressive" JPEG formatında olabiliyor. pdfMake'in altyapısı (pdfkit)
+ * bu formatları düzgün çözemediği için PDF'te resim yerine parazit/gürültü
+ * deseni gösteriyor. Görseli canvas'a çizip tekrar dışa aktarmak, tarayıcının
+ * kendi görüntü çözücüsünü kullanarak sorunlu profili tamamen temizler ve
+ * her zaman pdfMake'in sorunsuz okuyabildiği standart sRGB JPEG üretir.
+ * Ayrıca çok büyük fotoğrafları PDF boyutu şişmesin diye ölçekler.
+ */
+function gorseliHazirla(kaynak, maxGenislik = null) {
   return new Promise((resolve) => {
+    if (!kaynak) {
+      resolve(null);
+      return;
+    }
+
     const img = new Image();
     img.onload = () => {
       try {
-        const canvas = document.createElement('canvas');
-        canvas.width = img.width;
-        canvas.height = img.height;
-        const ctx = canvas.getContext('2d');
-        ctx.drawImage(img, 0, 0);
-        
-        const safPng = canvas.toDataURL('image/png');
-        resolve(safPng);
+        let genislik = img.naturalWidth || img.width;
+        let yukseklik = img.naturalHeight || img.height;
+
+        if (maxGenislik && genislik > maxGenislik) {
+          const oran = maxGenislik / genislik;
+          genislik = Math.round(genislik * oran);
+          yukseklik = Math.round(yukseklik * oran);
+        }
+
+        const canvas = document.createElement("canvas");
+        canvas.width = genislik;
+        canvas.height = yukseklik;
+        const ctx = canvas.getContext("2d");
+
+        // Olası saydam alanları/bozuk kanalları temiz beyaza boyayarak
+        // PDF üzerinde siyah/gürültü lekesi kalmasını engelliyoruz.
+        ctx.fillStyle = "#ffffff";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(img, 0, 0, genislik, yukseklik);
+
+        // JPEG olarak yeniden kodlamak, kaynaktaki CMYK/ICC profilini
+        // tamamen eler ve pdfMake ile uyumlu hale getirir.
+        const temizVeri = canvas.toDataURL("image/jpeg", 0.92);
+        resolve(temizVeri);
       } catch (e) {
+        console.error("Görsel PDF için hazırlanamadı:", e);
         resolve(null);
       }
     };
     img.onerror = () => resolve(null);
-    img.src = yol;
+    img.src = kaynak;
   });
+}
+
+// Logolar için: küçük ve zaten temiz dosyalar olduğundan boyutlandırma yapmadan kullanıyoruz.
+async function gorseliBase64eCevir(yol) {
+  return gorseliHazirla(yol, null);
 }
 
 const SOZLESME_SARTLARI = [
@@ -102,6 +142,18 @@ const ORTAK_FOOTER = {
   margin: [40, 0, 40, 20],
 };
 
+// ÜRÜN GÖRSELLERİNİ SEPET İÇİN ÖNCEDEN TEMİZLEYİP HAZIRLAYAN YARDIMCI FONKSİYON
+async function sepetGorselleriniHazirla(sepet) {
+  if (!sepet || sepet.length === 0) return [];
+  return Promise.all(
+    sepet.map(async (satir) => {
+      if (!satir.gorsel) return satir;
+      const temizGorsel = await gorseliHazirla(satir.gorsel, 700);
+      return { ...satir, gorsel: temizGorsel || satir.gorsel };
+    })
+  );
+}
+
 function sepetIcerikOlustur(sepet, baslikMetni) {
   if (!sepet || sepet.length === 0) return [];
 
@@ -115,12 +167,11 @@ function sepetIcerikOlustur(sepet, baslikMetni) {
       { text: baslik, bold: true, margin: [0, 6, 0, 2] }
     ];
 
-    // Ürün görseli varsa PDF'e dinamik olarak ekle
     if (satir.gorsel) {
       elemanlar.push({
         image: satir.gorsel,
-        width: 130,
-        margin: [0, 4, 0, 6]
+        width: 150, // Düz teklifte yer geniş, sadece width veriyoruz bozulmasın diye
+        margin: [0, 5, 0, 8]
       });
     }
 
@@ -164,25 +215,27 @@ function sepetIcerikOlustur(sepet, baslikMetni) {
   ];
 }
 
-// ==========================================
-// 1. DÜZ METİN TEKLİF PDF'İ
-// ==========================================
 export async function teklifPdfIndir(teklif, sepet1, sepet2 = [], teklifNo, onizlemeMi = false) {
   const logoSisecam = await gorseliBase64eCevir("/sisecam.png");
   const logoIso = await gorseliBase64eCevir("/birinci-logo.jpg");
+
+  // PDF'e gömülmeden önce ürün görsellerini (varsa) temizleyip standart hale getiriyoruz.
+  const [temizSepet1, temizSepet2] = await Promise.all([
+    sepetGorselleriniHazirla(sepet1),
+    sepetGorselleriniHazirla(sepet2),
+  ]);
 
   const imzalayanKisi = teklif.imzalayan || "Sercan Temel";
   const bankaIban = "TR26 0006 4000 0014 2210 2141 37";
   const dinamikSartlar = SOZLESME_SARTLARI;
 
-  const ikiliMi = sepet2 && sepet2.length > 0;
+  const ikiliMi = temizSepet2 && temizSepet2.length > 0;
 
-  const birinciSecenekIcerik = sepetIcerikOlustur(sepet1, ikiliMi ? "1. SEÇENEK" : null);
-  const ikinciSecenekIcerik = ikiliMi ? sepetIcerikOlustur(sepet2, "2. SEÇENEK") : [];
+  const birinciSecenekIcerik = sepetIcerikOlustur(temizSepet1, ikiliMi ? "1. SEÇENEK" : null);
+  const ikinciSecenekIcerik = ikiliMi ? sepetIcerikOlustur(temizSepet2, "2. SEÇENEK") : [];
 
   const tarihYazisi = teklif.tarih ? new Date(teklif.tarih).toLocaleDateString("tr-TR") : new Date().toLocaleDateString("tr-TR");
   
-  // ÖNCELİK TEKLİF OBJESİNDEKİ TEKLİF_NO (REVİZELİ NUMARA)
   const belgeNo = teklif.teklifNo || teklifNo || siradakiProformaNoGetir(); 
 
   const bankaStack = [
@@ -306,22 +359,24 @@ function proformaTabloOlustur(sepet, baslikMetni) {
       birimFiyatMetni = parcalar[1].trim();
     }
 
-    // Özel açıklama hücresine metin ve varsa görseli ekleme
     const ozelAciklamaStack = [
-      { text: satir.ozelAciklama || "-", fontSize: 9, margin: [0, 2, 0, 2] }
+      { text: satir.ozelAciklama || "-", fontSize: 9, margin: [0, 0, 0, 6], alignment: 'left' }
     ];
 
+    // O KRİTİK NOKTA BURASI! FİT YOK! YÜKSEKLİK YOK! 
+    // Sadece tablo sütununun (125) içine güvenle sığacak 110 genişlik veriyoruz.
+    // pdfMake mecburen resmin yüksekliğini kendi oranına göre milimetrik açacak.
     if (satir.gorsel) {
       ozelAciklamaStack.push({
         image: satir.gorsel,
-        width: 90,
-        margin: [0, 4, 0, 2]
+        width: 110,
+        alignment: 'center'
       });
     }
 
     tabloGövdesi.push([
       { text: satir.urunAciklamasi, fontSize: 9, margin: [5, 5, 0, 5], alignment: 'left' },
-      { stack: ozelAciklamaStack, margin: [5, 5, 0, 5], alignment: 'left' },
+      { stack: ozelAciklamaStack, margin: [5, 5, 0, 5] },
       { text: miktarMetni, fontSize: 9, alignment: 'center', margin: [0, 5, 0, 5] },
       { text: birimFiyatMetni, fontSize: 9, alignment: 'center', margin: [0, 5, 0, 5] },
       { text: `% ${satir.kdvOrani}`, fontSize: 9, alignment: 'center', margin: [0, 5, 0, 5] },
@@ -363,12 +418,15 @@ function proformaTabloOlustur(sepet, baslikMetni) {
   return { tabloGövdesi, yalnizMetni };
 }
 
-// ==========================================
-// 2. TABLOLU PROFORMA FATURA PDF'İ
-// ==========================================
 export async function proformaPdfIndir(teklif, sepet1, sepet2 = [], teklifNo, onizlemeMi = false) {
   const logoSisecam = await gorseliBase64eCevir("/sisecam.png");
   const logoIso = await gorseliBase64eCevir("/birinci-logo.jpg");
+
+  // PDF'e gömülmeden önce ürün görsellerini (varsa) temizleyip standart hale getiriyoruz.
+  const [temizSepet1, temizSepet2] = await Promise.all([
+    sepetGorselleriniHazirla(sepet1),
+    sepetGorselleriniHazirla(sepet2),
+  ]);
   
   const imzalayanKisi = teklif.imzalayan || "Sercan Temel";
   const bankaIban = "TR26 0006 4000 0014 2210 2141 37";
@@ -376,13 +434,12 @@ export async function proformaPdfIndir(teklif, sepet1, sepet2 = [], teklifNo, on
 
   const tarihYazisi = teklif.tarih ? new Date(teklif.tarih).toLocaleDateString("tr-TR") : new Date().toLocaleDateString("tr-TR");
   
-  // ÖNCELİK TEKLİF OBJESİNDEKİ TEKLİF_NO (REVİZELİ NUMARA)
   const belgeNo = teklif.teklifNo || teklifNo || siradakiProformaNoGetir(); 
 
-  const ikiliMi = sepet2 && sepet2.length > 0;
+  const ikiliMi = temizSepet2 && temizSepet2.length > 0;
 
-  const sonuc1 = proformaTabloOlustur(sepet1, ikiliMi ? "1. SEÇENEK" : null);
-  const sonuc2 = ikiliMi ? proformaTabloOlustur(sepet2, "2. SEÇENEK") : null;
+  const sonuc1 = proformaTabloOlustur(temizSepet1, ikiliMi ? "1. SEÇENEK" : null);
+  const sonuc2 = ikiliMi ? proformaTabloOlustur(temizSepet2, "2. SEÇENEK") : null;
 
   let kisi = (teklif.ilgiliKisi || "").toLocaleUpperCase("tr-TR");
   kisi = kisi.replace(/DİKKATİNE/g, "").replace(/[,;]/g, "").trim();
@@ -426,7 +483,8 @@ export async function proformaPdfIndir(teklif, sepet1, sepet2 = [], teklifNo, on
     {
       table: {
         headerRows: 1,
-        widths: ['*', '*', 'auto', 'auto', 'auto', 'auto'],
+        // DİĞER KRİTİK NOKTA: Görselin bulunduğu 2. sütun genişliğini 125 olarak sabitledik. Resim (110) paşalar gibi içine sığacak.
+        widths: ['*', 125, 'auto', 'auto', 'auto', 'auto'],
         body: sonuc1.tabloGövdesi
       },
       layout: {
@@ -439,13 +497,13 @@ export async function proformaPdfIndir(teklif, sepet1, sepet2 = [], teklifNo, on
     { text: [ {text: ikiliMi ? 'YALNIZ (1. Seçenek): ' : 'YALNIZ: ', bold: true}, `${sonuc1.yalnizMetni}.` ], fontSize: 10, alignment: 'right', margin: [0, 4, 0, 20] }
   ];
 
-  if (sonuc2 && sepet2.length > 0) {
+  if (sonuc2 && temizSepet2.length > 0) {
     icerikDizisi.push(
       { text: "", margin: [0, 10, 0, 10] },
       {
         table: {
           headerRows: 1,
-          widths: ['*', '*', 'auto', 'auto', 'auto', 'auto'],
+          widths: ['*', 125, 'auto', 'auto', 'auto', 'auto'], // Aynısını buraya da gömdük
           body: sonuc2.tabloGövdesi
         },
         layout: {
