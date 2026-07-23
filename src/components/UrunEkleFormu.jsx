@@ -8,8 +8,9 @@ export default function UrunEkleFormu({ urunler = [], yukleniyor, hata, onEkle, 
   const [secilenId, setSecilenId] = useState("");
   const [listeAcik, setListeAcik] = useState(false);
   
+  const [pozNo, setPozNo] = useState(""); // POZ NO STATE'İ EKLENDİ
   const [ozelAciklama, setOzelAciklama] = useState("");
-  const [urunGorselBase64, setUrunGorselBase64] = useState(null); // GÖRSEL BASE64 STATE'İ
+  const [urunGorselBase64, setUrunGorselBase64] = useState(null); 
 
   const [en, setEn] = useState("");
   const [boy, setBoy] = useState("");
@@ -19,13 +20,12 @@ export default function UrunEkleFormu({ urunler = [], yukleniyor, hata, onEkle, 
   const [fiyatAna, setFiyatAna] = useState(""); 
   const [fiyatAdet, setFiyatAdet] = useState(""); 
 
-  // --- DİNAMİK EKSTRA İŞLEM BEDELLERİ ---
   const [ekstraIslemler, setEkstraIslemler] = useState({
-    kenarBedeli: "",  // Rodaj, Bizote, Pah Bedeli
-    temperBedeli: "", // Temper Bedeli
-    delikBedeli: "",  // Delik Bedeli
-    oyguBedeli: "",   // Oygu Bedeli
-    bondingBedeli: "" // Bonding / Strüktürel Bedeli
+    kenarBedeli: "",  
+    temperBedeli: "", 
+    delikBedeli: "",  
+    oyguBedeli: "",   
+    bondingBedeli: "" 
   });
 
   const [paraBirimi, setParaBirimi] = useState("TRY");
@@ -38,6 +38,7 @@ export default function UrunEkleFormu({ urunler = [], yukleniyor, hata, onEkle, 
       const ham = islemVerisi.satir.hamVeri;
       setArama(ham.arama || "");
       setSecilenId(ham.secilenId || "");
+      setPozNo(ham.pozNo || ""); // POZ NO GERİ YÜKLEME
       setOzelAciklama(ham.ozelAciklama || "");
       setUrunGorselBase64(islemVerisi.satir.gorsel || null);
       setEn(ham.en || "");
@@ -93,7 +94,6 @@ export default function UrunEkleFormu({ urunler = [], yukleniyor, hata, onEkle, 
     setListeAcik(false);
   };
 
-  // GÖRSEL SEÇİLDİĞİNDE BASE64'E ÇEVİREN FONKSİYON
   const handleGorselYukle = (e) => {
     const dosya = e.target.files[0];
     if (dosya) {
@@ -133,7 +133,6 @@ export default function UrunEkleFormu({ urunler = [], yukleniyor, hata, onEkle, 
     }
   }
 
-  // --- HANGİ EKSTRA FİYAT İNPUTLARININ GÖRÜNECEĞİNİ TESPİT ETME ---
   const aramaUpper = arama.toLocaleUpperCase("tr-TR");
   const varKenar = aramaUpper.includes("RODAJ") || aramaUpper.includes("BİZOTE") || aramaUpper.includes("PAH");
   const varTemper = aramaUpper.includes("TEMPER");
@@ -229,17 +228,17 @@ export default function UrunEkleFormu({ urunler = [], yukleniyor, hata, onEkle, 
       Açıklama: aciklamaBul(sonKullanilacakUrun)
     };
 
-    // 1. ANA CAM SATIRINI HESAPLA VE EKLE
     const anaSatir = satirHesapla(duzeltilmisUrun, 100, 100, hesaplananMiktar, nihaiFiyat, paraBirimi, Number(kdvOrani), nihaiBirim);
+    anaSatir.pozNo = pozNo; // POZ NO SATIRA EKLENDİ
     anaSatir.ozelAciklama = ozelAciklama + ekstraAciklama;
-    anaSatir.gorsel = urunGorselBase64; // GÖRSEL BİLGİSİ SATIRA EKLENDİ
+    anaSatir.gorsel = urunGorselBase64; 
     anaSatir.miktar = Number(hesaplananMiktar.toFixed(3)); 
     anaSatir.secilenBirim = nihaiBirim;
     anaSatir.birimFiyat = nihaiFiyat;
     anaSatir.birim = nihaiBirim; 
     anaSatir.Birim = nihaiBirim;
     anaSatir.hamVeri = {
-      arama, secilenId, ozelAciklama, en, boy, miktar, secilenBirim, fiyatAna, fiyatAdet, paraBirimi, kdvOrani, ekstraIslemler
+      arama, secilenId, pozNo, ozelAciklama, en, boy, miktar, secilenBirim, fiyatAna, fiyatAdet, paraBirimi, kdvOrani, ekstraIslemler
     };
 
     if (islemVerisi && islemVerisi.tip === "duzenle") {
@@ -248,7 +247,6 @@ export default function UrunEkleFormu({ urunler = [], yukleniyor, hata, onEkle, 
     } else {
       if (onEkle) onEkle(anaSatir);
 
-      // 2. EKSTRA İŞLEM BEDELLERİNİ AYRI BİRER KALEM OLARAK SEPETE EKLEME
       const ekstraKalemler = [
         { isim: "RODAJ / BİZOTE / PAH İŞLEM BEDELİ", bedel: Number(ekstraIslemler.kenarBedeli) },
         { isim: "TEMPER İŞLEM BEDELİ", bedel: Number(ekstraIslemler.temperBedeli) },
@@ -268,6 +266,7 @@ export default function UrunEkleFormu({ urunler = [], yukleniyor, hata, onEkle, 
           };
 
           const ekstraSatir = satirHesapla(ekstraUrunObj, 100, 100, Number(miktar) || 1, item.bedel, paraBirimi, Number(kdvOrani), "ad");
+          ekstraSatir.pozNo = pozNo; // HİZMET BEDELİNE DE AYNI POZ NO'YU VERİYORUZ
           ekstraSatir.ozelAciklama = `(${aciklamaBul(sonKullanilacakUrun)} İçin Hizmet Bedeli)`;
           ekstraSatir.miktar = Number(miktar) || 1;
           ekstraSatir.secilenBirim = "ad";
@@ -282,11 +281,11 @@ export default function UrunEkleFormu({ urunler = [], yukleniyor, hata, onEkle, 
       if (islemVerisi && islemVerisi.tip === "tekrar" && onIptal) onIptal(); 
     }
     
-    // Formu Sıfırlama
     setFiyatAna("");
     setFiyatAdet("");
     setArama("");
     setSecilenId("");
+    setPozNo(""); // EKLENDİKTEN SONRA POZ NO'YU SIFIRLA
     setOzelAciklama(""); 
     setUrunGorselBase64(null);
     setEn("");
@@ -375,8 +374,21 @@ export default function UrunEkleFormu({ urunler = [], yukleniyor, hata, onEkle, 
         </div>
       </label>
 
-      {/* ÖZEL AÇIKLAMA VE GÖRSEL YÜKLEME ALANI */}
-      <div style={{ display: "flex", gap: "10px", alignItems: "flex-end" }}>
+      {/* POZ NO, ÖZEL AÇIKLAMA VE GÖRSEL YÜKLEME ALANI */}
+      <div style={{ display: "flex", gap: "10px", alignItems: "flex-end", flexWrap: "wrap" }}>
+        
+        {/* POZ NO ALANI */}
+        <label className="alan" style={{ flex: "0 0 100px" }}>
+          <span>Poz No</span>
+          <input
+            type="text"
+            placeholder="Örn: P1"
+            value={pozNo}
+            onChange={(e) => setPozNo(e.target.value)}
+            style={{ width: "100%", padding: "10px", borderRadius: "6px", border: "1px solid #ccc" }}
+          />
+        </label>
+
         <label className="alan" style={{ flex: 3 }}>
           <span>Ürün Açıklaması / Detay (PDF'teki Açıklama Sütununa Yazılır)</span>
           <input
@@ -388,14 +400,13 @@ export default function UrunEkleFormu({ urunler = [], yukleniyor, hata, onEkle, 
           />
         </label>
 
-        {/* GÖRSEL YÜKLEME INPUTI */}
-        <label className="alan" style={{ flex: 1 }}>
+        <label className="alan" style={{ flex: 1, minWidth: "140px" }}>
           <span style={{ fontSize: "12px", fontWeight: "700", color: "#0f2942" }}>🖼️ Ürün Görseli Ekle</span>
           <input
             type="file"
             accept="image/*"
             onChange={handleGorselYukle}
-            style={{ fontSize: "11px", padding: "6px" }}
+            style={{ fontSize: "11px", padding: "6px", width: "100%" }}
           />
         </label>
       </div>
