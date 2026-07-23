@@ -307,7 +307,11 @@ export default function UrunEkleFormu({ urunler = [], yukleniyor, hata, onEkle, 
 
   return (
     <section className="panel">
-      <CamKombinasyonSihirbazi onKombinasyonSec={handleSihirbazdanGelenUrun} />
+      {/* SİHİRBAZA VERİ AKTARIMI EKLENDİ */}
+      <CamKombinasyonSihirbazi 
+        onKombinasyonSec={handleSihirbazdanGelenUrun} 
+        baslangicMetni={islemVerisi ? arama : ""} 
+      />
 
       <h2 className="panel__baslik">
         {islemVerisi?.tip === "duzenle" ? "✏️ Ürünü Düzenle" : "Ürün Ekleme Ekranı"}
@@ -515,7 +519,7 @@ export default function UrunEkleFormu({ urunler = [], yukleniyor, hata, onEkle, 
         </div>
       </label>
 
-      {/* EKSTRA İŞLEM BEDELLERİ (TÜMÜ ARTIK HER ZAMAN GÖRÜNÜR) */}
+      {/* EKSTRA İŞLEM BEDELLERİ */}
       <div style={{ backgroundColor: "#f8fafc", padding: "12px", borderRadius: "6px", border: "1px solid #cbd5e1", marginBottom: "15px" }}>
         <span style={{ fontSize: "12px", fontWeight: "700", color: "#0f2942", display: "block", marginBottom: "8px" }}>
           Ekstra İşlem Bedelleri
