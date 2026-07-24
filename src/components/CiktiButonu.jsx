@@ -30,14 +30,36 @@ export default function CiktiButonu({ teklif, sepet, sepet2 = [] }) {
     
     if (error) {
       console.error("Supabase Kayıt Hatası:", error);
-      alert("Teklif oluşturuldu ama arşive kaydedilirken bir hata oluştu.");
-      return belgeNo;
+      alert("Arşive kaydedilirken bir hata oluştu.");
+      return null;
     }
 
     localStorage.setItem("proforma_sayac", sayac + 1);
     window.dispatchEvent(new Event("arsivGuncellendi"));
+    alert("Başarıyla arşive kaydedildi!");
     return belgeNo;
   };
+
+  // SADECE KAYDETMEYİ ÇALIŞTIRAN FONKSİYON
+  async function sadeceKaydet(tur) {
+    setIslemDurumu(tur + "_KAYDET");
+    try {
+      if (tur === "İMALAT") {
+        const seciliSepet1 = sepet.filter(item => item.secili !== false);
+        const seciliSepet2 = sepet2.filter(item => item.secili !== false);
+
+        if (seciliSepet1.length === 0 && seciliSepet2.length === 0) {
+          alert("Lütfen imalat listesine kaydetmek için en az 1 ürün seçin (checkbox)!");
+          return;
+        }
+        await supabaseKaydet(tur, seciliSepet1, seciliSepet2);
+      } else {
+        await supabaseKaydet(tur, sepet, sepet2);
+      }
+    } finally {
+      setIslemDurumu(null);
+    }
+  }
 
   async function islemYap(tur, onizlemeMi) {
     setIslemDurumu(tur);
@@ -53,18 +75,8 @@ export default function CiktiButonu({ teklif, sepet, sepet2 = [] }) {
           return;
         }
 
-        // SADECE İNDİR / KAYDET İŞLEMİNDE ARŞİVE KAYIT ATILIR, ÖNİZLEMEDE ATILMAZ
-        if (!onizlemeMi) {
-          belgeNo = await supabaseKaydet(tur, seciliSepet1, seciliSepet2);
-        }
-
         await imalatPdfIndir(teklif, seciliSepet1, seciliSepet2, belgeNo, onizlemeMi);
       } else {
-        // SADECE İNDİR / KAYDET İŞLEMİNDE ARŞİVE KAYIT ATILIR, ÖNİZLEMEDE ATILMAZ
-        if (!onizlemeMi) {
-          belgeNo = await supabaseKaydet(tur, sepet, sepet2);
-        }
-
         if (tur === "TEKLİF") {
           await teklifPdfIndir(teklif, sepet, sepet2, belgeNo, onizlemeMi);
         } else {
@@ -84,8 +96,16 @@ export default function CiktiButonu({ teklif, sepet, sepet2 = [] }) {
         
         {/* TEKLİF BUTONLARI */}
         <div style={{ display: "flex", flexDirection: "column", gap: "5px" }}>
+          <button 
+            className="buton" 
+            onClick={() => sadeceKaydet("TEKLİF")} 
+            disabled={islemDurumu !== null}
+            style={{ backgroundColor: "#10b981", color: "white", fontWeight: "bold", border: "1px solid #10b981" }}
+          >
+            {islemDurumu === "TEKLİF_KAYDET" ? "Kaydediliyor…" : "Teklifi Kaydet"}
+          </button>
           <button className="buton buton--birincil" onClick={() => islemYap("TEKLİF", false)} disabled={islemDurumu !== null}>
-            {islemDurumu === "TEKLİF" ? "Hazırlanıyor…" : "Teklifi Kaydet & İndir"}
+            {islemDurumu === "TEKLİF" ? "İndiriliyor…" : "Teklifi İndir"}
           </button>
           <button className="buton buton--ikincil" onClick={() => islemYap("TEKLİF", true)} disabled={islemDurumu !== null}>
             Teklifi Önizle
@@ -94,8 +114,16 @@ export default function CiktiButonu({ teklif, sepet, sepet2 = [] }) {
 
         {/* PROFORMA BUTONLARI */}
         <div style={{ display: "flex", flexDirection: "column", gap: "5px" }}>
+          <button 
+            className="buton" 
+            onClick={() => sadeceKaydet("PROFORMA")} 
+            disabled={islemDurumu !== null}
+            style={{ backgroundColor: "#10b981", color: "white", fontWeight: "bold", border: "1px solid #10b981" }}
+          >
+            {islemDurumu === "PROFORMA_KAYDET" ? "Kaydediliyor…" : "Proformayı Kaydet"}
+          </button>
           <button className="buton buton--birincil" onClick={() => islemYap("PROFORMA", false)} disabled={islemDurumu !== null}>
-            {islemDurumu === "PROFORMA" ? "Hazırlanıyor…" : "Proformayı Kaydet & İndir"}
+            {islemDurumu === "PROFORMA" ? "İndiriliyor…" : "Proformayı İndir"}
           </button>
           <button className="buton buton--ikincil" onClick={() => islemYap("PROFORMA", true)} disabled={islemDurumu !== null}>
             Proformayı Önizle
@@ -106,11 +134,19 @@ export default function CiktiButonu({ teklif, sepet, sepet2 = [] }) {
         <div style={{ display: "flex", flexDirection: "column", gap: "5px" }}>
           <button 
             className="buton" 
+            onClick={() => sadeceKaydet("İMALAT")} 
+            disabled={islemDurumu !== null}
+            style={{ backgroundColor: "#10b981", color: "white", fontWeight: "bold", border: "1px solid #10b981" }}
+          >
+            {islemDurumu === "İMALAT_KAYDET" ? "Kaydediliyor…" : "🛠️ İmalat Listesini Kaydet"}
+          </button>
+          <button 
+            className="buton" 
             onClick={() => islemYap("İMALAT", false)} 
             disabled={islemDurumu !== null}
             style={{ backgroundColor: "#0f2942", color: "white", fontWeight: "bold", border: "1px solid #0f2942" }}
           >
-            {islemDurumu === "İMALAT" ? "Hazırlanıyor…" : "🛠️ Seçilenlerin İmalatını İndir"}
+            {islemDurumu === "İMALAT" ? "İndiriliyor…" : "🛠️ Seçilenlerin İmalatını İndir"}
           </button>
           <button 
             className="buton buton--ikincil" 
