@@ -14,11 +14,16 @@ export default function CiktiButonu({ teklif, sepet, sepet2 = [] }) {
   if (sepet.length === 0 && sepet2.length === 0) return null;
 
   // Seçilen ürünleri ve sipariş numarasını izleyen Akıllı Fonksiyon
-  const getAkilliImalatTeklifi = (seciliSepet1, seciliSepet2) => {
+  const getAkilliImalatTeklifi = (seciliSepet1, seciliSepet2, tumuSeciliMi) => {
     const islemTeklifi = { ...teklif };
     if (!islemTeklifi.siparisNo) return islemTeklifi; // Sipariş no boşsa hiçbir şey yapma
 
-    // Seçilen ürünleri metne çevirip hafızayla karşılaştırıyoruz
+    // EĞER BÜTÜN ÜRÜNLER SEÇİLİYSE TAKI EKLEME, DİREKT ORİJİNAL NUMARAYI VER
+    if (tumuSeciliMi) {
+      return islemTeklifi;
+    }
+
+    // Parçalı seçim yapıldıysa hafıza ve sayaç mantığını çalıştır
     const seciliVeri = JSON.stringify([...seciliSepet1, ...seciliSepet2]);
     
     let guncelSayac = imalatSayaci;
@@ -48,7 +53,7 @@ export default function CiktiButonu({ teklif, sepet, sepet2 = [] }) {
 
     const yeniKayit = {
       teklif_no: belgeNo,
-      siparis_no: aktifTeklif.siparisNo || null, // ARŞİV İÇİN YENİ EKLENDİ!
+      siparis_no: aktifTeklif.siparisNo || null, 
       tur: tur,
       musteri_adi: aktifTeklif.musteriAdi || "Bilinmeyen Müşteri",
       proje_adi: aktifTeklif.projeAdi,
@@ -80,13 +85,16 @@ export default function CiktiButonu({ teklif, sepet, sepet2 = [] }) {
       if (tur === "İMALAT") {
         const seciliSepet1 = sepet.filter(item => item.secili !== false);
         const seciliSepet2 = sepet2.filter(item => item.secili !== false);
+        
+        // Sepetteki TÜM ürünlerin seçili olup olmadığını kontrol ediyoruz
+        const tumuSeciliMi = (seciliSepet1.length === sepet.length) && (seciliSepet2.length === sepet2.length);
 
         if (seciliSepet1.length === 0 && seciliSepet2.length === 0) {
           alert("Lütfen imalat listesine kaydetmek için en az 1 ürün seçin (checkbox)!");
           return;
         }
         
-        const islemTeklifi = getAkilliImalatTeklifi(seciliSepet1, seciliSepet2);
+        const islemTeklifi = getAkilliImalatTeklifi(seciliSepet1, seciliSepet2, tumuSeciliMi);
         await supabaseKaydet(tur, islemTeklifi, seciliSepet1, seciliSepet2);
       } else {
         await supabaseKaydet(tur, teklif, sepet, sepet2);
@@ -104,13 +112,16 @@ export default function CiktiButonu({ teklif, sepet, sepet2 = [] }) {
       if (tur === "İMALAT") {
         const seciliSepet1 = sepet.filter(item => item.secili !== false);
         const seciliSepet2 = sepet2.filter(item => item.secili !== false);
+        
+        // Sepetteki TÜM ürünlerin seçili olup olmadığını kontrol ediyoruz
+        const tumuSeciliMi = (seciliSepet1.length === sepet.length) && (seciliSepet2.length === sepet2.length);
 
         if (seciliSepet1.length === 0 && seciliSepet2.length === 0) {
           alert("Lütfen imalat listesine eklemek için en az 1 ürün seçin (checkbox)!");
           return;
         }
 
-        const islemTeklifi = getAkilliImalatTeklifi(seciliSepet1, seciliSepet2);
+        const islemTeklifi = getAkilliImalatTeklifi(seciliSepet1, seciliSepet2, tumuSeciliMi);
         await imalatPdfIndir(islemTeklifi, seciliSepet1, seciliSepet2, belgeNo, onizlemeMi);
       } else {
         if (tur === "TEKLİF") {

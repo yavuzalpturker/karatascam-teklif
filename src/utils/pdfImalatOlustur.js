@@ -245,7 +245,6 @@ export async function imalatPdfIndir(teklif, sepet1, sepet2 = [], teklifNo, oniz
           stack: [
             { text: `Tarih: ${tarihYazisi}`, fontSize: 10 },
             { text: `No: ${belgeNo}`, fontSize: 10, bold: true },
-            // SİPARİŞ NO MEVCUT BOYUTUNUN ÜÇ KATINA ÇIKARILDI (30 px)
             siparisNoMetni ? { text: `Sipariş No: ${siparisNoMetni}`, fontSize: 30, bold: true, color: '#0f2942', margin: [0, 6, 0, 0] } : null
           ].filter(Boolean),
           alignment: 'right'
