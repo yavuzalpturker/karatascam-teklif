@@ -5,22 +5,56 @@ import { imalatPdfIndir } from "../utils/pdfImalatOlustur";
 
 export default function CiktiButonu({ teklif, sepet, sepet2 = [] }) {
   const [islemDurumu, setIslemDurumu] = useState(null);
+  
+  // AKILLI SAYAÇ VE HAFIZA STATE'LERİ
+  const [imalatSayaci, setImalatSayaci] = useState(1);
+  const [sonSiparisNo, setSonSiparisNo] = useState("");
+  const [sonSeciliUrunler, setSonSeciliUrunler] = useState("");
 
   if (sepet.length === 0 && sepet2.length === 0) return null;
 
-  const supabaseKaydet = async (tur, imalatSepet1 = sepet, imalatSepet2 = sepet2) => {
+  // Seçilen ürünleri ve sipariş numarasını izleyen Akıllı Fonksiyon
+  const getAkilliImalatTeklifi = (seciliSepet1, seciliSepet2) => {
+    const islemTeklifi = { ...teklif };
+    if (!islemTeklifi.siparisNo) return islemTeklifi; // Sipariş no boşsa hiçbir şey yapma
+
+    // Seçilen ürünleri metne çevirip hafızayla karşılaştırıyoruz
+    const seciliVeri = JSON.stringify([...seciliSepet1, ...seciliSepet2]);
+    
+    let guncelSayac = imalatSayaci;
+
+    // Eğer ana sipariş numarası baştan değiştiyse (örn: I-1078'den I-1079'a geçtiyse)
+    if (islemTeklifi.siparisNo !== sonSiparisNo) {
+      guncelSayac = 1;
+      setSonSiparisNo(islemTeklifi.siparisNo);
+      setSonSeciliUrunler(seciliVeri);
+      setImalatSayaci(1);
+    } 
+    // Eğer sipariş numarası aynı ama SEÇİLEN ÜRÜNLER FARKLIYSA (Yeni ürünler tiklendiyse)
+    else if (seciliVeri !== sonSeciliUrunler) {
+      guncelSayac = imalatSayaci + 1;
+      setSonSeciliUrunler(seciliVeri);
+      setImalatSayaci(guncelSayac);
+    }
+
+    islemTeklifi.siparisNo = `${islemTeklifi.siparisNo}-${guncelSayac}`;
+    return islemTeklifi;
+  };
+
+  const supabaseKaydet = async (tur, aktifTeklif, imalatSepet1 = sepet, imalatSepet2 = sepet2) => {
     let sayac = parseInt(localStorage.getItem("proforma_sayac") || "1", 10);
     const yil = new Date().getFullYear();
     const belgeNo = `${yil}/${sayac.toString().padStart(3, "0")}`;
 
     const yeniKayit = {
       teklif_no: belgeNo,
+      siparis_no: aktifTeklif.siparisNo || null, // ARŞİV İÇİN YENİ EKLENDİ!
       tur: tur,
-      musteri_adi: teklif.musteriAdi || "Bilinmeyen Müşteri",
-      proje_adi: teklif.projeAdi,
-      ilgili_kisi: teklif.ilgiliKisi,
-      notlar: teklif.notlar || "",
-      odeme_sekli: teklif.odemeSekli || "", 
+      musteri_adi: aktifTeklif.musteriAdi || "Bilinmeyen Müşteri",
+      proje_adi: aktifTeklif.projeAdi,
+      ilgili_kisi: aktifTeklif.ilgiliKisi,
+      notlar: aktifTeklif.notlar || "",
+      odeme_sekli: aktifTeklif.odemeSekli || "", 
       tarih: new Date().toISOString(),
       sepet: imalatSepet1,
       sepet2: imalatSepet2
@@ -40,7 +74,6 @@ export default function CiktiButonu({ teklif, sepet, sepet2 = [] }) {
     return belgeNo;
   };
 
-  // SADECE KAYDETMEYİ ÇALIŞTIRAN FONKSİYON
   async function sadeceKaydet(tur) {
     setIslemDurumu(tur + "_KAYDET");
     try {
@@ -52,9 +85,11 @@ export default function CiktiButonu({ teklif, sepet, sepet2 = [] }) {
           alert("Lütfen imalat listesine kaydetmek için en az 1 ürün seçin (checkbox)!");
           return;
         }
-        await supabaseKaydet(tur, seciliSepet1, seciliSepet2);
+        
+        const islemTeklifi = getAkilliImalatTeklifi(seciliSepet1, seciliSepet2);
+        await supabaseKaydet(tur, islemTeklifi, seciliSepet1, seciliSepet2);
       } else {
-        await supabaseKaydet(tur, sepet, sepet2);
+        await supabaseKaydet(tur, teklif, sepet, sepet2);
       }
     } finally {
       setIslemDurumu(null);
@@ -75,7 +110,8 @@ export default function CiktiButonu({ teklif, sepet, sepet2 = [] }) {
           return;
         }
 
-        await imalatPdfIndir(teklif, seciliSepet1, seciliSepet2, belgeNo, onizlemeMi);
+        const islemTeklifi = getAkilliImalatTeklifi(seciliSepet1, seciliSepet2);
+        await imalatPdfIndir(islemTeklifi, seciliSepet1, seciliSepet2, belgeNo, onizlemeMi);
       } else {
         if (tur === "TEKLİF") {
           await teklifPdfIndir(teklif, sepet, sepet2, belgeNo, onizlemeMi);

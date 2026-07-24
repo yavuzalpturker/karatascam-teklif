@@ -9,7 +9,7 @@ export default function GecmisTeklifler({ kullaniciRolu, onSepetiYukle }) {
   const [yukleniyor, setYukleniyor] = useState(true);
   const [arama, setArama] = useState("");
   const [secilenTarih, setSecilenTarih] = useState("");
-  const [secilenTur, setSecilenTur] = useState(""); // TÜR FİLTRESİ STATE'İ
+  const [secilenTur, setSecilenTur] = useState(""); 
 
   useEffect(() => {
     fetchGecmisTeklifler();
@@ -83,6 +83,7 @@ export default function GecmisTeklifler({ kullaniciRolu, onSepetiYukle }) {
       ilgiliKisi: t.ilgili_kisi,
       notlar: t.notlar,
       odemeSekli: t.odeme_sekli || "", 
+      siparisNo: t.siparis_no || "", // <--- ARŞİVDEN SİPARİŞ NO EKLENDİ
       tarih: new Date(t.tarih)
     };
 
@@ -105,6 +106,7 @@ export default function GecmisTeklifler({ kullaniciRolu, onSepetiYukle }) {
       ilgiliKisi: t.ilgili_kisi,
       notlar: t.notlar,
       odemeSekli: t.odeme_sekli || "", 
+      siparisNo: t.siparis_no || "", // <--- ARŞİVDEN SİPARİŞ NO EKLENDİ
       tarih: new Date(t.tarih)
     };
 
@@ -120,23 +122,19 @@ export default function GecmisTeklifler({ kullaniciRolu, onSepetiYukle }) {
     }
   }
 
-  // --- ÜÇLÜ FİLTRELEME: ARAMA METNİ + TARİH + TÜR ---
   const filtrelenmisTeklifler = teklifler.filter((t) => {
     const aramaMetni = arama.toLocaleLowerCase("tr-TR");
     
-    // 1. Metin Uyumu
     const metinUygun = 
       (t.teklif_no || "").toLocaleLowerCase("tr-TR").includes(aramaMetni) ||
       (t.musteri_adi || "").toLocaleLowerCase("tr-TR").includes(aramaMetni);
 
-    // 2. Tarih Uyumu
     let tarihUygun = true;
     if (secilenTarih) {
       const kayitTarihi = t.tarih ? new Date(t.tarih).toISOString().split("T")[0] : "";
       tarihUygun = kayitTarihi === secilenTarih;
     }
 
-    // 3. Tür Uyumu (TEKLİF / PROFORMA / İMALAT)
     let turUygun = true;
     if (secilenTur) {
       turUygun = t.tur === secilenTur;
@@ -145,14 +143,13 @@ export default function GecmisTeklifler({ kullaniciRolu, onSepetiYukle }) {
     return metinUygun && tarihUygun && turUygun;
   });
 
-  // TÜR ROZETLERİ İÇİN TEMİZ VE ŞIK RENKLER
   const getTurRozetStili = (tur) => {
     if (tur === "İMALAT") {
-      return { backgroundColor: "#ffedd5", color: "#c2410c", border: "1px solid #fed7aa" }; // Şık Turuncu/Amber
+      return { backgroundColor: "#ffedd5", color: "#c2410c", border: "1px solid #fed7aa" }; 
     } else if (tur === "PROFORMA") {
-      return { backgroundColor: "#f3e8ff", color: "#6b21a8", border: "1px solid #e9d5ff" }; // Şık Mor
+      return { backgroundColor: "#f3e8ff", color: "#6b21a8", border: "1px solid #e9d5ff" }; 
     } else {
-      return { backgroundColor: "#e0f2fe", color: "#0369a1", border: "1px solid #bae6fd" }; // Şık Mavi (Teklif)
+      return { backgroundColor: "#e0f2fe", color: "#0369a1", border: "1px solid #bae6fd" }; 
     }
   };
 
@@ -170,9 +167,7 @@ export default function GecmisTeklifler({ kullaniciRolu, onSepetiYukle }) {
         )}
       </div>
 
-      {/* ARAMA + TÜR FİLTRESİ + TARİH FİLTRESİ ALANI */}
       <div style={{ display: "flex", gap: "10px", marginBottom: "15px", flexWrap: "wrap", alignItems: "center" }}>
-        {/* METİN ARAMA */}
         <input
           type="text"
           placeholder="Ara (No veya Müşteri Adı)..."
@@ -181,7 +176,6 @@ export default function GecmisTeklifler({ kullaniciRolu, onSepetiYukle }) {
           style={{ flex: 2, minWidth: "180px", padding: "10px 14px", borderRadius: "6px", border: "1px solid #cbd5e1", outline: "none", fontSize: "14px" }}
         />
 
-        {/* TÜR SEÇİM DROPDOWN */}
         <select
           value={secilenTur}
           onChange={(e) => setSecilenTur(e.target.value)}
@@ -193,7 +187,6 @@ export default function GecmisTeklifler({ kullaniciRolu, onSepetiYukle }) {
           <option value="İMALAT">İmalat</option>
         </select>
 
-        {/* TARİH SEÇİMİ */}
         <div style={{ display: "flex", gap: "6px", alignItems: "center", flex: 1, minWidth: "200px" }}>
           <input
             type="date"

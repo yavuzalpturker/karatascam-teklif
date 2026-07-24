@@ -11,6 +11,7 @@ export default function SepetTablosu({
 }) {
   const [modalAcik, setModalAcik] = useState(false);
   const [hedefToplam, setHedefToplam] = useState("");
+  const [suruklenenIndex, setSuruklenenIndex] = useState(null);
 
   if (!sepet || sepet.length === 0) {
     return (
@@ -20,7 +21,32 @@ export default function SepetTablosu({
     );
   }
 
-  // İMALAT İÇİN HEPSİNİ SEÇ / HEPSİNİ KALDIR İŞLEMİ
+  // --- SÜRÜKLE & BIRAK (DRAG AND DROP) FONKSİYONLARI ---
+  const handleDragStart = (e, index) => {
+    setSuruklenenIndex(index);
+    e.dataTransfer.effectAllowed = "move";
+  };
+
+  const handleDragOver = (e) => {
+    e.preventDefault(); 
+    e.dataTransfer.dropEffect = "move";
+  };
+
+  const handleDrop = (e, hedefIndex) => {
+    e.preventDefault();
+    if (suruklenenIndex === null || suruklenenIndex === hedefIndex) return;
+
+    const yeniSepet = [...sepet];
+    const [tasinanUrun] = yeniSepet.splice(suruklenenIndex, 1);
+    yeniSepet.splice(hedefIndex, 0, tasinanUrun);
+
+    setSuruklenenIndex(null);
+
+    if (onTopluFiyatGuncelle) {
+      onTopluFiyatGuncelle(yeniSepet);
+    }
+  };
+
   const tumunuSecVeyaKaldir = (durum) => {
     const yeniSepet = sepet.map(item => ({ ...item, secili: durum }));
     if (onTopluFiyatGuncelle) {
@@ -28,7 +54,6 @@ export default function SepetTablosu({
     }
   };
 
-  // İMALAT İÇİN TEK KART SEÇİM İŞLEMİ
   const tekliSecimDegistir = (index, durum) => {
     const yeniSepet = [...sepet];
     yeniSepet[index] = { ...yeniSepet[index], secili: durum };
@@ -37,7 +62,6 @@ export default function SepetTablosu({
     }
   };
 
-  // HEDEF TOPLAM FİYATTAN HER KALEME m² BİRİM FİYATI DAĞITMA
   const topluFiyatDagit = () => {
     const girilenHedef = parseFloat(hedefToplam);
     if (!girilenHedef || girilenHedef <= 0) {
@@ -57,7 +81,6 @@ export default function SepetTablosu({
     const yeniSepet = sepet.map((item) => {
       const yeniToplamTutar = Number((item.miktar * yeniBirimFiyat).toFixed(2));
       const birimFiyatStr = yeniBirimFiyat.toFixed(2);
-      
       let yeniMiktarDetay = `${item.miktar} ${item.secilenBirim || item.birim || 'm²'} x ${birimFiyatStr} ₺`;
 
       return {
@@ -83,55 +106,27 @@ export default function SepetTablosu({
   return (
     <div style={{ backgroundColor: "white", borderRadius: "8px", border: "1px solid #cbd5e1", padding: "12px", boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }}>
       
-      {/* TABLO ÜSTÜ BUTONLAR */}
       <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px", marginBottom: "10px" }}>
-        
-        {/* TOPLU FİYAT DAĞITMA BUTONU */}
         <button
           type="button"
           onClick={() => setModalAcik(true)}
-          style={{
-            backgroundColor: "#0284c7",
-            color: "white",
-            border: "none",
-            padding: "6px 14px",
-            borderRadius: "5px",
-            fontSize: "12px",
-            fontWeight: "600",
-            cursor: "pointer",
-            display: "flex",
-            alignItems: "center",
-            gap: "5px"
-          }}
+          style={{ backgroundColor: "#0284c7", color: "white", border: "none", padding: "6px 14px", borderRadius: "5px", fontSize: "12px", fontWeight: "600", cursor: "pointer", display: "flex", alignItems: "center", gap: "5px" }}
         >
           💰 Toplu Fiyat / m² Dağıt
         </button>
 
-        {/* SEPETİ TEMİZLE BUTONU */}
         <button
           type="button"
           onClick={onTemizle}
-          style={{
-            backgroundColor: "#475569",
-            color: "white",
-            border: "none",
-            padding: "6px 14px",
-            borderRadius: "5px",
-            fontSize: "12px",
-            fontWeight: "600",
-            cursor: "pointer"
-          }}
+          style={{ backgroundColor: "#475569", color: "white", border: "none", padding: "6px 14px", borderRadius: "5px", fontSize: "12px", fontWeight: "600", cursor: "pointer" }}
         >
           🗑️ Sepeti Temizle
         </button>
       </div>
 
-      {/* DİNAMİK TOPLU FİYAT GİRİŞ MODALI */}
       {modalAcik && (
         <div style={{ backgroundColor: "#f0f9ff", border: "1px solid #0284c7", borderRadius: "6px", padding: "12px", marginBottom: "12px", display: "flex", alignItems: "center", gap: "10px" }}>
-          <span style={{ fontSize: "12px", fontWeight: "700", color: "#0369a1", whitespace: "nowrap" }}>
-            Hedef Toplam Tutar (KDV Hariç):
-          </span>
+          <span style={{ fontSize: "12px", fontWeight: "700", color: "#0369a1" }}>Hedef Toplam Tutar (KDV Hariç):</span>
           <input
             type="number"
             placeholder="Örn: 50000"
@@ -156,13 +151,12 @@ export default function SepetTablosu({
         </div>
       )}
 
-      {/* SEPET TABLOSU */}
       <div style={{ overflowX: "auto" }}>
         <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "13px" }}>
           <thead>
             <tr style={{ backgroundColor: "#0f2942", color: "white", textAlign: "left" }}>
-              {/* İMALAT SEÇİM CHECKBOX SÜTUNU */}
-              <th style={{ padding: "10px", textAlign: "center", width: "40px", borderRadius: "4px 0 0 0" }}>
+              <th style={{ padding: "10px", textAlign: "center", width: "30px", borderRadius: "4px 0 0 0" }} title="Sürüklemek için tut">↕️</th>
+              <th style={{ padding: "10px", textAlign: "center", width: "40px" }}>
                 <input 
                   type="checkbox"
                   checked={hepsiSeciliMi}
@@ -173,9 +167,7 @@ export default function SepetTablosu({
               </th>
               <th style={{ padding: "10px" }}>Ürün Açıklaması</th>
               <th style={{ padding: "10px" }}>Özel Açıklama</th>
-              {/* AYRI ÖLÇÜ SÜTUNU */}
               <th style={{ padding: "10px", textAlign: "center", color: "#38bdf8" }}>Ölçü (En x Boy)</th>
-              {/* AYRI ADET SÜTUNU */}
               <th style={{ padding: "10px", textAlign: "center", color: "#38bdf8" }}>Adet</th>
               <th style={{ padding: "10px", textAlign: "center" }}>Ölçü / Miktar</th>
               <th style={{ padding: "10px", textAlign: "center" }}>KDV</th>
@@ -189,14 +181,26 @@ export default function SepetTablosu({
               const olcuMatch = tamMetin.match(/(\d+)\s*[xX×]\s*(\d+)/);
               const enBoyMetni = olcuMatch ? `${olcuMatch[1]} × ${olcuMatch[2]} mm` : "-";
 
-              // Adeti metinden veya satir objesinden güvenle çekiyoruz
               const adetMatch = tamMetin.match(/(?:-\s*)?(\d+)\s*Adet/i);
               const adetDegeri = satir.miktar && !String(satir.miktarDetay).includes("m²") ? satir.miktar : (adetMatch ? adetMatch[1] : "1");
 
               return (
-                <tr key={index} style={{ borderBottom: "1px solid #e2e8f0", backgroundColor: index % 2 === 0 ? "white" : "#f8fafc" }}>
-                  {/* TEKLİ SEÇİM KUTUSU */}
-                  <td style={{ padding: "10px", textAlign: "center" }}>
+                <tr 
+                  key={index} 
+                  draggable
+                  onDragStart={(e) => handleDragStart(e, index)}
+                  onDragOver={handleDragOver}
+                  onDrop={(e) => handleDrop(e, index)}
+                  style={{ 
+                    borderBottom: "1px solid #e2e8f0", 
+                    backgroundColor: suruklenenIndex === index ? "#e0f2fe" : (index % 2 === 0 ? "white" : "#f8fafc"),
+                    cursor: "grab",
+                    opacity: suruklenenIndex === index ? 0.5 : 1
+                  }}
+                  title="Basılı tutup yukarı/aşağı sürükleyerek yerini değiştirebilirsiniz"
+                >
+                  <td style={{ padding: "10px", textAlign: "center", color: "#94a3b8", fontWeight: "bold" }}>☰</td>
+                  <td style={{ padding: "10px", textAlign: "center" }} onClick={(e) => e.stopPropagation()}>
                     <input 
                       type="checkbox"
                       checked={satir.secili !== false}
@@ -211,11 +215,9 @@ export default function SepetTablosu({
                   <td style={{ padding: "10px", color: "#64748b", fontSize: "12px" }}>
                     {satir.ozelAciklama || "-"}
                   </td>
-                  {/* BÜYÜK VE NET ÖLÇÜ SÜTUNU */}
                   <td style={{ padding: "10px", textAlign: "center", fontWeight: "800", color: "#0369a1", fontSize: "14px", backgroundColor: "#f0f9ff" }}>
                     {enBoyMetni}
                   </td>
-                  {/* BÜYÜK VE NET ADET SÜTUNU */}
                   <td style={{ padding: "10px", textAlign: "center", fontWeight: "800", color: "#0f2942", fontSize: "14px", backgroundColor: "#f8fafc" }}>
                     {adetDegeri} Adet
                   </td>
@@ -228,8 +230,8 @@ export default function SepetTablosu({
                   <td style={{ padding: "10px", textAlign: "right", fontWeight: "700", color: "#0f2942" }}>
                     {paraFormatla(satir.toplamTutar, satir.paraBirimi)}
                   </td>
-                  <td style={{ padding: "10px", textAlign: "center" }}>
-                    <div style={{ display: "flex", gap: "4px", justifyContent: "center" }}>
+                  <td style={{ padding: "10px", textAlign: "center" }} onClick={(e) => e.stopPropagation()}>
+                    <div style={{ display: "flex", gap: "5px", justifyContent: "center", alignItems: "center" }}>
                       {onDuzenle && (
                         <button
                           type="button"
@@ -266,7 +268,6 @@ export default function SepetTablosu({
         </table>
       </div>
 
-      {/* TOPLAM ALANI */}
       <div style={{ marginTop: "15px", paddingTop: "10px", borderTop: "2px solid #0f2942", display: "flex", justifyContent: "flex-end", gap: "20px", flexWrap: "wrap", fontSize: "13px" }}>
         {Object.entries(genelToplamlar).map(([paraBirimi, tutar]) => {
           const kdvTutar = genelKdvler[paraBirimi] || 0;

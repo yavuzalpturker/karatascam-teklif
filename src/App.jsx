@@ -65,6 +65,7 @@ export default function App() {
     ilgiliKisi: "",
     projeAdi: "",
     teklifNo: "",
+    siparisNo: "",
     odemeSekli: "",
     tarih: new Date(),
   });
@@ -291,6 +292,7 @@ export default function App() {
                     notlar: yuklenenTeklif.notlar || "",
                     odemeSekli: yuklenenTeklif.odeme_sekli || "",
                     teklifNo: revizeTeklifNo,
+                    siparisNo: yuklenenTeklif.siparis_no || "", // <--- ARŞİVDEN GELEN SİPARİŞ NO EKLENDİ
                     tarih: new Date()
                   });
                   setSepet1(yuklenenSepet1 || []);
