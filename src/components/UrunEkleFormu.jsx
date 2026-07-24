@@ -408,7 +408,7 @@ export default function UrunEkleFormu({
         </div>
       )}
 
-      {/* ÜST SATIR: BİRİM, EN, BOY (ADET VE KDV AŞAĞI ALINDI VE BÜYÜTÜLDÜ) */}
+      {/* BİRİM, EN, BOY */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: "14px", marginBottom: "16px" }}>
         <div>
           <label style={{ display: "block", fontSize: "13px", fontWeight: "700", color: "#334155", marginBottom: "6px" }}>Birim Seçimi</label>
@@ -423,11 +423,11 @@ export default function UrunEkleFormu({
           <>
             <div>
               <label style={{ display: "block", fontSize: "13px", fontWeight: "700", color: "#334155", marginBottom: "6px" }}>En (mm)</label>
-              <input type="number" min="0" placeholder="Örn: 1500" value={en} onChange={(e) => setEn(e.target.value)} style={{ width: "100%", padding: "12px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "14px", fontWeight: "600", backgroundColor: "white" }} />
+              <input type="number" min="0"  value={en} onChange={(e) => setEn(e.target.value)} style={{ width: "100%", padding: "12px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "14px", fontWeight: "600", backgroundColor: "white" }} />
             </div>
             <div>
               <label style={{ display: "block", fontSize: "13px", fontWeight: "700", color: "#334155", marginBottom: "6px" }}>Boy (mm)</label>
-              <input type="number" min="0" placeholder="Örn: 2000" value={boy} onChange={(e) => setBoy(e.target.value)} style={{ width: "100%", padding: "12px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "14px", fontWeight: "600", backgroundColor: "white" }} />
+              <input type="number" min="0"  value={boy} onChange={(e) => setBoy(e.target.value)} style={{ width: "100%", padding: "12px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "14px", fontWeight: "600", backgroundColor: "white" }} />
             </div>
           </>
         ) : secilenBirim === "mt" ? (
@@ -438,24 +438,13 @@ export default function UrunEkleFormu({
         ) : null}
       </div>
 
-      {/* ALT SATIR: ADET, KDV ORANI VE FİYATLANDIRMA (BÜYÜK VE BELİRGİN) */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 2fr 110px", gap: "14px", marginBottom: "20px", alignItems: "flex-end" }}>
+      {/* ADET VE FİYATLANDIRMA (KDV SOL ALTA TAŞINDI) */}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 2fr 110px", gap: "14px", marginBottom: "20px", alignItems: "flex-end" }}>
         
-        {/* BÜYÜTÜLMÜŞ ADET */}
+        {/* ADET */}
         <div>
           <label style={{ display: "block", fontSize: "13px", fontWeight: "800", color: "#0f2942", marginBottom: "6px" }}>Adet</label>
           <input type="number" min="1" step="1" value={miktar} onChange={(e) => setMiktar(e.target.value)} style={{ width: "100%", padding: "12px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "15px", fontWeight: "700", backgroundColor: "white" }} />
-        </div>
-
-        {/* BÜYÜTÜLMÜŞ KDV */}
-        <div>
-          <label style={{ display: "block", fontSize: "13px", fontWeight: "800", color: "#0f2942", marginBottom: "6px" }}>KDV Oranı (%)</label>
-          <select value={kdvOrani} onChange={(e) => setKdvOrani(e.target.value)} style={{ width: "100%", padding: "12px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "15px", fontWeight: "700", backgroundColor: "white" }}>
-            <option value="0">0</option>
-            <option value="1">1</option>
-            <option value="10">10</option>
-            <option value="20">20</option>
-          </select>
         </div>
 
         {/* FİYAT */}
@@ -504,35 +493,52 @@ export default function UrunEkleFormu({
         </div>
       </div>
 
-      <div style={{ display: "flex", gap: "10px", justifyContent: "flex-end" }}>
-        {islemVerisi && (
-          <button 
-            type="button" 
-            onClick={() => { formuSifirla(); onIptal(); }}
-            style={{ backgroundColor: "#64748b", color: "white", border: "none", padding: "12px 20px", borderRadius: "6px", fontSize: "14px", fontWeight: "700", cursor: "pointer" }}
-          >
-            İptal
-          </button>
-        )}
+      {/* ALT SATIR: KDV ORANI SOL ALTA ALINDI VE BUTONLAR SAĞDA */}
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", flexWrap: "wrap", gap: "15px", borderTop: "1px solid #f1f5f9", paddingTop: "15px" }}>
+        
+        {/* KDV ORANI SOL ALTA SIKIŞTIRILDI / SOLDA GÖZ ÖNÜNDE OLMAYACAK ŞEKilde */}
+        <div style={{ width: "130px" }}>
+          <label style={{ display: "block", fontSize: "11px", fontWeight: "600", color: "#64748b", marginBottom: "3px" }}>KDV Oranı (%)</label>
+          <select value={kdvOrani} onChange={(e) => setKdvOrani(e.target.value)} style={{ width: "100%", padding: "8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "13px", fontWeight: "600", backgroundColor: "#f8fafc", color: "#475569" }}>
+            <option value="0">% 0</option>
+            <option value="1">% 1</option>
+            <option value="10">% 10</option>
+            <option value="20">% 20</option>
+          </select>
+        </div>
 
-        {islemVerisi?.tip === "duzenle" && (
+        {/* İŞLEM BUTONLARI SAĞDA */}
+        <div style={{ display: "flex", gap: "10px" }}>
+          {islemVerisi && (
+            <button 
+              type="button" 
+              onClick={() => { formuSifirla(); onIptal(); }}
+              style={{ backgroundColor: "#64748b", color: "white", border: "none", padding: "12px 20px", borderRadius: "6px", fontSize: "14px", fontWeight: "700", cursor: "pointer" }}
+            >
+              İptal
+            </button>
+          )}
+
+          {islemVerisi?.tip === "duzenle" && (
+            <button 
+              type="button"
+              onClick={topluUygula}
+              style={{ backgroundColor: "#8b5cf6", color: "white", border: "none", padding: "12px 20px", borderRadius: "6px", fontSize: "14px", fontWeight: "800", cursor: "pointer", boxShadow: "0 4px 6px rgba(0,0,0,0.1)" }}
+            >
+              ✨ Seçili Ürünlere de Uygula
+            </button>
+          )}
+
           <button 
             type="button"
-            onClick={topluUygula}
-            style={{ backgroundColor: "#8b5cf6", color: "white", border: "none", padding: "12px 20px", borderRadius: "6px", fontSize: "14px", fontWeight: "800", cursor: "pointer", boxShadow: "0 4px 6px rgba(0,0,0,0.1)" }}
+            onClick={ekle} 
+            disabled={!arama.trim()}
+            style={{ backgroundColor: islemVerisi?.tip === "duzenle" ? "#10b981" : "#0f2942", color: "white", border: "none", padding: "12px 26px", borderRadius: "6px", fontSize: "14px", fontWeight: "800", cursor: arama.trim() ? "pointer" : "not-allowed", opacity: arama.trim() ? 1 : 0.6, boxShadow: "0 4px 6px rgba(0,0,0,0.15)" }}
           >
-            ✨ Seçili Ürünlere de Uygula
+            {islemVerisi?.tip === "duzenle" ? "💾 Sadece Bu Ürünü Kaydet" : "📥 Sepete Ekle"}
           </button>
-        )}
+        </div>
 
-        <button 
-          type="button"
-          onClick={ekle} 
-          disabled={!arama.trim()}
-          style={{ backgroundColor: islemVerisi?.tip === "duzenle" ? "#10b981" : "#0f2942", color: "white", border: "none", padding: "12px 26px", borderRadius: "6px", fontSize: "14px", fontWeight: "800", cursor: arama.trim() ? "pointer" : "not-allowed", opacity: arama.trim() ? 1 : 0.6, boxShadow: "0 4px 6px rgba(0,0,0,0.15)" }}
-        >
-          {islemVerisi?.tip === "duzenle" ? "💾 Sadece Bu Ürünü Kaydet" : "📥 Sepete Ekle"}
-        </button>
       </div>
     </section>
   );

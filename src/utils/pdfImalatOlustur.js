@@ -28,7 +28,6 @@ async function gorseliBase64eCevir(yol) {
 function imalatTabloOlustur(sepet, baslikMetni) {
   if (!sepet || sepet.length === 0) return { tabloGövdesi: [], toplamAdet: 0, toplamM2: 0, toplamMtul: 0, aciklamaGoster: false };
 
-  // --- 1. AŞAMA: SÜTUNUN GÖSTERİLİP GÖSTERİLMEYECEĞİNE KARAR VER ---
   let aciklamaGoster = false;
   for (const satir of sepet) {
     let temizAciklama = satir.ozelAciklama || "";
@@ -46,7 +45,6 @@ function imalatTabloOlustur(sepet, baslikMetni) {
     }
   }
 
-  // --- 2. AŞAMA: DİNAMİK BAŞLIKLARI (HEADERS) OLUŞTUR ---
   const headers = [
     { text: 'POZ NO', bold: true, fillColor: '#eeeeee', margin: [0, 5, 0, 5], alignment: 'center' },
     { text: baslikMetni ? `${baslikMetni} - MALIN CİNSİ` : 'MALIN CİNSİ', bold: true, fillColor: '#eeeeee', margin: [5, 5, 0, 5], alignment: 'left' }
@@ -70,7 +68,6 @@ function imalatTabloOlustur(sepet, baslikMetni) {
   let genelToplamM2 = 0;
   let genelToplamMtul = 0;
 
-  // --- 3. AŞAMA: SATIRLARI DİNAMİK OLARAK DOLDUR ---
   sepet.forEach(satir => {
     const tamMetin = `${satir.ozelAciklama || ""} ${satir.miktarDetay || ""} ${satir.urunAciklamasi || ""}`;
 
@@ -155,7 +152,6 @@ function imalatTabloOlustur(sepet, baslikMetni) {
     tabloGövdesi.push(satirDizisi);
   });
 
-  // --- 4. AŞAMA: DİNAMİK COLSPAN İLE GENEL TOPLAM SATIRI ---
   const genelToplamRow = [
     { text: 'GENEL TOPLAM', colSpan: aciklamaGoster ? 5 : 4, alignment: 'right', bold: true, fillColor: '#f5f5f5', margin: [0, 5, 5, 5] }
   ];
@@ -258,12 +254,12 @@ export async function imalatPdfIndir(teklif, sepet1, sepet2 = [], teklifNo, oniz
     },
     { text: "ÜRETİM VE KESİM LİSTESİ", alignment: "center", bold: true, fontSize: 13, margin: [0, 0, 0, 15], color: '#0f2942' },
     
-    // TABLO 1: dontBreakRows: true EKLENDİ
+    // POZ NO SÜTUNU 35'TEN 48'E ÇIKARILDI (7 Karakterin rahatça tek satıra sığması için)
     {
       table: {
         headerRows: 1,
-        dontBreakRows: true, // SATIRLARIN BÖLÜNMESİNİ ENGELLER
-        widths: sonuc1.aciklamaGoster ? [35, '*', 70, 40, 40, 30, 45, 45] : [35, '*', 40, 40, 30, 45, 45],
+        dontBreakRows: true, 
+        widths: sonuc1.aciklamaGoster ? [48, '*', 70, 40, 40, 30, 45, 45] : [48, '*', 40, 40, 30, 45, 45],
         body: sonuc1.tabloGövdesi
       },
       layout: {
@@ -278,12 +274,11 @@ export async function imalatPdfIndir(teklif, sepet1, sepet2 = [], teklifNo, oniz
   if (sonuc2 && sepet2.length > 0) {
     icerikDizisi.push(
       { text: "", margin: [0, 15, 0, 15] },
-      // TABLO 2: dontBreakRows: true EKLENDİ
       {
         table: {
           headerRows: 1,
-          dontBreakRows: true, // SATIRLARIN BÖLÜNMESİNİ ENGELLER
-          widths: sonuc2.aciklamaGoster ? [35, '*', 70, 40, 40, 30, 45, 45] : [35, '*', 40, 40, 30, 45, 45],
+          dontBreakRows: true, 
+          widths: sonuc2.aciklamaGoster ? [48, '*', 70, 40, 40, 30, 45, 45] : [48, '*', 40, 40, 30, 45, 45],
           body: sonuc2.tabloGövdesi
         },
         layout: {
