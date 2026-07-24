@@ -177,7 +177,7 @@ export async function imalatPdfIndir(teklif, sepet1, sepet2 = [], teklifNo, oniz
   
   const tarihYazisi = teklif.tarih ? new Date(teklif.tarih).toLocaleDateString("tr-TR") : new Date().toLocaleDateString("tr-TR");
   const belgeNo = teklif.teklifNo || teklifNo || "İMALAT-LİSTESİ"; 
-  const siparisNoMetni = teklif.siparisNo ? `Sipariş No: ${teklif.siparisNo}` : null;
+  const siparisNoMetni = teklif.siparisNo ? `${teklif.siparisNo}` : null;
 
   const ikiliMi = sepet2 && sepet2.length > 0;
 
@@ -245,7 +245,8 @@ export async function imalatPdfIndir(teklif, sepet1, sepet2 = [], teklifNo, oniz
           stack: [
             { text: `Tarih: ${tarihYazisi}`, fontSize: 10 },
             { text: `No: ${belgeNo}`, fontSize: 10, bold: true },
-            siparisNoMetni ? { text: siparisNoMetni, fontSize: 10, bold: true, color: '#000000', margin: [0, 3, 0, 0] } : null
+            // SİPARİŞ NO MEVCUT BOYUTUNUN ÜÇ KATINA ÇIKARILDI (30 px)
+            siparisNoMetni ? { text: `Sipariş No: ${siparisNoMetni}`, fontSize: 30, bold: true, color: '#0f2942', margin: [0, 6, 0, 0] } : null
           ].filter(Boolean),
           alignment: 'right'
         }
@@ -254,7 +255,6 @@ export async function imalatPdfIndir(teklif, sepet1, sepet2 = [], teklifNo, oniz
     },
     { text: "ÜRETİM VE KESİM LİSTESİ", alignment: "center", bold: true, fontSize: 13, margin: [0, 0, 0, 15], color: '#0f2942' },
     
-    // POZ NO SÜTUNU 35'TEN 48'E ÇIKARILDI (7 Karakterin rahatça tek satıra sığması için)
     {
       table: {
         headerRows: 1,

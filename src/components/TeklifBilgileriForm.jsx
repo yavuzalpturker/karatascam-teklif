@@ -37,12 +37,12 @@ export default function TeklifBilgileriForm({ teklif, onDegistir }) {
 
       {/* SİPARİŞ NUMARASI ALANI EKLENDİ */}
       <label className="alan">
-        <span>Sipariş No</span>
+        <span>Sipariş No (İmalat) </span>
         <input
           type="text"
           value={teklif.siparisNo || ""}
           onChange={(e) => alanGuncelle("siparisNo", e.target.value)}
-          placeholder="Örn: SIP-2026-001"
+          
         />
       </label>
 
