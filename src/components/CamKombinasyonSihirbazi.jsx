@@ -44,12 +44,12 @@ const PVB_TURLERI = [
   "Vanceva Renkli PVB", "Mesh PVB (Metal Fileli)", "SentryGlas (SG Ionoplast)"
 ];
 
-// --- BÜYÜTÜLMÜŞ ÖZEL İŞLEM SEÇİCİ BİLEŞENİ ---
+// --- DAHA BÜYÜK VE BELİRGİN ÖZEL İŞLEM SEÇİCİ BİLEŞENİ ---
 const CamIslemleriPaneli = ({ kenar, setKenar, temper, setTemper, delik, setDelik, oygu, setOygu }) => (
-  <div style={{ marginTop: "12px", paddingTop: "10px", borderTop: "1px dashed #cbd5e1", display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
+  <div style={{ marginTop: "14px", paddingTop: "12px", borderTop: "1px dashed #cbd5e1", display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
     <div>
-      <label style={{ display: "block", fontSize: "12px", fontWeight: "700", color: "#334155", marginBottom: "4px" }}>Kenar İşlemi</label>
-      <select value={kenar} onChange={e => setKenar(e.target.value)} style={{ width: "100%", padding: "9px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "13px", fontWeight: "600", color: "#1e293b", backgroundColor: "white" }}>
+      <label style={{ display: "block", fontSize: "13px", fontWeight: "800", color: "#334155", marginBottom: "5px" }}>Kenar İşlemi</label>
+      <select value={kenar} onChange={e => setKenar(e.target.value)} style={{ width: "100%", padding: "11px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "14px", fontWeight: "700", color: "#1e293b", backgroundColor: "white" }}>
         <option>Düz Kesim (İşlemsiz)</option>
         <option>Rodajlı</option>
         <option>Bizoteli</option>
@@ -57,8 +57,8 @@ const CamIslemleriPaneli = ({ kenar, setKenar, temper, setTemper, delik, setDeli
       </select>
     </div>
     <div>
-      <label style={{ display: "block", fontSize: "12px", fontWeight: "700", color: "#334155", marginBottom: "4px" }}>Temper İşlemi</label>
-      <select value={temper} onChange={e => setTemper(e.target.value)} style={{ width: "100%", padding: "9px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "13px", fontWeight: "600", color: "#1e293b", backgroundColor: "white" }}>
+      <label style={{ display: "block", fontSize: "13px", fontWeight: "800", color: "#334155", marginBottom: "5px" }}>Temper İşlemi</label>
+      <select value={temper} onChange={e => setTemper(e.target.value)} style={{ width: "100%", padding: "11px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "14px", fontWeight: "700", color: "#1e293b", backgroundColor: "white" }}>
         <option>Tempersiz</option>
         <option>Temperli</option>
         <option>Yarı Temperli</option>
@@ -66,15 +66,15 @@ const CamIslemleriPaneli = ({ kenar, setKenar, temper, setTemper, delik, setDeli
       </select>
     </div>
     <div>
-      <label style={{ display: "block", fontSize: "12px", fontWeight: "700", color: "#334155", marginBottom: "4px" }}>Delik İşlemi</label>
-      <select value={delik} onChange={e => setDelik(e.target.value)} style={{ width: "100%", padding: "9px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "13px", fontWeight: "600", color: "#1e293b", backgroundColor: "white" }}>
+      <label style={{ display: "block", fontSize: "13px", fontWeight: "800", color: "#334155", marginBottom: "5px" }}>Delik İşlemi</label>
+      <select value={delik} onChange={e => setDelik(e.target.value)} style={{ width: "100%", padding: "11px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "14px", fontWeight: "700", color: "#1e293b", backgroundColor: "white" }}>
         <option>Delik Yok</option>
         <option>Delik Var</option>
       </select>
     </div>
     <div>
-      <label style={{ display: "block", fontSize: "12px", fontWeight: "700", color: "#334155", marginBottom: "4px" }}>Oygu İşlemi</label>
-      <select value={oygu} onChange={e => setOygu(e.target.value)} style={{ width: "100%", padding: "9px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "13px", fontWeight: "600", color: "#1e293b", backgroundColor: "white" }}>
+      <label style={{ display: "block", fontSize: "13px", fontWeight: "800", color: "#334155", marginBottom: "5px" }}>Oygu İşlemi</label>
+      <select value={oygu} onChange={e => setOygu(e.target.value)} style={{ width: "100%", padding: "11px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "14px", fontWeight: "700", color: "#1e293b", backgroundColor: "white" }}>
         <option>Oygu Yok</option>
         <option>Oygu Var</option>
       </select>
@@ -89,11 +89,11 @@ const CamKatmaniSecici = ({
   renk, setRenk, kaplama, setKaplama,
   kenar, setKenar, temper, setTemper, delik, setDelik, oygu, setOygu
 }) => (
-  <div style={{ flex: 3, minWidth: "300px", padding: "16px", backgroundColor: bgColor, borderRadius: "10px", border: `1px solid ${borderColor}`, boxShadow: "0 2px 4px rgba(0,0,0,0.02)" }}>
-    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
-      <label style={{ fontSize: "15px", fontWeight: "800", color: "#0f2942" }}>{title}</label>
+  <div style={{ flex: 3, minWidth: "320px", padding: "18px", backgroundColor: bgColor, borderRadius: "10px", border: `1px solid ${borderColor}`, boxShadow: "0 2px 5px rgba(0,0,0,0.03)" }}>
+    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "14px" }}>
+      <label style={{ fontSize: "16px", fontWeight: "900", color: "#0f2942" }}>{title}</label>
       {setTip && (
-        <select value={tip} onChange={e => setTip(e.target.value)} style={{ fontSize: "13px", padding: "6px 12px", borderRadius: "6px", border: "1px solid #cbd5e1", backgroundColor: tip === "lamine" ? "#e0f2fe" : "white", fontWeight: "700", color: "#1e293b", cursor: "pointer" }}>
+        <select value={tip} onChange={e => setTip(e.target.value)} style={{ fontSize: "14px", padding: "8px 14px", borderRadius: "6px", border: "1px solid #cbd5e1", backgroundColor: tip === "lamine" ? "#e0f2fe" : "white", fontWeight: "800", color: "#1e293b", cursor: "pointer" }}>
           <option value="tek">Tek Cam</option>
           <option value="lamine">Lamine Cam</option>
         </select>
@@ -101,22 +101,22 @@ const CamKatmaniSecici = ({
     </div>
 
     {tip === "tek" || !tip ? (
-      <div style={{ display: "flex", gap: "10px", marginBottom: "10px" }}>
-        <select value={kalinlik} onChange={(e) => setKalinlik(e.target.value)} style={{ flex: 1, padding: "11px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "14px", fontWeight: "700", color: "#1e293b", backgroundColor: "white" }}>{KALINLIKLAR.map(k => <option key={k} value={k}>{k}</option>)}</select>
-        <select value={renk} onChange={(e) => setRenk(e.target.value)} style={{ flex: 2, padding: "11px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "14px", fontWeight: "600", color: "#1e293b", backgroundColor: "white" }}>{CAM_RENKLERI.map(r => <option key={r} value={r}>{r}</option>)}</select>
+      <div style={{ display: "flex", gap: "10px", marginBottom: "12px" }}>
+        <select value={kalinlik} onChange={(e) => setKalinlik(e.target.value)} style={{ flex: 1, padding: "12px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "15px", fontWeight: "800", color: "#1e293b", backgroundColor: "white" }}>{KALINLIKLAR.map(k => <option key={k} value={k}>{k}</option>)}</select>
+        <select value={renk} onChange={(e) => setRenk(e.target.value)} style={{ flex: 2, padding: "12px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "15px", fontWeight: "700", color: "#1e293b", backgroundColor: "white" }}>{CAM_RENKLERI.map(r => <option key={r} value={r}>{r}</option>)}</select>
       </div>
     ) : (
-      <div style={{ display: "flex", flexDirection: "column", gap: "10px", marginBottom: "10px" }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: "10px", marginBottom: "12px" }}>
         <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
-          <select value={lamK1} onChange={(e) => setLamK1(e.target.value)} style={{ flex: 1, padding: "11px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "14px", fontWeight: "700", color: "#1e293b", backgroundColor: "white" }}>{KALINLIKLAR.map(k => <option key={k} value={k}>{k}</option>)}</select>
-          <span style={{ fontWeight: "bold", color: "#64748b", fontSize: "16px" }}>+</span>
-          <select value={lamK2} onChange={(e) => setLamK2(e.target.value)} style={{ flex: 1, padding: "11px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "14px", fontWeight: "700", color: "#1e293b", backgroundColor: "white" }}>{KALINLIKLAR.map(k => <option key={k} value={k}>{k}</option>)}</select>
+          <select value={lamK1} onChange={(e) => setLamK1(e.target.value)} style={{ flex: 1, padding: "12px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "15px", fontWeight: "800", color: "#1e293b", backgroundColor: "white" }}>{KALINLIKLAR.map(k => <option key={k} value={k}>{k}</option>)}</select>
+          <span style={{ fontWeight: "900", color: "#64748b", fontSize: "18px" }}>+</span>
+          <select value={lamK2} onChange={(e) => setLamK2(e.target.value)} style={{ flex: 1, padding: "12px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "15px", fontWeight: "800", color: "#1e293b", backgroundColor: "white" }}>{KALINLIKLAR.map(k => <option key={k} value={k}>{k}</option>)}</select>
         </div>
-        <select value={lamPVB} onChange={(e) => setLamPVB(e.target.value)} style={{ width: "100%", padding: "10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "13px", fontWeight: "600", color: "#1e293b", backgroundColor: "white" }}>{PVB_TURLERI.map(p => <option key={p} value={p}>{p}</option>)}</select>
-        <select value={renk} onChange={(e) => setRenk(e.target.value)} style={{ width: "100%", padding: "10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "13px", fontWeight: "600", color: "#1e293b", backgroundColor: "white" }}>{CAM_RENKLERI.map(r => <option key={r} value={r}>{r}</option>)}</select>
+        <select value={lamPVB} onChange={(e) => setLamPVB(e.target.value)} style={{ width: "100%", padding: "12px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "14px", fontWeight: "700", color: "#1e293b", backgroundColor: "white" }}>{PVB_TURLERI.map(p => <option key={p} value={p}>{p}</option>)}</select>
+        <select value={renk} onChange={(e) => setRenk(e.target.value)} style={{ width: "100%", padding: "12px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "14px", fontWeight: "700", color: "#1e293b", backgroundColor: "white" }}>{CAM_RENKLERI.map(r => <option key={r} value={r}>{r}</option>)}</select>
       </div>
     )}
-    <select value={kaplama} onChange={(e) => setKaplama(e.target.value)} style={{ width: "100%", padding: "11px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "14px", fontWeight: "700", color: "#0f2942", backgroundColor: "#f8fafc" }}>{KAPLAMA_TURLERI.map(kp => <option key={kp} value={kp}>{kp}</option>)}</select>
+    <select value={kaplama} onChange={(e) => setKaplama(e.target.value)} style={{ width: "100%", padding: "12px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "15px", fontWeight: "800", color: "#0f2942", backgroundColor: "#f8fafc" }}>{KAPLAMA_TURLERI.map(kp => <option key={kp} value={kp}>{kp}</option>)}</select>
 
     <CamIslemleriPaneli 
       kenar={kenar} setKenar={setKenar} 
@@ -233,7 +233,7 @@ export default function CamKombinasyonSihirbazi({ onKombinasyonSec, baslangicMet
 
   const [olusturulanIsim, setOlusturulanIsim] = useState("");
 
-  // --- GELİŞMİŞ AKILLI PARSER ---
+  // --- AKILLI PARSER ---
   useEffect(() => {
     if (!baslangicMetni) return;
     
@@ -435,13 +435,13 @@ export default function CamKombinasyonSihirbazi({ onKombinasyonSec, baslangicMet
   };
 
   return (
-    <div style={{ backgroundColor: "#f8fafc", padding: "20px", borderRadius: "10px", border: "1px solid #cbd5e1", marginBottom: "25px", boxShadow: "0 4px 6px -1px rgba(0,0,0,0.05)" }}>
-      <h3 style={{ margin: "0 0 16px 0", color: "#0f2942", fontSize: "17px", fontWeight: "800" }}>
+    <div style={{ backgroundColor: "#f8fafc", padding: "24px", borderRadius: "12px", border: "1px solid #cbd5e1", marginBottom: "30px", boxShadow: "0 6px 12px -2px rgba(0,0,0,0.06)" }}>
+      <h3 style={{ margin: "0 0 16px 0", color: "#0f2942", fontSize: "19px", fontWeight: "900" }}>
         Şişecam Katmanlı Cam & Kaplama Sihirbazı
       </h3>
 
-      {/* ÜST TÜR SEÇİM BUTONLARI */}
-      <div style={{ display: "flex", gap: "10px", marginBottom: "20px" }}>
+      {/* BÜYÜTÜLMÜŞ ÜST TÜR SEÇİM BUTONLARI */}
+      <div style={{ display: "flex", gap: "12px", marginBottom: "22px" }}>
         {[
           { id: "isicam", label: "Isıcam (Çift Cam)" },
           { id: "ucIliIsicam", label: "Üçlü Isıcam" },
@@ -453,11 +453,11 @@ export default function CamKombinasyonSihirbazi({ onKombinasyonSec, baslangicMet
             type="button"
             onClick={() => setCamTuru(item.id)}
             style={{
-              flex: 1, padding: "12px", borderRadius: "6px", border: "1px solid #cbd5e1",
+              flex: 1, padding: "14px", borderRadius: "8px", border: "1px solid #cbd5e1",
               backgroundColor: camTuru === item.id ? "#0f2942" : "white",
               color: camTuru === item.id ? "white" : "#334155",
-              fontWeight: "700", fontSize: "14px", cursor: "pointer",
-              boxShadow: camTuru === item.id ? "0 2px 4px rgba(0,0,0,0.2)" : "none",
+              fontWeight: "800", fontSize: "15px", cursor: "pointer",
+              boxShadow: camTuru === item.id ? "0 4px 6px rgba(0,0,0,0.15)" : "none",
               transition: "all 0.2s ease"
             }}
           >
@@ -467,7 +467,7 @@ export default function CamKombinasyonSihirbazi({ onKombinasyonSec, baslangicMet
       </div>
 
       {/* KATMAN SEÇİMLERİ ANA ALAN */}
-      <div style={{ display: "flex", flexWrap: "wrap", gap: "14px", alignItems: "stretch", backgroundColor: "white", padding: "18px", borderRadius: "8px", border: "1px solid #cbd5e1" }}>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: "16px", alignItems: "stretch", backgroundColor: "white", padding: "20px", borderRadius: "10px", border: "1px solid #cbd5e1" }}>
         
         {/* 1. TEK CAM ALANI */}
         {camTuru === "tek" && (
@@ -485,7 +485,7 @@ export default function CamKombinasyonSihirbazi({ onKombinasyonSec, baslangicMet
 
         {/* 2. LAMİNE CAM ALANI */}
         {camTuru === "lamine" && (
-          <div style={{ display: "flex", gap: "12px", width: "100%", alignItems: "center", flexWrap: "nowrap" }}>
+          <div style={{ display: "flex", gap: "14px", width: "100%", alignItems: "center", flexWrap: "nowrap" }}>
             <CamKatmaniSecici 
               title="1. Dış Cam Katmanı" bgColor="#f8fafc" borderColor="#cbd5e1"
               kalinlik={lam1Kalinlik} setKalinlik={setLam1Kalinlik}
@@ -497,16 +497,16 @@ export default function CamKombinasyonSihirbazi({ onKombinasyonSec, baslangicMet
               oygu={lam1Oygu} setOygu={setLam1Oygu}
             />
 
-            <div style={{ fontWeight: "800", color: "#64748b", fontSize: "22px", padding: "0 4px" }}>+</div>
+            <div style={{ fontWeight: "900", color: "#64748b", fontSize: "26px", padding: "0 6px" }}>+</div>
 
-            <div style={{ flex: 2, padding: "16px", backgroundColor: "#f1f5f9", borderRadius: "10px", border: "1px solid #cbd5e1", alignSelf: "stretch", display: "flex", flexDirection: "column", justifyContent: "center" }}>
-              <label style={{ display: "block", fontSize: "13px", fontWeight: "800", color: "#334155", marginBottom: "10px" }}>Ara Katman (PVB Film)</label>
-              <select value={pvbTuru} onChange={(e) => setPvbTuru(e.target.value)} style={{ width: "100%", padding: "12px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "14px", fontWeight: "700", color: "#1e293b", backgroundColor: "white" }}>
+            <div style={{ flex: 2, padding: "18px", backgroundColor: "#f1f5f9", borderRadius: "10px", border: "1px solid #cbd5e1", alignSelf: "stretch", display: "flex", flexDirection: "column", justifyContent: "center" }}>
+              <label style={{ display: "block", fontSize: "14px", fontWeight: "900", color: "#334155", marginBottom: "10px" }}>Ara Katman (PVB Film)</label>
+              <select value={pvbTuru} onChange={(e) => setPvbTuru(e.target.value)} style={{ width: "100%", padding: "13px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "15px", fontWeight: "800", color: "#1e293b", backgroundColor: "white" }}>
                 {PVB_TURLERI.map(p => <option key={p} value={p}>{p}</option>)}
               </select>
             </div>
 
-            <div style={{ fontWeight: "800", color: "#64748b", fontSize: "22px", padding: "0 4px" }}>+</div>
+            <div style={{ fontWeight: "900", color: "#64748b", fontSize: "26px", padding: "0 6px" }}>+</div>
 
             <CamKatmaniSecici 
               title="2. İç Cam Katmanı" bgColor="#f8fafc" borderColor="#cbd5e1"
@@ -523,7 +523,7 @@ export default function CamKombinasyonSihirbazi({ onKombinasyonSec, baslangicMet
 
         {/* 3. ISICAM (ÇİFT CAM) ALANI */}
         {camTuru === "isicam" && (
-          <div style={{ display: "flex", gap: "12px", width: "100%", alignItems: "center" }}>
+          <div style={{ display: "flex", gap: "14px", width: "100%", alignItems: "center" }}>
             <CamKatmaniSecici 
               title="1. Dış Cam" bgColor="#f8fafc" borderColor="#cbd5e1"
               tip={disCamTipi} setTip={setDisCamTipi} kalinlik={disCamKalinlik} setKalinlik={setDisCamKalinlik}
@@ -533,29 +533,29 @@ export default function CamKombinasyonSihirbazi({ onKombinasyonSec, baslangicMet
               delik={disDelik} setDelik={setDisDelik} oygu={disOygu} setOygu={setDisOygu}
             />
             
-            <div style={{ fontWeight: "800", color: "#64748b", fontSize: "22px", padding: "0 4px" }}>+</div>
+            <div style={{ fontWeight: "900", color: "#64748b", fontSize: "26px", padding: "0 6px" }}>+</div>
             
-            <div style={{ flex: 2, padding: "16px", backgroundColor: "#f1f5f9", borderRadius: "10px", border: "1px solid #cbd5e1", alignSelf: "stretch", display: "flex", flexDirection: "column", justifyContent: "center" }}>
-              <label style={{ display: "block", fontSize: "13px", fontWeight: "800", color: "#334155", marginBottom: "10px" }}>Ara Boşluk & Çıta</label>
-              <div style={{ display: "flex", gap: "8px", marginBottom: "8px" }}>
-                <select value={citaKalinlik} onChange={(e) => setCitaKalinlik(e.target.value)} style={{ flex: 1, padding: "11px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "13px", fontWeight: "700", color: "#1e293b", backgroundColor: "white" }}>
+            <div style={{ flex: 2, padding: "18px", backgroundColor: "#f1f5f9", borderRadius: "10px", border: "1px solid #cbd5e1", alignSelf: "stretch", display: "flex", flexDirection: "column", justifyContent: "center" }}>
+              <label style={{ display: "block", fontSize: "14px", fontWeight: "900", color: "#334155", marginBottom: "10px" }}>Ara Boşluk & Çıta</label>
+              <div style={{ display: "flex", gap: "8px", marginBottom: "10px" }}>
+                <select value={citaKalinlik} onChange={(e) => setCitaKalinlik(e.target.value)} style={{ flex: 1, padding: "12px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "14px", fontWeight: "800", color: "#1e293b", backgroundColor: "white" }}>
                   {CITA_KALINLIKLARI.map(b => <option key={b} value={b}>{b}</option>)}
                 </select>
-                <select value={gazTipi} onChange={(e) => setGazTipi(e.target.value)} style={{ flex: 1, padding: "11px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "13px", fontWeight: "700", color: "#1e293b", backgroundColor: "white" }}>
+                <select value={gazTipi} onChange={(e) => setGazTipi(e.target.value)} style={{ flex: 1, padding: "12px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "14px", fontWeight: "800", color: "#1e293b", backgroundColor: "white" }}>
                   {GAZ_TIPLERI.map(g => <option key={g} value={g}>{g}</option>)}
                 </select>
               </div>
               <div style={{ display: "flex", gap: "8px" }}>
-                <select value={citaTipi} onChange={(e) => setCitaTipi(e.target.value)} style={{ flex: 1, padding: "11px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "12px", fontWeight: "600", color: "#1e293b", backgroundColor: "white" }}>
+                <select value={citaTipi} onChange={(e) => setCitaTipi(e.target.value)} style={{ flex: 1, padding: "12px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "13px", fontWeight: "700", color: "#1e293b", backgroundColor: "white" }}>
                   {CITA_TIPLERI.map(ct => <option key={ct} value={ct}>{ct}</option>)}
                 </select>
-                <select value={dolguTipi} onChange={(e) => setDolguTipi(e.target.value)} style={{ flex: 1, padding: "11px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "12px", fontWeight: "600", color: "#1e293b", backgroundColor: "white" }}>
+                <select value={dolguTipi} onChange={(e) => setDolguTipi(e.target.value)} style={{ flex: 1, padding: "12px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "13px", fontWeight: "700", color: "#1e293b", backgroundColor: "white" }}>
                   {DOLGU_TIPLERI.map(dt => <option key={dt} value={dt}>{dt}</option>)}
                 </select>
               </div>
             </div>
 
-            <div style={{ fontWeight: "800", color: "#64748b", fontSize: "22px", padding: "0 4px" }}>+</div>
+            <div style={{ fontWeight: "900", color: "#64748b", fontSize: "26px", padding: "0 6px" }}>+</div>
 
             <CamKatmaniSecici 
               title="2. İç Cam" bgColor="#f8fafc" borderColor="#cbd5e1"
@@ -580,21 +580,21 @@ export default function CamKombinasyonSihirbazi({ onKombinasyonSec, baslangicMet
               delik={uDisDelik} setDelik={setUDisDelik} oygu={uDisOygu} setOygu={setUDisOygu}
             />
             
-            <div style={{ fontWeight: "800", color: "#64748b", fontSize: "18px" }}>+</div>
+            <div style={{ fontWeight: "900", color: "#64748b", fontSize: "20px" }}>+</div>
 
-            <div style={{ flex: 1.5, padding: "12px", backgroundColor: "#f1f5f9", borderRadius: "8px", border: "1px solid #cbd5e1", alignSelf: "stretch", display: "flex", flexDirection: "column", justifyContent: "center" }}>
-              <label style={{ display: "block", fontSize: "12px", fontWeight: "800", color: "#334155", marginBottom: "6px" }}>1. Boşluk</label>
+            <div style={{ flex: 1.5, padding: "14px", backgroundColor: "#f1f5f9", borderRadius: "8px", border: "1px solid #cbd5e1", alignSelf: "stretch", display: "flex", flexDirection: "column", justifyContent: "center" }}>
+              <label style={{ display: "block", fontSize: "13px", fontWeight: "900", color: "#334155", marginBottom: "6px" }}>1. Boşluk</label>
               <div style={{ display: "flex", gap: "6px", marginBottom: "6px" }}>
-                <select value={uCita1Kalinlik} onChange={(e) => setUCita1Kalinlik(e.target.value)} style={{ flex: 1, padding: "9px", borderRadius: "5px", border: "1px solid #cbd5e1", fontSize: "12px", fontWeight: "700", color: "#1e293b", backgroundColor: "white" }}>{CITA_KALINLIKLARI.map(b => <option key={b} value={b}>{b}</option>)}</select>
-                <select value={uGaz1Tipi} onChange={(e) => setUGaz1Tipi(e.target.value)} style={{ flex: 1, padding: "9px", borderRadius: "5px", border: "1px solid #cbd5e1", fontSize: "12px", fontWeight: "700", color: "#1e293b", backgroundColor: "white" }}>{GAZ_TIPLERI.map(g => <option key={g} value={g}>{g}</option>)}</select>
+                <select value={uCita1Kalinlik} onChange={(e) => setUCita1Kalinlik(e.target.value)} style={{ flex: 1, padding: "10px", borderRadius: "5px", border: "1px solid #cbd5e1", fontSize: "13px", fontWeight: "800", color: "#1e293b", backgroundColor: "white" }}>{CITA_KALINLIKLARI.map(b => <option key={b} value={b}>{b}</option>)}</select>
+                <select value={uGaz1Tipi} onChange={(e) => setUGaz1Tipi(e.target.value)} style={{ flex: 1, padding: "10px", borderRadius: "5px", border: "1px solid #cbd5e1", fontSize: "13px", fontWeight: "800", color: "#1e293b", backgroundColor: "white" }}>{GAZ_TIPLERI.map(g => <option key={g} value={g}>{g}</option>)}</select>
               </div>
               <div style={{ display: "flex", gap: "6px" }}>
-                <select value={uCita1Tipi} onChange={(e) => setUCita1Tipi(e.target.value)} style={{ flex: 1, padding: "9px", borderRadius: "5px", border: "1px solid #cbd5e1", fontSize: "11px", fontWeight: "600", color: "#1e293b", backgroundColor: "white" }}>{CITA_TIPLERI.map(ct => <option key={ct} value={ct}>{ct}</option>)}</select>
-                <select value={uDolgu1Tipi} onChange={(e) => setUDolgu1Tipi(e.target.value)} style={{ flex: 1, padding: "9px", borderRadius: "5px", border: "1px solid #cbd5e1", fontSize: "11px", fontWeight: "600", color: "#1e293b", backgroundColor: "white" }}>{DOLGU_TIPLERI.map(dt => <option key={dt} value={dt}>{dt}</option>)}</select>
+                <select value={uCita1Tipi} onChange={(e) => setUCita1Tipi(e.target.value)} style={{ flex: 1, padding: "10px", borderRadius: "5px", border: "1px solid #cbd5e1", fontSize: "12px", fontWeight: "700", color: "#1e293b", backgroundColor: "white" }}>{CITA_TIPLERI.map(ct => <option key={ct} value={ct}>{ct}</option>)}</select>
+                <select value={uDolgu1Tipi} onChange={(e) => setUDolgu1Tipi(e.target.value)} style={{ flex: 1, padding: "10px", borderRadius: "5px", border: "1px solid #cbd5e1", fontSize: "12px", fontWeight: "700", color: "#1e293b", backgroundColor: "white" }}>{DOLGU_TIPLERI.map(dt => <option key={dt} value={dt}>{dt}</option>)}</select>
               </div>
             </div>
 
-            <div style={{ fontWeight: "800", color: "#64748b", fontSize: "18px" }}>+</div>
+            <div style={{ fontWeight: "900", color: "#64748b", fontSize: "20px" }}>+</div>
 
             <CamKatmaniSecici 
               title="2. Orta Cam" bgColor="#f8fafc" borderColor="#cbd5e1" 
@@ -605,21 +605,21 @@ export default function CamKombinasyonSihirbazi({ onKombinasyonSec, baslangicMet
               delik={uOrtaDelik} setDelik={setUOrtaDelik} oygu={uOrtaOygu} setOygu={setUOrtaOygu}
             />
             
-            <div style={{ fontWeight: "800", color: "#64748b", fontSize: "18px" }}>+</div>
+            <div style={{ fontWeight: "900", color: "#64748b", fontSize: "20px" }}>+</div>
 
-            <div style={{ flex: 1.5, padding: "12px", backgroundColor: "#f1f5f9", borderRadius: "8px", border: "1px solid #cbd5e1", alignSelf: "stretch", display: "flex", flexDirection: "column", justifyContent: "center" }}>
-              <label style={{ display: "block", fontSize: "12px", fontWeight: "800", color: "#334155", marginBottom: "6px" }}>2. Boşluk</label>
+            <div style={{ flex: 1.5, padding: "14px", backgroundColor: "#f1f5f9", borderRadius: "8px", border: "1px solid #cbd5e1", alignSelf: "stretch", display: "flex", flexDirection: "column", justifyContent: "center" }}>
+              <label style={{ display: "block", fontSize: "13px", fontWeight: "900", color: "#334155", marginBottom: "6px" }}>2. Boşluk</label>
               <div style={{ display: "flex", gap: "6px", marginBottom: "6px" }}>
-                <select value={uCita2Kalinlik} onChange={(e) => setUCita2Kalinlik(e.target.value)} style={{ flex: 1, padding: "9px", borderRadius: "5px", border: "1px solid #cbd5e1", fontSize: "12px", fontWeight: "700", color: "#1e293b", backgroundColor: "white" }}>{CITA_KALINLIKLARI.map(b => <option key={b} value={b}>{b}</option>)}</select>
-                <select value={uGaz2Tipi} onChange={(e) => setUGaz2Tipi(e.target.value)} style={{ flex: 1, padding: "9px", borderRadius: "5px", border: "1px solid #cbd5e1", fontSize: "12px", fontWeight: "700", color: "#1e293b", backgroundColor: "white" }}>{GAZ_TIPLERI.map(g => <option key={g} value={g}>{g}</option>)}</select>
+                <select value={uCita2Kalinlik} onChange={(e) => setUCita2Kalinlik(e.target.value)} style={{ flex: 1, padding: "10px", borderRadius: "5px", border: "1px solid #cbd5e1", fontSize: "13px", fontWeight: "800", color: "#1e293b", backgroundColor: "white" }}>{CITA_KALINLIKLARI.map(b => <option key={b} value={b}>{b}</option>)}</select>
+                <select value={uGaz2Tipi} onChange={(e) => setUGaz2Tipi(e.target.value)} style={{ flex: 1, padding: "10px", borderRadius: "5px", border: "1px solid #cbd5e1", fontSize: "13px", fontWeight: "800", color: "#1e293b", backgroundColor: "white" }}>{GAZ_TIPLERI.map(g => <option key={g} value={g}>{g}</option>)}</select>
               </div>
               <div style={{ display: "flex", gap: "6px" }}>
-                <select value={uCita2Tipi} onChange={(e) => setUCita2Tipi(e.target.value)} style={{ flex: 1, padding: "9px", borderRadius: "5px", border: "1px solid #cbd5e1", fontSize: "11px", fontWeight: "600", color: "#1e293b", backgroundColor: "white" }}>{CITA_TIPLERI.map(ct => <option key={ct} value={ct}>{ct}</option>)}</select>
-                <select value={uDolgu2Tipi} onChange={(e) => setUDolgu2Tipi(e.target.value)} style={{ flex: 1, padding: "9px", borderRadius: "5px", border: "1px solid #cbd5e1", fontSize: "11px", fontWeight: "600", color: "#1e293b", backgroundColor: "white" }}>{DOLGU_TIPLERI.map(dt => <option key={dt} value={dt}>{dt}</option>)}</select>
+                <select value={uCita2Tipi} onChange={(e) => setUCita2Tipi(e.target.value)} style={{ flex: 1, padding: "10px", borderRadius: "5px", border: "1px solid #cbd5e1", fontSize: "12px", fontWeight: "700", color: "#1e293b", backgroundColor: "white" }}>{CITA_TIPLERI.map(ct => <option key={ct} value={ct}>{ct}</option>)}</select>
+                <select value={uDolgu2Tipi} onChange={(e) => setUDolgu2Tipi(e.target.value)} style={{ flex: 1, padding: "10px", borderRadius: "5px", border: "1px solid #cbd5e1", fontSize: "12px", fontWeight: "700", color: "#1e293b", backgroundColor: "white" }}>{DOLGU_TIPLERI.map(dt => <option key={dt} value={dt}>{dt}</option>)}</select>
               </div>
             </div>
 
-            <div style={{ fontWeight: "800", color: "#64748b", fontSize: "18px" }}>+</div>
+            <div style={{ fontWeight: "900", color: "#64748b", fontSize: "20px" }}>+</div>
 
             <CamKatmaniSecici 
               title="3. İç Cam" bgColor="#f8fafc" borderColor="#cbd5e1" 
@@ -634,11 +634,11 @@ export default function CamKombinasyonSihirbazi({ onKombinasyonSec, baslangicMet
       </div>
 
       {/* ÖNİZLEME VE FORMA AKTARMA ALANI */}
-      <div style={{ marginTop: "16px", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "12px", backgroundColor: "#e2e8f0", padding: "14px 18px", borderRadius: "8px", border: "1px solid #cbd5e1" }}>
-        <div style={{ fontSize: "14px", color: "#1e293b", flex: 1 }}>
-          <span style={{ fontWeight: "700", color: "#475569" }}>Oluşturulan Teknik Cam Adı: </span>
+      <div style={{ marginTop: "18px", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "14px", backgroundColor: "#e2e8f0", padding: "16px 20px", borderRadius: "8px", border: "1px solid #cbd5e1" }}>
+        <div style={{ fontSize: "15px", color: "#1e293b", flex: 1 }}>
+          <span style={{ fontWeight: "800", color: "#475569" }}>Oluşturulan Teknik Cam Adı: </span>
           <br />
-          <span style={{ fontWeight: "800", color: "#0f2942", fontSize: "15px" }}>{olusturulanIsim}</span>
+          <span style={{ fontWeight: "900", color: "#0f2942", fontSize: "16px" }}>{olusturulanIsim}</span>
         </div>
 
         <button
@@ -648,10 +648,10 @@ export default function CamKombinasyonSihirbazi({ onKombinasyonSec, baslangicMet
             backgroundColor: "#0f2942",
             color: "white",
             border: "none",
-            padding: "12px 24px",
+            padding: "14px 28px",
             borderRadius: "6px",
-            fontSize: "14px",
-            fontWeight: "800",
+            fontSize: "15px",
+            fontWeight: "900",
             cursor: "pointer",
             boxShadow: "0 4px 6px rgba(0,0,0,0.15)",
             transition: "all 0.2s ease"

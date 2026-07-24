@@ -219,6 +219,15 @@ export default function App() {
                 urunler={urunler}
                 yukleniyor={yukleniyor}
                 hata={hata}
+                sepet1={sepet1}
+                sepet2={sepet2}
+                onTopluGuncelle={(hedefSepetNo, guncelSepet) => {
+                  if (hedefSepetNo === 1) {
+                    setSepet1(guncelSepet);
+                  } else {
+                    setSepet2(guncelSepet);
+                  }
+                }}
                 onEkle={(satir) => {
                   if (aktifSepetNumarasi === 1) {
                     setSepet1((mevcut) => [...mevcut, satir]);
@@ -292,7 +301,7 @@ export default function App() {
                     notlar: yuklenenTeklif.notlar || "",
                     odemeSekli: yuklenenTeklif.odeme_sekli || "",
                     teklifNo: revizeTeklifNo,
-                    siparisNo: yuklenenTeklif.siparis_no || "", // <--- ARŞİVDEN GELEN SİPARİŞ NO EKLENDİ
+                    siparisNo: yuklenenTeklif.siparis_no || "",
                     tarih: new Date()
                   });
                   setSepet1(yuklenenSepet1 || []);
