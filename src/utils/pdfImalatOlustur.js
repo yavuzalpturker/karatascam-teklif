@@ -64,20 +64,10 @@ function imalatTabloOlustur(sepet, baslikMetni) {
 
   const tabloGövdesi = [headers];
 
-  let genelToplamAdet = 0;
-  let genelToplamM2 = 0;
-  let genelToplamMtul = 0;
-
-  // İlk ürünün ismini baz alıyoruz (farklı olanı yakalamak için)
-  const ilkUrunAdi = sepet.length > 0 ? (sepet[0].urunAciklamasi || "").trim() : "";
-
-  sepet.forEach(satir => {
+  // ADIM 1: Verileri hesaplama ve hazırlama
+  const islenmisSepet = sepet.map((satir) => {
     const tamMetin = `${satir.ozelAciklama || ""} ${satir.miktarDetay || ""} ${satir.urunAciklamasi || ""}`;
-
-    let en = 0;
-    let boy = 0;
-    let adetDegeri = 1;
-    let miktarM2 = 0;
+    let en = 0, boy = 0, adetDegeri = 1, miktarM2 = 0;
 
     const olcuMatch = tamMetin.match(/(\d+)\s*[xX×]\s*(\d+)/);
     if (olcuMatch) {
@@ -93,81 +83,155 @@ function imalatTabloOlustur(sepet, baslikMetni) {
     const m2Match = tamMetin.match(/(?:Toplam:\s*)?([\d.]+)\s*m²/i);
     if (m2Match) {
       miktarM2 = parseFloat(m2Match[1]);
+    } else if (en > 0 && boy > 0) {
+      miktarM2 = (en * boy * adetDegeri) / 1000000;
     }
 
+    const tekilM2 = adetDegeri > 0 ? miktarM2 / adetDegeri : miktarM2;
+    const kucukMu = tekilM2 < 0.2;
     let metretul = 0;
-    let metretulYazi = "-";
-
     if (en > 0 && boy > 0 && adetDegeri > 0) {
       metretul = (2 * (en + boy) / 1000) * adetDegeri;
-      metretulYazi = `${metretul.toFixed(2)}`;
     }
 
-    genelToplamAdet += adetDegeri;
-    genelToplamM2 += miktarM2;
-    genelToplamMtul += metretul;
-
-    // Ürün ismi ilk üründen farklı mı kontrol ediliyor
-    const mevcutUrunAdi = (satir.urunAciklamasi || "").trim();
-    const farkliMi = mevcutUrunAdi !== ilkUrunAdi;
-
-    const satirDizisi = [
-      { text: satir.pozNo || "-", fontSize: 10, bold: true, alignment: 'center', margin: [0, 5, 0, 5] },
-      // Farklı olan ürünler bold ve net siyah yazılır
-      { text: satir.urunAciklamasi, fontSize: 9, bold: farkliMi, color: farkliMi ? '#000000' : '#222222', margin: [5, 5, 0, 5], alignment: 'left' }
-    ];
-
-    if (aciklamaGoster) {
-      let temizAciklama = satir.ozelAciklama || "";
-      temizAciklama = temizAciklama
-        .replace(/\(\s*\d+\s*[xX×]\s*\d+\s*mm[^)]*\)/gi, "")
-        .replace(/\d+\s*[xX×]\s*\d+\s*mm/gi, "")
-        .replace(/\d+\s*Adet/gi, "")
-        .replace(/Toplam:\s*[\d.]+\s*m²/gi, "")
-        .replace(/[-–—]/g, " ")
-        .trim();
-
-      const ozelAciklamaStack = [];
-
-      if (temizAciklama.length > 0) {
-        ozelAciklamaStack.push({ text: temizAciklama, fontSize: 9, margin: [0, 0, 0, 6], alignment: 'left' });
-      }
-
-      if (satir.gorsel) {
-        ozelAciklamaStack.push({
-          image: satir.gorsel,
-          width: 100, 
-          alignment: 'center',
-          margin: [0, 4, 0, 4]
-        });
-      }
-
-      if (ozelAciklamaStack.length === 0) {
-        ozelAciklamaStack.push({ text: "", fontSize: 9, alignment: 'left' });
-      }
-
-      satirDizisi.push({ stack: ozelAciklamaStack, margin: [5, 5, 5, 5] });
-    }
-
-    satirDizisi.push(
-      { text: en > 0 ? `${en}` : "-", fontSize: 12, bold: true, alignment: 'center', margin: [0, 5, 0, 5] },
-      { text: boy > 0 ? `${boy}` : "-", fontSize: 12, bold: true, alignment: 'center', margin: [0, 5, 0, 5] },
-      { text: `${adetDegeri}`, fontSize: 11, bold: true, alignment: 'center', margin: [0, 5, 0, 5] },
-      { text: miktarM2 > 0 ? `${miktarM2.toFixed(2)}` : "-", fontSize: 12, bold: true, alignment: 'center', margin: [0, 5, 0, 5], color: '#000000' },
-      { text: metretulYazi, fontSize: 9, bold: true, alignment: 'center', margin: [0, 5, 0, 5] }
-    );
-
-    tabloGövdesi.push(satirDizisi);
+    return {
+      ...satir,
+      urunAciklamasi: (satir.urunAciklamasi || "").trim(),
+      ozelAciklama: (satir.ozelAciklama || "").trim(),
+      en, boy, adetDegeri, miktarM2, metretul, kucukMu
+    };
   });
 
+  // ADIM 2: Ürün adına göre ana grupları oluşturma
+  const grupMap = new Map();
+  islenmisSepet.forEach(satir => {
+    const urunAdi = satir.urunAciklamasi;
+    if (!grupMap.has(urunAdi)) {
+      grupMap.set(urunAdi, []);
+    }
+    grupMap.get(urunAdi).push(satir);
+  });
+
+  let genelToplamAdet = 0;
+  let genelToplamM2 = 0;
+  let genelToplamMtul = 0;
+  let kucukSayac = 0;
+
+  // Tasarım için ilk ürünü baz al (Diğer ürünleri bold yapmak için)
+  const anaUrunAdi = grupMap.keys().next().value; 
+
+  // ADIM 3: Her grubu kendi içinde işleyip tabloya basma
+  grupMap.forEach((grupIciSepet, urunAdi) => {
+    const altGrupMap = new Map();
+
+    // Aynı ürün grubunun içindeki benzer satırları (aynı ölçü/açıklama) birleştir
+    grupIciSepet.forEach(satir => {
+      let key;
+      if (satir.kucukMu) {
+        // 0.2'den küçükler asla birleştirilmez
+        kucukSayac++;
+        key = `kucuk_${kucukSayac}`;
+      } else {
+        key = `normal_${satir.ozelAciklama}_${satir.gorsel}_${satir.en}_${satir.boy}`;
+      }
+
+      if (altGrupMap.has(key)) {
+        const mevcut = altGrupMap.get(key);
+        mevcut.adetDegeri += satir.adetDegeri;
+        mevcut.miktarM2 += satir.miktarM2;
+        mevcut.metretul += satir.metretul;
+      } else {
+        altGrupMap.set(key, { ...satir });
+      }
+    });
+
+    let grupToplamAdet = 0;
+    let grupToplamM2 = 0;
+    let grupToplamMtul = 0;
+    const farkliMi = urunAdi !== anaUrunAdi;
+
+    // Alt grubu tabloya bas
+    altGrupMap.forEach(satir => {
+      grupToplamAdet += satir.adetDegeri;
+      grupToplamM2 += satir.miktarM2;
+      grupToplamMtul += satir.metretul;
+
+      const satirDizisi = [
+        { text: satir.pozNo || "-", fontSize: 10, bold: true, alignment: 'center', margin: [0, 5, 0, 5] },
+        { text: satir.urunAciklamasi, fontSize: 9, bold: farkliMi || true, color: farkliMi ? '#000000' : '#222222', margin: [5, 5, 0, 5], alignment: 'left' }
+      ];
+
+      if (aciklamaGoster) {
+        let temizAciklama = satir.ozelAciklama || "";
+        temizAciklama = temizAciklama
+          .replace(/\(\s*\d+\s*[xX×]\s*\d+\s*mm[^)]*\)/gi, "")
+          .replace(/\d+\s*[xX×]\s*\d+\s*mm/gi, "")
+          .replace(/\d+\s*Adet/gi, "")
+          .replace(/Toplam:\s*[\d.]+\s*m²/gi, "")
+          .replace(/[-–—]/g, " ")
+          .trim();
+
+        const ozelAciklamaStack = [];
+
+        if (temizAciklama.length > 0) {
+          ozelAciklamaStack.push({ text: temizAciklama, fontSize: 9, margin: [0, 0, 0, 6], alignment: 'left' });
+        }
+
+        if (satir.gorsel) {
+          ozelAciklamaStack.push({
+            image: satir.gorsel,
+            width: 100, 
+            alignment: 'center',
+            margin: [0, 4, 0, 4]
+          });
+        }
+
+        if (ozelAciklamaStack.length === 0) {
+          ozelAciklamaStack.push({ text: "", fontSize: 9, alignment: 'left' });
+        }
+
+        satirDizisi.push({ stack: ozelAciklamaStack, margin: [5, 5, 5, 5] });
+      }
+
+      satirDizisi.push(
+        { text: satir.en > 0 ? `${satir.en}` : "-", fontSize: 12, bold: true, alignment: 'center', margin: [0, 5, 0, 5] },
+        { text: satir.boy > 0 ? `${satir.boy}` : "-", fontSize: 12, bold: true, alignment: 'center', margin: [0, 5, 0, 5] },
+        { text: `${satir.adetDegeri}`, fontSize: 11, bold: true, alignment: 'center', margin: [0, 5, 0, 5] },
+        { text: satir.miktarM2 > 0 ? `${satir.miktarM2.toFixed(2)}` : "-", fontSize: 12, bold: true, alignment: 'center', margin: [0, 5, 0, 5], color: '#000000' },
+        { text: satir.metretul > 0 ? `${satir.metretul.toFixed(2)}` : "-", fontSize: 9, bold: true, alignment: 'center', margin: [0, 5, 0, 5] }
+      );
+
+      tabloGövdesi.push(satirDizisi);
+    });
+
+    // Her ürün grubunun sonuna kendi ARA TOPLAM'ını ekle (Gruplar karışmasın diye belirgin mavi arkaplan)
+    if (grupMap.size > 1) {
+      const araToplamRow = [
+        { text: 'ARA TOPLAM', colSpan: aciklamaGoster ? 5 : 4, alignment: 'right', bold: true, fillColor: '#e6f2ff', margin: [0, 5, 5, 5], color: '#003366' }
+      ];
+      for (let i = 0; i < (aciklamaGoster ? 4 : 3); i++) {
+        araToplamRow.push({});
+      }
+      araToplamRow.push(
+        { text: `${grupToplamAdet}\nAdet`, alignment: 'center', bold: true, fillColor: '#e6f2ff', margin: [0, 5, 0, 5], color: '#003366' },
+        { text: `${grupToplamM2.toFixed(2)}\nm²`, alignment: 'center', bold: true, fillColor: '#e6f2ff', margin: [0, 5, 0, 5], color: '#003366' },
+        { text: `${grupToplamMtul.toFixed(2)}\nmtül`, alignment: 'center', bold: true, fillColor: '#e6f2ff', margin: [0, 5, 0, 5], color: '#003366' }
+      );
+      tabloGövdesi.push(araToplamRow);
+    }
+
+    genelToplamAdet += grupToplamAdet;
+    genelToplamM2 += grupToplamM2;
+    genelToplamMtul += grupToplamMtul;
+  });
+
+  // ADIM 4: Tüm tablo bittiğinde en alta GENEL TOPLAM
   const genelToplamRow = [
     { text: 'GENEL TOPLAM', colSpan: aciklamaGoster ? 5 : 4, alignment: 'right', bold: true, fillColor: '#f5f5f5', margin: [0, 5, 5, 5] }
   ];
-  
   for (let i = 0; i < (aciklamaGoster ? 4 : 3); i++) {
     genelToplamRow.push({});
   }
-
   genelToplamRow.push(
     { text: `${genelToplamAdet}\nAdet`, alignment: 'center', bold: true, fillColor: '#f5f5f5', margin: [0, 5, 0, 5] },
     { text: `${genelToplamM2.toFixed(2)}\nm²`, alignment: 'center', bold: true, fillColor: '#f5f5f5', margin: [0, 5, 0, 5] },
