@@ -53,7 +53,6 @@ export default function TeklifBilgileriForm({ teklif, onDegistir }) {
         />
       </label>
 
-      {/* Notlar alanı küçültüldü (rows 7'den 3'e düşürüldü) */}
       <label className="alan">
         <span>Notlar</span>
         <textarea
@@ -85,7 +84,6 @@ export default function TeklifBilgileriForm({ teklif, onDegistir }) {
         />
       </label>
 
-      {/* SİPARİŞ TESLİM SÜRESİ (Net Yan Yana Metin Kutusu + Belirgin Takvim Butonu) */}
       <label className="alan">
         <span>Sipariş Teslim Süresi</span>
         <div style={{ display: "flex", gap: "6px", alignItems: "center" }}>
