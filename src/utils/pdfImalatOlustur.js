@@ -68,6 +68,9 @@ function imalatTabloOlustur(sepet, baslikMetni) {
   let genelToplamM2 = 0;
   let genelToplamMtul = 0;
 
+  // İlk ürünün ismini baz alıyoruz (farklı olanı yakalamak için)
+  const ilkUrunAdi = sepet.length > 0 ? (sepet[0].urunAciklamasi || "").trim() : "";
+
   sepet.forEach(satir => {
     const tamMetin = `${satir.ozelAciklama || ""} ${satir.miktarDetay || ""} ${satir.urunAciklamasi || ""}`;
 
@@ -104,9 +107,14 @@ function imalatTabloOlustur(sepet, baslikMetni) {
     genelToplamM2 += miktarM2;
     genelToplamMtul += metretul;
 
+    // Ürün ismi ilk üründen farklı mı kontrol ediliyor
+    const mevcutUrunAdi = (satir.urunAciklamasi || "").trim();
+    const farkliMi = mevcutUrunAdi !== ilkUrunAdi;
+
     const satirDizisi = [
       { text: satir.pozNo || "-", fontSize: 10, bold: true, alignment: 'center', margin: [0, 5, 0, 5] },
-      { text: satir.urunAciklamasi, fontSize: 9, bold: true, margin: [5, 5, 0, 5], alignment: 'left' }
+      // Farklı olan ürünler bold ve net siyah yazılır
+      { text: satir.urunAciklamasi, fontSize: 9, bold: farkliMi, color: farkliMi ? '#000000' : '#222222', margin: [5, 5, 0, 5], alignment: 'left' }
     ];
 
     if (aciklamaGoster) {
