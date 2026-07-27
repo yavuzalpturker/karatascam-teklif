@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import FirmaOtomatikTamamlama from "./FirmaOtomatikTamamlama";
 
 export default function TeklifBilgileriForm({ teklif, onDegistir }) {
@@ -12,7 +13,7 @@ export default function TeklifBilgileriForm({ teklif, onDegistir }) {
       <label className="alan">
         <span>Firma Adı</span>
         <FirmaOtomatikTamamlama
-          deger={teklif.musteriAdi}
+          deger={teklif.musteriAdi || ""}
           onSecim={(deger) => alanGuncelle("musteriAdi", deger)}
         />
       </label>
@@ -21,7 +22,7 @@ export default function TeklifBilgileriForm({ teklif, onDegistir }) {
         <span>İlgili Kişi</span>
         <input
           type="text"
-          value={teklif.ilgiliKisi}
+          value={teklif.ilgiliKisi || ""}
           onChange={(e) => alanGuncelle("ilgiliKisi", e.target.value)}
         />
       </label>
@@ -30,7 +31,7 @@ export default function TeklifBilgileriForm({ teklif, onDegistir }) {
         <span>Proje Adı</span>
         <input
           type="text"
-          value={teklif.projeAdi}
+          value={teklif.projeAdi || ""}
           onChange={(e) => alanGuncelle("projeAdi", e.target.value)}
         />
       </label>
@@ -48,7 +49,7 @@ export default function TeklifBilgileriForm({ teklif, onDegistir }) {
         <span>Teklif Tarihi</span>
         <input
           type="date"
-          value={teklif.tarih.toISOString().slice(0, 10)}
+          value={teklif.tarih ? new Date(teklif.tarih).toISOString().slice(0, 10) : new Date().toISOString().slice(0, 10)}
           onChange={(e) => alanGuncelle("tarih", new Date(e.target.value))}
         />
       </label>

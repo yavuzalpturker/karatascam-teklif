@@ -438,7 +438,7 @@ export default function UrunEkleFormu({
         ) : null}
       </div>
 
-      {/* ADET VE FİYATLANDIRMA (KDV SOL ALTA TAŞINDI) */}
+      {/* ADET VE FİYATLANDIRMA */}
       <div style={{ display: "grid", gridTemplateColumns: "1fr 2fr 110px", gap: "14px", marginBottom: "20px", alignItems: "flex-end" }}>
         
         {/* ADET */}
@@ -493,10 +493,10 @@ export default function UrunEkleFormu({
         </div>
       </div>
 
-      {/* ALT SATIR: KDV ORANI SOL ALTA ALINDI VE BUTONLAR SAĞDA */}
+      {/* ALT SATIR: KDV SOL ALTA VE BUTONLAR SAĞDA */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", flexWrap: "wrap", gap: "15px", borderTop: "1px solid #f1f5f9", paddingTop: "15px" }}>
         
-        {/* KDV ORANI SOL ALTA SIKIŞTIRILDI / SOLDA GÖZ ÖNÜNDE OLMAYACAK ŞEKilde */}
+        {/* KDV ORANI SOL ALTA */}
         <div style={{ width: "130px" }}>
           <label style={{ display: "block", fontSize: "11px", fontWeight: "600", color: "#64748b", marginBottom: "3px" }}>KDV Oranı (%)</label>
           <select value={kdvOrani} onChange={(e) => setKdvOrani(e.target.value)} style={{ width: "100%", padding: "8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "13px", fontWeight: "600", backgroundColor: "#f8fafc", color: "#475569" }}>
@@ -508,7 +508,7 @@ export default function UrunEkleFormu({
         </div>
 
         {/* İŞLEM BUTONLARI SAĞDA */}
-        <div style={{ display: "flex", gap: "10px" }}>
+        <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
           {islemVerisi && (
             <button 
               type="button" 
@@ -523,9 +523,20 @@ export default function UrunEkleFormu({
             <button 
               type="button"
               onClick={topluUygula}
-              style={{ backgroundColor: "#8b5cf6", color: "white", border: "none", padding: "12px 20px", borderRadius: "6px", fontSize: "14px", fontWeight: "800", cursor: "pointer", boxShadow: "0 4px 6px rgba(0,0,0,0.1)" }}
+              style={{ 
+                backgroundColor: "#f1f5f9", 
+                color: "#475569", 
+                border: "1px solid #cbd5e1", 
+                padding: "8px 12px", 
+                borderRadius: "6px", 
+                fontSize: "12px", 
+                fontWeight: "600", 
+                cursor: "pointer",
+                transition: "all 0.2s"
+              }}
+              title="Aynı özellikteki seçili diğer ürünlere de bu değişiklikleri uygula"
             >
-              ✨ Seçili Ürünlere de Uygula
+              🔄 Seçili Ürünlere de Uygula
             </button>
           )}
 

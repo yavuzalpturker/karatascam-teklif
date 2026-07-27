@@ -165,6 +165,7 @@ export default function SepetTablosu({
                   style={{ cursor: "pointer", width: "16px", height: "16px" }}
                 />
               </th>
+              <th style={{ padding: "10px", textAlign: "center", width: "70px" }}>Poz No</th>
               <th style={{ padding: "10px" }}>Ürün Açıklaması</th>
               <th style={{ padding: "10px" }}>Özel Açıklama</th>
               <th style={{ padding: "10px", textAlign: "center", color: "#38bdf8" }}>Ölçü (En x Boy)</th>
@@ -208,6 +209,9 @@ export default function SepetTablosu({
                       title="İmalat Listesine Ekle"
                       style={{ cursor: "pointer", width: "16px", height: "16px" }}
                     />
+                  </td>
+                  <td style={{ padding: "10px", textAlign: "center", fontWeight: "700", color: "#0f2942" }}>
+                    {satir.pozNo || "-"}
                   </td>
                   <td style={{ padding: "10px", fontWeight: "600", color: "#1e293b" }}>
                     {satir.urunAciklamasi}
