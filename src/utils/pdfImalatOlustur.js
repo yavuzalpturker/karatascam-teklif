@@ -64,7 +64,6 @@ function imalatTabloOlustur(sepet, baslikMetni) {
 
   const tabloGövdesi = [headers];
 
-  // ADIM 1: Verileri hesaplama ve hazırlama
   const islenmisSepet = sepet.map((satir) => {
     const tamMetin = `${satir.ozelAciklama || ""} ${satir.miktarDetay || ""} ${satir.urunAciklamasi || ""}`;
     let en = 0, boy = 0, adetDegeri = 1, miktarM2 = 0;
@@ -87,8 +86,6 @@ function imalatTabloOlustur(sepet, baslikMetni) {
       miktarM2 = (en * boy * adetDegeri) / 1000000;
     }
 
-    const tekilM2 = adetDegeri > 0 ? miktarM2 / adetDegeri : miktarM2;
-    const kucukMu = tekilM2 < 0.2;
     let metretul = 0;
     if (en > 0 && boy > 0 && adetDegeri > 0) {
       metretul = (2 * (en + boy) / 1000) * adetDegeri;
@@ -98,11 +95,10 @@ function imalatTabloOlustur(sepet, baslikMetni) {
       ...satir,
       urunAciklamasi: (satir.urunAciklamasi || "").trim(),
       ozelAciklama: (satir.ozelAciklama || "").trim(),
-      en, boy, adetDegeri, miktarM2, metretul, kucukMu
+      en, boy, adetDegeri, miktarM2, metretul
     };
   });
 
-  // ADIM 2: Ürün adına göre ana grupları oluşturma
   const grupMap = new Map();
   islenmisSepet.forEach(satir => {
     const urunAdi = satir.urunAciklamasi;
@@ -115,43 +111,16 @@ function imalatTabloOlustur(sepet, baslikMetni) {
   let genelToplamAdet = 0;
   let genelToplamM2 = 0;
   let genelToplamMtul = 0;
-  let kucukSayac = 0;
 
-  // Tasarım için ilk ürünü baz al (Diğer ürünleri bold yapmak için)
   const anaUrunAdi = grupMap.keys().next().value; 
 
-  // ADIM 3: Her grubu kendi içinde işleyip tabloya basma
   grupMap.forEach((grupIciSepet, urunAdi) => {
-    const altGrupMap = new Map();
-
-    // Aynı ürün grubunun içindeki benzer satırları (aynı ölçü/açıklama) birleştir
-    grupIciSepet.forEach(satir => {
-      let key;
-      if (satir.kucukMu) {
-        // 0.2'den küçükler asla birleştirilmez
-        kucukSayac++;
-        key = `kucuk_${kucukSayac}`;
-      } else {
-        key = `normal_${satir.ozelAciklama}_${satir.gorsel}_${satir.en}_${satir.boy}`;
-      }
-
-      if (altGrupMap.has(key)) {
-        const mevcut = altGrupMap.get(key);
-        mevcut.adetDegeri += satir.adetDegeri;
-        mevcut.miktarM2 += satir.miktarM2;
-        mevcut.metretul += satir.metretul;
-      } else {
-        altGrupMap.set(key, { ...satir });
-      }
-    });
-
     let grupToplamAdet = 0;
     let grupToplamM2 = 0;
     let grupToplamMtul = 0;
     const farkliMi = urunAdi !== anaUrunAdi;
 
-    // Alt grubu tabloya bas
-    altGrupMap.forEach(satir => {
+    grupIciSepet.forEach(satir => {
       grupToplamAdet += satir.adetDegeri;
       grupToplamM2 += satir.miktarM2;
       grupToplamMtul += satir.metretul;
@@ -204,7 +173,6 @@ function imalatTabloOlustur(sepet, baslikMetni) {
       tabloGövdesi.push(satirDizisi);
     });
 
-    // Her ürün grubunun sonuna kendi ARA TOPLAM'ını ekle (Gruplar karışmasın diye belirgin mavi arkaplan)
     if (grupMap.size > 1) {
       const araToplamRow = [
         { text: 'ARA TOPLAM', colSpan: aciklamaGoster ? 5 : 4, alignment: 'right', bold: true, fillColor: '#e6f2ff', margin: [0, 5, 5, 5], color: '#003366' }
@@ -225,7 +193,6 @@ function imalatTabloOlustur(sepet, baslikMetni) {
     genelToplamMtul += grupToplamMtul;
   });
 
-  // ADIM 4: Tüm tablo bittiğinde en alta GENEL TOPLAM
   const genelToplamRow = [
     { text: 'GENEL TOPLAM', colSpan: aciklamaGoster ? 5 : 4, alignment: 'right', bold: true, fillColor: '#f5f5f5', margin: [0, 5, 5, 5] }
   ];
