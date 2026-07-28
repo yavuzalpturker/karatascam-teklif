@@ -8,7 +8,6 @@ export default function Login({ onLogin }) {
   const girisYap = (e) => {
     e.preventDefault();
     
-    // Tarayıcı hafızasındaki güncel ayarları çek. Eğer hiç ayar yapılmamışsa varsayılanları (karatas/1234) kullan.
     const kayitliSifreler = JSON.parse(localStorage.getItem('karatas_sifreler')) || {
       adminKadi: 'karatas',
       admin: '1234',
@@ -16,12 +15,12 @@ export default function Login({ onLogin }) {
       personel: '1234'
     };
     
-    // Sabit metinler yerine Ayarlar'dan gelen dinamik verilerle karşılaştır
     if (kullaniciAdi === kayitliSifreler.adminKadi && sifre === kayitliSifreler.admin) {
-      // Yönetici girişi
+      // Sekme/tarayıcı kapanınca sıfırlanması için sessionStorage kullanıyoruz
+      sessionStorage.setItem('karatas_oturum', JSON.stringify({ aktif: true, rol: 'admin' }));
       onLogin(true, 'admin');
     } else if (kullaniciAdi === kayitliSifreler.personelKadi && sifre === kayitliSifreler.personel) {
-      // Normal çalışan girişi
+      sessionStorage.setItem('karatas_oturum', JSON.stringify({ aktif: true, rol: 'calisan' }));
       onLogin(true, 'calisan');
     } else {
       setHata('Kullanıcı adı veya şifre hatalı!');

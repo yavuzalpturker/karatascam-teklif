@@ -30,13 +30,13 @@ export default function App() {
 
   const [aktifSayfa, setAktifSayfa] = useState("teklif");
 
-  // --- ŞİFRE KORUMA SİSTEMİ ---
+  // --- ŞİFRE KORUMA SİSTEMİ (sessionStorage ile her sekme kapanışında sıfırlanır) ---
   const [girisBasarili, setGirisBasarili] = useState(false);
   const [kullaniciRolu, setKullaniciRolu] = useState(null);
 
   useEffect(() => {
-    const oturum = localStorage.getItem('karatas_oturum');
-    const rol = localStorage.getItem('karatas_rol');
+    const oturum = sessionStorage.getItem('karatas_oturum');
+    const rol = sessionStorage.getItem('karatas_rol');
     if (oturum === 'aktif' && rol) {
       setGirisBasarili(true);
       setKullaniciRolu(rol);
@@ -45,16 +45,16 @@ export default function App() {
 
   const handleLogin = (durum, rol) => {
     if (durum) {
-      localStorage.setItem('karatas_oturum', 'aktif');
-      localStorage.setItem('karatas_rol', rol);
+      sessionStorage.setItem('karatas_oturum', 'aktif');
+      sessionStorage.setItem('karatas_rol', rol);
       setKullaniciRolu(rol);
       setGirisBasarili(true);
     }
   };
 
   const cikisYap = () => {
-    localStorage.removeItem('karatas_oturum');
-    localStorage.removeItem('karatas_rol');
+    sessionStorage.removeItem('karatas_oturum');
+    sessionStorage.removeItem('karatas_rol');
     setGirisBasarili(false);
     setKullaniciRolu(null);
     setAktifSayfa("teklif");
