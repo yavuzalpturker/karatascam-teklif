@@ -3,39 +3,34 @@ import { supabase } from "../lib/supabaseClient";
 import { teklifPdfIndir, proformaPdfIndir } from "../utils/pdfOlustur";
 import { imalatPdfIndir } from "../utils/pdfImalatOlustur";
 
-export default function CiktiButonu({ teklif, sepet, sepet2 = [] }) {
+export default function CiktiButonu({ teklif, sepet, sepet2 = [], kullaniciRolu }) {
   const [islemDurumu, setIslemDurumu] = useState(null);
   
-  // AKILLI SAYAÇ VE HAFIZA STATE'LERİ
+  // AKILLI SAYAÇ VE HAFIZA STATE'LERİ (Orijinal Kodun)
   const [imalatSayaci, setImalatSayaci] = useState(1);
   const [sonSiparisNo, setSonSiparisNo] = useState("");
   const [sonSeciliUrunler, setSonSeciliUrunler] = useState("");
 
   if (sepet.length === 0 && sepet2.length === 0) return null;
 
-  // Seçilen ürünleri ve sipariş numarasını izleyen Akıllı Fonksiyon
+  // Seçilen ürünleri ve sipariş numarasını izleyen Akıllı Fonksiyon (Orijinal Kodun)
   const getAkilliImalatTeklifi = (seciliSepet1, seciliSepet2, tumuSeciliMi) => {
     const islemTeklifi = { ...teklif };
-    if (!islemTeklifi.siparisNo) return islemTeklifi; // Sipariş no boşsa hiçbir şey yapma
+    if (!islemTeklifi.siparisNo) return islemTeklifi; 
 
-    // EĞER BÜTÜN ÜRÜNLER SEÇİLİYSE TAKI EKLEME, DİREKT ORİJİNAL NUMARAYI VER
     if (tumuSeciliMi) {
       return islemTeklifi;
     }
 
-    // Parçalı seçim yapıldıysa hafıza ve sayaç mantığını çalıştır
     const seciliVeri = JSON.stringify([...seciliSepet1, ...seciliSepet2]);
-    
     let guncelSayac = imalatSayaci;
 
-    // Eğer ana sipariş numarası baştan değiştiyse (örn: I-1078'den I-1079'a geçtiyse)
     if (islemTeklifi.siparisNo !== sonSiparisNo) {
       guncelSayac = 1;
       setSonSiparisNo(islemTeklifi.siparisNo);
       setSonSeciliUrunler(seciliVeri);
       setImalatSayaci(1);
     } 
-    // Eğer sipariş numarası aynı ama SEÇİLEN ÜRÜNLER FARKLIYSA (Yeni ürünler tiklendiyse)
     else if (seciliVeri !== sonSeciliUrunler) {
       guncelSayac = imalatSayaci + 1;
       setSonSeciliUrunler(seciliVeri);
@@ -46,7 +41,7 @@ export default function CiktiButonu({ teklif, sepet, sepet2 = [] }) {
     return islemTeklifi;
   };
 
-  const supabaseKaydet = async (tur, aktifTeklif, imalatSepet1 = sepet, imalatSepet2 = sepet2) => {
+  const supabaseKaydet = async (tur, aktifTeklif, imalatSepet1 = sepet, imalatSepet2 = sepet2, onayDurumu = "onaylandi") => {
     let sayac = parseInt(localStorage.getItem("proforma_sayac") || "1", 10);
     const yil = new Date().getFullYear();
     const belgeNo = `${yil}/${sayac.toString().padStart(3, "0")}`;
@@ -62,7 +57,8 @@ export default function CiktiButonu({ teklif, sepet, sepet2 = [] }) {
       odeme_sekli: aktifTeklif.odemeSekli || "", 
       tarih: new Date().toISOString(),
       sepet: imalatSepet1,
-      sepet2: imalatSepet2
+      sepet2: imalatSepet2,
+      onay_durumu: onayDurumu 
     };
 
     const { error } = await supabase.from("teklifler").insert([yeniKayit]);
@@ -75,7 +71,12 @@ export default function CiktiButonu({ teklif, sepet, sepet2 = [] }) {
 
     localStorage.setItem("proforma_sayac", sayac + 1);
     window.dispatchEvent(new Event("arsivGuncellendi"));
-    alert("Başarıyla arşive kaydedildi!");
+    
+    if (onayDurumu === "bekliyor") {
+      alert("✅ Sepet başarıyla yönetici onayına sunuldu!");
+    } else {
+      alert("Başarıyla arşive kaydedildi!");
+    }
     return belgeNo;
   };
 
@@ -85,8 +86,6 @@ export default function CiktiButonu({ teklif, sepet, sepet2 = [] }) {
       if (tur === "İMALAT") {
         const seciliSepet1 = sepet.filter(item => item.secili !== false);
         const seciliSepet2 = sepet2.filter(item => item.secili !== false);
-        
-        // Sepetteki TÜM ürünlerin seçili olup olmadığını kontrol ediyoruz
         const tumuSeciliMi = (seciliSepet1.length === sepet.length) && (seciliSepet2.length === sepet2.length);
 
         if (seciliSepet1.length === 0 && seciliSepet2.length === 0) {
@@ -95,9 +94,9 @@ export default function CiktiButonu({ teklif, sepet, sepet2 = [] }) {
         }
         
         const islemTeklifi = getAkilliImalatTeklifi(seciliSepet1, seciliSepet2, tumuSeciliMi);
-        await supabaseKaydet(tur, islemTeklifi, seciliSepet1, seciliSepet2);
+        await supabaseKaydet(tur, islemTeklifi, seciliSepet1, seciliSepet2, "onaylandi");
       } else {
-        await supabaseKaydet(tur, teklif, sepet, sepet2);
+        await supabaseKaydet(tur, teklif, sepet, sepet2, "onaylandi");
       }
     } finally {
       setIslemDurumu(null);
@@ -112,8 +111,6 @@ export default function CiktiButonu({ teklif, sepet, sepet2 = [] }) {
       if (tur === "İMALAT") {
         const seciliSepet1 = sepet.filter(item => item.secili !== false);
         const seciliSepet2 = sepet2.filter(item => item.secili !== false);
-        
-        // Sepetteki TÜM ürünlerin seçili olup olmadığını kontrol ediyoruz
         const tumuSeciliMi = (seciliSepet1.length === sepet.length) && (seciliSepet2.length === sepet2.length);
 
         if (seciliSepet1.length === 0 && seciliSepet2.length === 0) {
@@ -135,74 +132,117 @@ export default function CiktiButonu({ teklif, sepet, sepet2 = [] }) {
     }
   }
 
+  // PERSONEL İÇİN TEK ONAY İSTEME FONKSİYONU
+  async function personelOnayGonder() {
+    setIslemDurumu("ONAY_GONDER");
+    try {
+      const seciliSepet1 = sepet.filter(item => item.secili !== false);
+      const seciliSepet2 = sepet2.filter(item => item.secili !== false);
+      const tumuSeciliMi = (seciliSepet1.length === sepet.length) && (seciliSepet2.length === sepet2.length);
+
+      const islemTeklifi = getAkilliImalatTeklifi(seciliSepet1, seciliSepet2, tumuSeciliMi);
+      await supabaseKaydet("TEKLİF", islemTeklifi, seciliSepet1, seciliSepet2, "bekliyor");
+    } finally {
+      setIslemDurumu(null);
+    }
+  }
+
+  // YETKİ KONTROLÜ: Yöneticiyse VEYA personel geçmişten onaylanmış belgeyi yüklediyse tam yetki açılır
+  const belgeOnaylanmisMi = teklif.onayDurumu === 'onaylandi';
+  const tamYetki = kullaniciRolu === 'admin' || belgeOnaylanmisMi;
+
   return (
     <section className="panel">
       <h2 className="panel__baslik">Çıktı Yönetimi</h2>
       
-      <div style={{ display: "flex", gap: "2rem", flexWrap: "wrap", alignItems: "flex-start" }}>
+      <div style={{ display: "flex", gap: "2rem", flexWrap: "wrap", alignItems: "flex-start", justifyContent: tamYetki ? 'flex-start' : 'center' }}>
         
-        {/* TEKLİF BUTONLARI */}
-        <div style={{ display: "flex", flexDirection: "column", gap: "5px" }}>
-          <button 
-            className="buton" 
-            onClick={() => sadeceKaydet("TEKLİF")} 
-            disabled={islemDurumu !== null}
-            style={{ backgroundColor: "#10b981", color: "white", fontWeight: "bold", border: "1px solid #10b981" }}
-          >
-            {islemDurumu === "TEKLİF_KAYDET" ? "Kaydediliyor…" : "Teklifi Kaydet"}
-          </button>
-          <button className="buton buton--birincil" onClick={() => islemYap("TEKLİF", false)} disabled={islemDurumu !== null}>
-            {islemDurumu === "TEKLİF" ? "İndiriliyor…" : "Teklifi İndir"}
-          </button>
-          <button className="buton buton--ikincil" onClick={() => islemYap("TEKLİF", true)} disabled={islemDurumu !== null}>
-            Teklifi Önizle
-          </button>
-        </div>
+        {tamYetki ? (
+          // ==========================================
+          // YÖNETİCİ VEYA ONAYLI BELGE EKRANI (Senin Orijinal Tasarımın)
+          // ==========================================
+          <>
+            {/* TEKLİF BUTONLARI */}
+            <div style={{ display: "flex", flexDirection: "column", gap: "5px" }}>
+              <button 
+                className="buton" 
+                onClick={() => sadeceKaydet("TEKLİF")} 
+                disabled={islemDurumu !== null}
+                style={{ backgroundColor: "#10b981", color: "white", fontWeight: "bold", border: "1px solid #10b981" }}
+              >
+                {islemDurumu === "TEKLİF_KAYDET" ? "Kaydediliyor…" : "Teklifi Kaydet"}
+              </button>
+              <button className="buton buton--birincil" onClick={() => islemYap("TEKLİF", false)} disabled={islemDurumu !== null}>
+                {islemDurumu === "TEKLİF" ? "İndiriliyor…" : "Teklifi İndir"}
+              </button>
+              <button className="buton buton--ikincil" onClick={() => islemYap("TEKLİF", true)} disabled={islemDurumu !== null}>
+                Teklifi Önizle
+              </button>
+            </div>
 
-        {/* PROFORMA BUTONLARI */}
-        <div style={{ display: "flex", flexDirection: "column", gap: "5px" }}>
-          <button 
-            className="buton" 
-            onClick={() => sadeceKaydet("PROFORMA")} 
-            disabled={islemDurumu !== null}
-            style={{ backgroundColor: "#10b981", color: "white", fontWeight: "bold", border: "1px solid #10b981" }}
-          >
-            {islemDurumu === "PROFORMA_KAYDET" ? "Kaydediliyor…" : "Proformayı Kaydet"}
-          </button>
-          <button className="buton buton--birincil" onClick={() => islemYap("PROFORMA", false)} disabled={islemDurumu !== null}>
-            {islemDurumu === "PROFORMA" ? "İndiriliyor…" : "Proformayı İndir"}
-          </button>
-          <button className="buton buton--ikincil" onClick={() => islemYap("PROFORMA", true)} disabled={islemDurumu !== null}>
-            Proformayı Önizle
-          </button>
-        </div>
+            {/* PROFORMA BUTONLARI */}
+            <div style={{ display: "flex", flexDirection: "column", gap: "5px" }}>
+              <button 
+                className="buton" 
+                onClick={() => sadeceKaydet("PROFORMA")} 
+                disabled={islemDurumu !== null}
+                style={{ backgroundColor: "#10b981", color: "white", fontWeight: "bold", border: "1px solid #10b981" }}
+              >
+                {islemDurumu === "PROFORMA_KAYDET" ? "Kaydediliyor…" : "Proformayı Kaydet"}
+              </button>
+              <button className="buton buton--birincil" onClick={() => islemYap("PROFORMA", false)} disabled={islemDurumu !== null}>
+                {islemDurumu === "PROFORMA" ? "İndiriliyor…" : "Proformayı İndir"}
+              </button>
+              <button className="buton buton--ikincil" onClick={() => islemYap("PROFORMA", true)} disabled={islemDurumu !== null}>
+                Proformayı Önizle
+              </button>
+            </div>
 
-        {/* İMALAT / KESİM LİSTESİ BUTONLARI */}
-        <div style={{ display: "flex", flexDirection: "column", gap: "5px" }}>
-          <button 
-            className="buton" 
-            onClick={() => sadeceKaydet("İMALAT")} 
-            disabled={islemDurumu !== null}
-            style={{ backgroundColor: "#10b981", color: "white", fontWeight: "bold", border: "1px solid #10b981" }}
-          >
-            {islemDurumu === "İMALAT_KAYDET" ? "Kaydediliyor…" : "🛠️ İmalat Listesini Kaydet"}
-          </button>
-          <button 
-            className="buton" 
-            onClick={() => islemYap("İMALAT", false)} 
-            disabled={islemDurumu !== null}
-            style={{ backgroundColor: "#0f2942", color: "white", fontWeight: "bold", border: "1px solid #0f2942" }}
-          >
-            {islemDurumu === "İMALAT" ? "İndiriliyor…" : "🛠️ Seçilenlerin İmalatını İndir"}
-          </button>
-          <button 
-            className="buton buton--ikincil" 
-            onClick={() => islemYap("İMALAT", true)} 
-            disabled={islemDurumu !== null}
-          >
-            Seçilenlerin İmalatını Önizle
-          </button>
-        </div>
+            {/* İMALAT / KESİM LİSTESİ BUTONLARI */}
+            <div style={{ display: "flex", flexDirection: "column", gap: "5px" }}>
+              <button 
+                className="buton" 
+                onClick={() => sadeceKaydet("İMALAT")} 
+                disabled={islemDurumu !== null}
+                style={{ backgroundColor: "#10b981", color: "white", fontWeight: "bold", border: "1px solid #10b981" }}
+              >
+                {islemDurumu === "İMALAT_KAYDET" ? "Kaydediliyor…" : "🛠️ İmalat Listesini Kaydet"}
+              </button>
+              <button 
+                className="buton" 
+                onClick={() => islemYap("İMALAT", false)} 
+                disabled={islemDurumu !== null}
+                style={{ backgroundColor: "#0f2942", color: "white", fontWeight: "bold", border: "1px solid #0f2942" }}
+              >
+                {islemDurumu === "İMALAT" ? "İndiriliyor…" : "🛠️ Seçilenlerin İmalatını İndir"}
+              </button>
+              <button 
+                className="buton buton--ikincil" 
+                onClick={() => islemYap("İMALAT", true)} 
+                disabled={islemDurumu !== null}
+              >
+                Seçilenlerin İmalatını Önizle
+              </button>
+            </div>
+          </>
+        ) : (
+          /* =========================================
+             PERSONEL EKRANI (Tek Onay Butonu - Orijinal Tasarıma Uygun)
+             ========================================= */
+          <div style={{ width: '100%', maxWidth: '550px', textAlign: 'center' }}>
+            <button 
+              className="buton" 
+              onClick={personelOnayGonder} 
+              disabled={islemDurumu !== null}
+              style={{ width: '100%', padding: '16px', backgroundColor: '#0f2942', color: 'white', fontWeight: 'bold', fontSize: '15px', border: '1px solid #0f2942', borderRadius: '6px', cursor: 'pointer' }}
+            >
+              {islemDurumu === "ONAY_GONDER" ? "Yöneticiye İletiliyor..." : "📋 Sepeti Yöneticinin Onayına Gönder"}
+            </button>
+            <p style={{ marginTop: '12px', color: '#64748b', fontSize: '13.5px', fontWeight: '500' }}>
+              Yönetici onayladıktan sonra, bu sepeti <b>Geçmiş Teklifler</b> bölümünden açarak tüm indirme butonlarına erişebilirsiniz.
+            </p>
+          </div>
+        )}
 
       </div>
     </section>

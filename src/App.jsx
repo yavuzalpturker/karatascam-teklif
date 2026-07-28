@@ -8,13 +8,11 @@ import GecmisTeklifler from './components/GecmisTeklifler';
 import Login from './components/Login';
 import M2FiyatHesaplayici from './components/M2FiyatHesaplayici';
 import Ayarlar from './components/Ayarlar';
+import OnayYonetimi from './components/OnayYonetimi';
 
-// REVİZYON NUMARASI OLUŞTURMA YARDIMCI FONKSİYONU (-R1, -R2 TESPİTİ)
 function teklifNoRevizeEt(mevcutTeklifNo) {
   if (!mevcutTeklifNo) return "";
-
   const revizyonMatch = mevcutTeklifNo.match(/^(.*?)-R(\d+)$/i);
-
   if (revizyonMatch) {
     const anaTeklifNo = revizyonMatch[1];
     const mevcutRevizyonSayisi = parseInt(revizyonMatch[2], 10);
@@ -25,12 +23,9 @@ function teklifNoRevizeEt(mevcutTeklifNo) {
 }
 
 export default function App() {
-  
   const { urunler, yukleniyor, hata } = useUrunler();
-
   const [aktifSayfa, setAktifSayfa] = useState("teklif");
 
-  // --- ŞİFRE KORUMA SİSTEMİ (sessionStorage ile her sekme kapanışında sıfırlanır) ---
   const [girisBasarili, setGirisBasarili] = useState(false);
   const [kullaniciRolu, setKullaniciRolu] = useState(null);
 
@@ -68,23 +63,20 @@ export default function App() {
     siparisNo: "",
     odemeSekli: "",
     tarih: new Date(),
+    onayDurumu: "bekliyor" // Yeni açılan sayfa için varsayılan olarak bekliyor
   });
   
-  // İKİ AYRI SEPET STATE'İ
   const [sepet1, setSepet1] = useState([]);
   const [sepet2, setSepet2] = useState([]);
-  
   const [aktifSepetNumarasi, setAktifSepetNumarasi] = useState(1);
   const [islemVerisi, setIslemVerisi] = useState(null);
 
-  // 1. VE 2. SEÇENEĞİ BİRBİRİYLE YER DEĞİŞTİRME FONKSİYONU
   const secenekleriYerDegistir = () => {
     const geciciSepet = [...sepet1];
     setSepet1([...sepet2]);
     setSepet2(geciciSepet);
   };
 
-  // Silme işlemleri
   const sepettenUrunSil = (silinecekIndex, sepetNo) => {
     if (sepetNo === 1) {
       setSepet1(sepet1.filter((_, index) => index !== silinecekIndex));
@@ -114,7 +106,22 @@ export default function App() {
       <header className="ust-bar" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '15px 20px' }}>
         <div>
           <h1>KARATAŞCAM ŞİŞECAM</h1>
-          <p>Kurumsal Fiyat Teklifi Oluşturma Sistemi</p>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '4px' }}>
+            <p style={{ margin: 0 }}>Kurumsal Fiyat Teklifi Oluşturma Sistemi</p>
+            <span style={{ 
+              backgroundColor: '#0f2942', 
+              color: 'white', 
+              padding: '2px 8px', 
+              borderRadius: '4px', 
+              fontSize: '11px', 
+              fontWeight: '700',
+              letterSpacing: '0.05em',
+              textTransform: 'uppercase',
+              border: '1px solid rgba(255,255,255,0.25)'
+            }}>
+              {kullaniciRolu === 'admin' ? 'YÖNETİCİ' : 'PERSONEL'}
+            </span>
+          </div>
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
@@ -124,21 +131,29 @@ export default function App() {
             style={{ height: '75px', width: 'auto', objectFit: 'contain', borderRadius: '4px', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }} 
           />
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', position: 'relative', zIndex: 9999, alignItems: 'flex-end' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', position: 'relative', zIndex: 9999, alignItems: 'flex-end' }}>
             {kullaniciRolu === 'admin' && (
-              <button 
-                onClick={() => setAktifSayfa(aktifSayfa === "ayarlar" ? "teklif" : "ayarlar")} 
-                style={{ backgroundColor: 'rgba(255, 255, 255, 0.95)', color: '#0f2942', padding: '10px 20px', border: '1px solid rgba(255, 255, 255, 0.5)', borderRadius: '6px', cursor: 'pointer', fontWeight: '700', fontSize: '14px', boxShadow: '0 4px 15px rgba(0, 0, 0, 0.15)', display: 'flex', alignItems: 'center', gap: '8px', transition: 'all 0.2s ease' }}
-              >
-                {aktifSayfa === "ayarlar" ? "📄 Teklif Ekranına Dön" : "⚙️ Ayarlar"}
-              </button>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <button 
+                  onClick={() => setAktifSayfa(aktifSayfa === "onaylar" ? "teklif" : "onaylar")} 
+                  style={{ backgroundColor: '#0f2942', color: 'white', padding: '9px 16px', border: '1px solid rgba(255,255,255,0.35)', borderRadius: '6px', cursor: 'pointer', fontWeight: '700', fontSize: '13px', transition: 'all 0.2s ease' }}
+                >
+                  {aktifSayfa === "onaylar" ? "Teklif Ekranına Dön" : "Onay Bekleyenler"}
+                </button>
+                <button 
+                  onClick={() => setAktifSayfa(aktifSayfa === "ayarlar" ? "teklif" : "ayarlar")} 
+                  style={{ backgroundColor: '#ffffff', color: '#0f2942', padding: '9px 16px', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: '700', fontSize: '13px', transition: 'all 0.2s ease' }}
+                >
+                  {aktifSayfa === "ayarlar" ? "Teklif Ekranına Dön" : "Ayarlar"}
+                </button>
+              </div>
             )}
 
             <button 
               onClick={cikisYap} 
-              style={{ backgroundColor: 'rgba(255, 255, 255, 0.1)', color: 'white', padding: '8px 20px', border: '1px solid rgba(255, 255, 255, 0.2)', borderRadius: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: '500', backdropFilter: 'blur(10px)', transition: 'all 0.2s ease' }}
+              style={{ backgroundColor: 'rgba(255, 255, 255, 0.12)', color: 'white', padding: '7px 16px', border: '1px solid rgba(255, 255, 255, 0.25)', borderRadius: '6px', cursor: 'pointer', fontSize: '12.5px', fontWeight: '600', transition: 'all 0.2s ease' }}
             >
-              Çıkış Yap 🚪
+              Çıkış Yap
             </button>
           </div>
         </div>
@@ -147,6 +162,8 @@ export default function App() {
       <div className="govde">
         {aktifSayfa === "ayarlar" ? (
           <Ayarlar />
+        ) : aktifSayfa === "onaylar" ? (
+          <OnayYonetimi />
         ) : aktifSayfa === "m2hesapla" ? (
           <M2FiyatHesaplayici />
         ) : (
@@ -154,42 +171,28 @@ export default function App() {
             <TeklifBilgileriForm teklif={teklif} onDegistir={setTeklif} />
 
             <main className="ana-icerik">
-              
-              {/* HANGİ SEPETE EKLENECEĞİ & SEÇENEK YER DEĞİŞTİRME BUTONU */}
               <div style={{ display: 'flex', gap: '10px', marginBottom: '15px', backgroundColor: '#e2e8f0', padding: '6px', borderRadius: '8px', alignItems: 'center' }}>
                 <button
                   type="button"
                   onClick={() => setAktifSepetNumarasi(1)}
                   style={{
-                    flex: 1,
-                    padding: '10px',
-                    borderRadius: '6px',
-                    border: 'none',
+                    flex: 1, padding: '10px', borderRadius: '6px', border: 'none',
                     backgroundColor: aktifSepetNumarasi === 1 ? '#0f2942' : 'transparent',
                     color: aktifSepetNumarasi === 1 ? 'white' : '#475569',
-                    fontWeight: '600',
-                    cursor: 'pointer',
-                    transition: 'all 0.2s'
+                    fontWeight: '600', cursor: 'pointer', transition: 'all 0.2s'
                   }}
                 >
                   1. Seçenek [{sepet1.length} Ürün]
                 </button>
 
-                {/* YER DEĞİŞTİRME BUTONU */}
                 <button
                   type="button"
                   onClick={secenekleriYerDegistir}
                   title="1. ve 2. Seçeneğin Yerini Değiştir"
                   style={{
-                    backgroundColor: '#0284c7',
-                    color: 'white',
-                    border: 'none',
-                    padding: '10px 16px',
-                    borderRadius: '6px',
-                    fontSize: '13px',
-                    fontWeight: 'bold',
-                    cursor: 'pointer',
-                    whiteSpace: 'nowrap',
+                    backgroundColor: '#0f2942', color: 'white', border: 'none',
+                    padding: '10px 16px', borderRadius: '6px', fontSize: '13px',
+                    fontWeight: 'bold', cursor: 'pointer', whiteSpace: 'nowrap',
                     boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
                   }}
                 >
@@ -200,15 +203,10 @@ export default function App() {
                   type="button"
                   onClick={() => setAktifSepetNumarasi(2)}
                   style={{
-                    flex: 1,
-                    padding: '10px',
-                    borderRadius: '6px',
-                    border: 'none',
+                    flex: 1, padding: '10px', borderRadius: '6px', border: 'none',
                     backgroundColor: aktifSepetNumarasi === 2 ? '#0f2942' : 'transparent',
                     color: aktifSepetNumarasi === 2 ? 'white' : '#475569',
-                    fontWeight: '600',
-                    cursor: 'pointer',
-                    transition: 'all 0.2s'
+                    fontWeight: '600', cursor: 'pointer', transition: 'all 0.2s'
                   }}
                 >
                   2. Seçenek [{sepet2.length} Ürün]
@@ -243,7 +241,6 @@ export default function App() {
                 onIptal={() => setIslemVerisi(null)}
               />
 
-              {/* 1. SEÇENEK TABLOSU */}
               <div style={{ marginBottom: '30px' }}>
                 <h3 style={{ color: '#0f2942', borderBottom: '2px solid #0f2942', paddingBottom: '8px', marginBottom: '15px', fontSize: '16px', fontWeight: '700' }}>
                   1. Seçenek
@@ -264,7 +261,6 @@ export default function App() {
                 />
               </div>
 
-              {/* 2. SEÇENEK TABLOSU */}
               <div style={{ marginBottom: '30px' }}>
                 <h3 style={{ color: '#0f2942', borderBottom: '2px solid #0f2942', paddingBottom: '8px', marginBottom: '15px', fontSize: '16px', fontWeight: '700' }}>
                   2. Seçenek
@@ -285,9 +281,8 @@ export default function App() {
                 />
               </div>
 
-              <CiktiButonu teklif={teklif} sepet={sepet1} sepet2={sepet2} />
+              <CiktiButonu teklif={teklif} sepet={sepet1} sepet2={sepet2} kullaniciRolu={kullaniciRolu} />
 
-              {/* SADECE TEK BİR GEÇMİŞ TEKLİFLER BİLEŞENİ */}
               <GecmisTeklifler 
                 kullaniciRolu={kullaniciRolu} 
                 onSepetiYukle={(yuklenenTeklif, yuklenenSepet1, yuklenenSepet2) => {
@@ -302,7 +297,9 @@ export default function App() {
                     odemeSekli: yuklenenTeklif.odeme_sekli || "",
                     teklifNo: revizeTeklifNo,
                     siparisNo: yuklenenTeklif.siparis_no || "",
-                    tarih: new Date()
+                    tarih: new Date(),
+                    // !!! İŞTE SİSTEMİN KİLİT NOKTASI: Geçmişten gelen belgenin onay durumunu alıyor
+                    onayDurumu: yuklenenTeklif.onay_durumu || "onaylandi"
                   });
                   setSepet1(yuklenenSepet1 || []);
                   setSepet2(yuklenenSepet2 || []);

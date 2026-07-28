@@ -39,7 +39,7 @@ const DOLGU_TIPLERI = [
 
 const GAZ_TIPLERI = ["Hava", "Argon Gazı", "Kripton Gazı"];
 const PVB_TURLERI = [
-  "Şeffaf PVB (0.38)", "Şeffaf PVB (0.76)", "Şeffaf PVB (1.52)", 
+  "Şeffaf PVB (0.38)", "Şeffaf PVB (0.76)", "Şeffaf PVB (1.14)", "Şeffaf PVB (1.52)", 
   "Akustik PVB (0.38)", "Akustik PVB (0.76)", "Opak PVB", "Füme PVB", "Bronz PVB", 
   "Vanceva Renkli PVB", "Mesh PVB (Metal Fileli)", "SentryGlas (SG Ionoplast)"
 ];
