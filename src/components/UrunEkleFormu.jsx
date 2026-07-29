@@ -25,6 +25,7 @@ export default function UrunEkleFormu({
 
   const [en, setEn] = useState("");
   const [boy, setBoy] = useState("");
+  const [manuelM2, setManuelM2] = useState(""); // <--- DİREKT TOPLAM m² GİRİŞİ İÇİN
   const [miktar, setMiktar] = useState("1"); 
   const [secilenBirim, setSecilenBirim] = useState("m²");
 
@@ -46,6 +47,7 @@ export default function UrunEkleFormu({
       setUrunGorselBase64(islemVerisi.satir.gorsel || null);
       setEn(ham.en || "");
       setBoy(ham.boy || "");
+      setManuelM2(ham.manuelM2 || "");
       setMiktar(ham.miktar || "1");
       setSecilenBirim(ham.secilenBirim || "m²");
       setFiyatAna(ham.fiyatAna || "");
@@ -63,6 +65,7 @@ export default function UrunEkleFormu({
     setUrunGorselBase64(null);
     setEn("");
     setBoy("");
+    setManuelM2("");
     setMiktar("1");
     setFiyatAna("");
     setFiyatAdet("");
@@ -160,9 +163,10 @@ export default function UrunEkleFormu({
     return sonKullanilacakUrun;
   };
 
-  const satirOlusturHelper = (hedefEn, hedefBoy, hedefMiktar, hedefBirim, hedefPozNo, hedefSecili, secilenSonUrun) => {
+  const satirOlusturHelper = (hedefEn, hedefBoy, hedefManuelM2, hedefMiktar, hedefBirim, hedefPozNo, hedefSecili, secilenSonUrun) => {
     const enDegeri = Number(hedefEn) || 0;
     const boyDegeri = Number(hedefBoy) || 0;
+    const manuelM2Degeri = Number(hedefManuelM2) || 0;
     const miktarDegeri = Number(hedefMiktar) || 1;
     let ekstraAciklama = "";
     let nihaiFiyat = Number(fiyatAna) || Number(fiyatAdet) || 0;
@@ -171,7 +175,10 @@ export default function UrunEkleFormu({
 
     if (hedefBirim === "m²" || hedefBirim === "ad") {
       let toplamM2 = 0;
-      if (enDegeri > 0 && boyDegeri > 0) {
+      if (manuelM2Degeri > 0) {
+        toplamM2 = manuelM2Degeri * miktarDegeri;
+        ekstraAciklama = ` (${manuelM2Degeri} m² - ${miktarDegeri} Adet - Toplam: ${toplamM2.toFixed(2)} m²)`;
+      } else if (enDegeri > 0 && boyDegeri > 0) {
         const tekCamM2 = (enDegeri * boyDegeri) / 1000000;
         toplamM2 = tekCamM2 * miktarDegeri;
         ekstraAciklama = ` (${enDegeri}×${boyDegeri} mm - ${miktarDegeri} Adet - Toplam: ${toplamM2.toFixed(2)} m²)`;
@@ -216,8 +223,9 @@ export default function UrunEkleFormu({
     satir.secili = hedefSecili;
     satir.en = enDegeri;
     satir.boy = boyDegeri;
+    satir.manuelM2 = manuelM2Degeri;
     satir.hamVeri = {
-      arama, secilenId, pozNo: hedefPozNo, ozelAciklama, en: hedefEn, boy: hedefBoy, miktar: hedefMiktar, secilenBirim: hedefBirim, fiyatAna, fiyatAdet, paraBirimi, kdvOrani
+      arama, secilenId, pozNo: hedefPozNo, ozelAciklama, en: hedefEn, boy: hedefBoy, manuelM2: hedefManuelM2, miktar: hedefMiktar, secilenBirim: hedefBirim, fiyatAna, fiyatAdet, paraBirimi, kdvOrani
     };
 
     return satir;
@@ -228,7 +236,7 @@ export default function UrunEkleFormu({
     if (!secilenUrun) return;
 
     const sonUrun = await getSonUrun();
-    const anaSatir = satirOlusturHelper(en, boy, miktar, secilenBirim, pozNo, true, sonUrun);
+    const anaSatir = satirOlusturHelper(en, boy, manuelM2, miktar, secilenBirim, pozNo, true, sonUrun);
 
     if (islemVerisi && islemVerisi.tip === "duzenle") {
       if (onGuncelle) onGuncelle(islemVerisi.index, anaSatir);
@@ -260,11 +268,12 @@ export default function UrunEkleFormu({
       if (item.secili !== false || idx === islemVerisi.index) {
         const hEn = item.hamVeri?.en || item.en || "";
         const hBoy = item.hamVeri?.boy || item.boy || "";
+        const hManuelM2 = item.hamVeri?.manuelM2 || item.manuelM2 || "";
         const hMiktar = item.hamVeri?.miktar || "1";
         const hBirim = item.hamVeri?.secilenBirim || item.secilenBirim || "m²";
         const hPozNo = item.pozNo || "";
         
-        return satirOlusturHelper(hEn, hBoy, hMiktar, hBirim, hPozNo, item.secili !== false, sonUrun);
+        return satirOlusturHelper(hEn, hBoy, hManuelM2, hMiktar, hBirim, hPozNo, item.secili !== false, sonUrun);
       }
       return item;
     });
@@ -408,7 +417,7 @@ export default function UrunEkleFormu({
         </div>
       )}
 
-      {/* BİRİM, EN, BOY */}
+      {/* BİRİM, EN, BOY VEYA DİREKT m² */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: "14px", marginBottom: "16px" }}>
         <div>
           <label style={{ display: "block", fontSize: "13px", fontWeight: "700", color: "#334155", marginBottom: "6px" }}>Birim Seçimi</label>
@@ -419,15 +428,30 @@ export default function UrunEkleFormu({
           </select>
         </div>
 
-        {(secilenBirim === "m²" || secilenBirim === "ad") ? (
+        {secilenBirim === "m²" ? (
+          <>
+            <div>
+              <label style={{ display: "block", fontSize: "13px", fontWeight: "700", color: "#334155", marginBottom: "6px" }}>Toplam m² (Opsiyonel)</label>
+              <input type="number" min="0" step="0.01" placeholder="Örn: 70" value={manuelM2} onChange={(e) => setManuelM2(e.target.value)} style={{ width: "100%", padding: "12px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "14px", fontWeight: "600", backgroundColor: "white" }} />
+            </div>
+            <div>
+              <label style={{ display: "block", fontSize: "13px", fontWeight: "700", color: "#64748b", marginBottom: "6px" }}>En (mm) - (Ölçü varsa)</label>
+              <input type="number" min="0" value={en} onChange={(e) => setEn(e.target.value)} style={{ width: "100%", padding: "12px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "14px", fontWeight: "600", backgroundColor: "white" }} />
+            </div>
+            <div>
+              <label style={{ display: "block", fontSize: "13px", fontWeight: "700", color: "#64748b", marginBottom: "6px" }}>Boy (mm) - (Ölçü varsa)</label>
+              <input type="number" min="0" value={boy} onChange={(e) => setBoy(e.target.value)} style={{ width: "100%", padding: "12px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "14px", fontWeight: "600", backgroundColor: "white" }} />
+            </div>
+          </>
+        ) : secilenBirim === "ad" ? (
           <>
             <div>
               <label style={{ display: "block", fontSize: "13px", fontWeight: "700", color: "#334155", marginBottom: "6px" }}>En (mm)</label>
-              <input type="number" min="0"  value={en} onChange={(e) => setEn(e.target.value)} style={{ width: "100%", padding: "12px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "14px", fontWeight: "600", backgroundColor: "white" }} />
+              <input type="number" min="0" value={en} onChange={(e) => setEn(e.target.value)} style={{ width: "100%", padding: "12px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "14px", fontWeight: "600", backgroundColor: "white" }} />
             </div>
             <div>
               <label style={{ display: "block", fontSize: "13px", fontWeight: "700", color: "#334155", marginBottom: "6px" }}>Boy (mm)</label>
-              <input type="number" min="0"  value={boy} onChange={(e) => setBoy(e.target.value)} style={{ width: "100%", padding: "12px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "14px", fontWeight: "600", backgroundColor: "white" }} />
+              <input type="number" min="0" value={boy} onChange={(e) => setBoy(e.target.value)} style={{ width: "100%", padding: "12px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "14px", fontWeight: "600", backgroundColor: "white" }} />
             </div>
           </>
         ) : secilenBirim === "mt" ? (
@@ -456,7 +480,7 @@ export default function UrunEkleFormu({
                 type="number"
                 min="0"
                 step="0.01"
-                placeholder={(secilenBirim === "m²" || secilenBirim === "ad") ? "Ana Cam m² Fiyatı" : "Fiyat"}
+                placeholder={(secilenBirim === "m²" || secilenBirim === "ad") ? "Birim m² Fiyatı" : "Fiyat"}
                 value={fiyatAna}
                 onChange={(e) => {
                   setFiyatAna(e.target.value);
