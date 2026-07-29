@@ -63,7 +63,7 @@ export default function App() {
     siparisNo: "",
     odemeSekli: "",
     tarih: new Date(),
-    onayDurumu: "bekliyor" // Yeni açılan sayfa için varsayılan olarak bekliyor
+    onayDurumu: "onaylandi" // Onay mekanizması iptal edildiği için direkt onaylı/serbest
   });
   
   const [sepet1, setSepet1] = useState([]);
@@ -298,8 +298,7 @@ export default function App() {
                     teklifNo: revizeTeklifNo,
                     siparisNo: yuklenenTeklif.siparis_no || "",
                     tarih: new Date(),
-                    // !!! İŞTE SİSTEMİN KİLİT NOKTASI: Geçmişten gelen belgenin onay durumunu alıyor
-                    onayDurumu: yuklenenTeklif.onay_durumu || "onaylandi"
+                    onayDurumu: "onaylandi"
                   });
                   setSepet1(yuklenenSepet1 || []);
                   setSepet2(yuklenenSepet2 || []);
