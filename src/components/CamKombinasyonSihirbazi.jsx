@@ -232,7 +232,7 @@ export default function CamKombinasyonSihirbazi({ onKombinasyonSec, baslangicMet
     const yeniCamlar = [...lamCamlar];
     yeniCamlar[index] = { ...yeniCamlar[index], [alan]: deger };
 
-    // İLK CAMDA YAPILAN TÜM DEĞİŞİKLİKLERİ (Kalınlık, Renk, Kaplama, Kenar, Temper, Delik, Oygu) DİĞER KATMANLARA OTOMATİK UYARLA
+    // İLK CAMDA YAPILAN TÜM DEĞİŞİKLİKLERİ DİĞER KATMANLARA OTOMATİK UYARLA
     if (index === 0) {
       for (let i = 1; i < yeniCamlar.length; i++) {
         yeniCamlar[i] = { ...yeniCamlar[i], [alan]: deger };
@@ -245,6 +245,14 @@ export default function CamKombinasyonSihirbazi({ onKombinasyonSec, baslangicMet
   const handlePvbGuncelle = (index, deger) => {
     const yeniPvb = [...lamPvbLer];
     yeniPvb[index] = deger;
+
+    // İLK PVB DEĞİŞTİRİLDİYSE DİĞER PVB'LERİ DE OTOMATİK EŞİTLE
+    if (index === 0) {
+      for (let i = 1; i < yeniPvb.length; i++) {
+        yeniPvb[i] = deger;
+      }
+    }
+
     setLamPvbLer(yeniPvb);
   };
 
@@ -526,7 +534,7 @@ export default function CamKombinasyonSihirbazi({ onKombinasyonSec, baslangicMet
           />
         )}
 
-        {/* 2. LAMİNE CAM (ÇOKLU KATMAN DESTEKLİ VE TÜM ÖZELLİKLER SENKRONİZE) */}
+        {/* 2. LAMİNE CAM (ÇOKLU KATMAN DESTEKLİ, GENİŞ PVB KUTUSU VE TÜM ÖZELLİKLER SENKRONİZE) */}
         {camTuru === "lamine" && (
           <div style={{ width: "100%" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "10px", backgroundColor: "#e2e8f0", padding: "6px 10px", borderRadius: "6px" }}>
@@ -560,12 +568,12 @@ export default function CamKombinasyonSihirbazi({ onKombinasyonSec, baslangicMet
                   {i < lamineKatmanSayisi - 1 && (
                     <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "2px" }}>
                       <span style={{ fontWeight: "800", color: "#64748b", fontSize: "14px" }}>+</span>
-                      <div style={{ padding: "8px", backgroundColor: "#f1f5f9", borderRadius: "6px", border: "1px solid #cbd5e1", width: "110px" }}>
-                        <label style={{ display: "block", fontSize: "10px", fontWeight: "800", color: "#334155", marginBottom: "3px" }}>PVB Film</label>
+                      <div style={{ padding: "8px", backgroundColor: "#f1f5f9", borderRadius: "6px", border: "1px solid #cbd5e1", width: "170px" }}>
+                        <label style={{ display: "block", fontSize: "11px", fontWeight: "800", color: "#334155", marginBottom: "4px" }}>PVB Film</label>
                         <select 
                           value={lamPvbLer[i] || "Şeffaf PVB (0.38)"} 
                           onChange={(e) => handlePvbGuncelle(i, e.target.value)} 
-                          style={{ width: "100%", padding: "6px", borderRadius: "4px", border: "1px solid #cbd5e1", fontSize: "11px", fontWeight: "700", color: "#1e293b", backgroundColor: "white" }}
+                          style={{ width: "100%", padding: "7px", borderRadius: "4px", border: "1px solid #cbd5e1", fontSize: "12px", fontWeight: "700", color: "#1e293b", backgroundColor: "white" }}
                         >
                           {PVB_TURLERI.map(p => <option key={p} value={p}>{p}</option>)}
                         </select>
