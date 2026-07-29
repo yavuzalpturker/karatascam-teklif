@@ -231,6 +231,14 @@ export default function CamKombinasyonSihirbazi({ onKombinasyonSec, baslangicMet
   const handleLamCamGuncelle = (index, alan, deger) => {
     const yeniCamlar = [...lamCamlar];
     yeniCamlar[index] = { ...yeniCamlar[index], [alan]: deger };
+
+    // İLK CAMIN KALINLIĞI DEĞİŞTİRİLDİYSE DİĞER TÜM CAMLARIN KALINLIĞINI OTOMATİK EŞİTLE
+    if (index === 0 && alan === 'kalinlik') {
+      for (let i = 1; i < yeniCamlar.length; i++) {
+        yeniCamlar[i] = { ...yeniCamlar[i], kalinlik: deger };
+      }
+    }
+
     setLamCamlar(yeniCamlar);
   };
 
@@ -518,7 +526,7 @@ export default function CamKombinasyonSihirbazi({ onKombinasyonSec, baslangicMet
           />
         )}
 
-        {/* 2. LAMİNE CAM (ÇOKLU KATMAN DESTEKLİ) */}
+        {/* 2. LAMİNE CAM (ÇOKLU KATMAN DESTEKLİ VE OTOMATİK KALINLIK SENKRONİZASYONLU) */}
         {camTuru === "lamine" && (
           <div style={{ width: "100%" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "10px", backgroundColor: "#e2e8f0", padding: "6px 10px", borderRadius: "6px" }}>
@@ -707,7 +715,7 @@ export default function CamKombinasyonSihirbazi({ onKombinasyonSec, baslangicMet
             transition: "all 0.2s ease"
           }}
         >
-          ↙️ Forma Aktar
+          ↙️ Forma Aktار
         </button>
       </div>
     </div>
