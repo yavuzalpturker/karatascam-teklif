@@ -83,7 +83,7 @@ export default function GecmisTeklifler({ kullaniciRolu, onSepetiYukle }) {
       ilgiliKisi: t.ilgili_kisi,
       notlar: t.notlar,
       odemeSekli: t.odeme_sekli || "", 
-      siparisNo: t.siparis_no || "", // <--- ARŞİVDEN SİPARİŞ NO EKLENDİ
+      siparisNo: t.siparis_no || "", 
       tarih: new Date(t.tarih)
     };
 
@@ -106,7 +106,7 @@ export default function GecmisTeklifler({ kullaniciRolu, onSepetiYukle }) {
       ilgiliKisi: t.ilgili_kisi,
       notlar: t.notlar,
       odemeSekli: t.odeme_sekli || "", 
-      siparisNo: t.siparis_no || "", // <--- ARŞİVDEN SİPARİŞ NO EKLENDİ
+      siparisNo: t.siparis_no || "", 
       tarih: new Date(t.tarih)
     };
 
@@ -125,9 +125,11 @@ export default function GecmisTeklifler({ kullaniciRolu, onSepetiYukle }) {
   const filtrelenmisTeklifler = teklifler.filter((t) => {
     const aramaMetni = arama.toLocaleLowerCase("tr-TR");
     
+    // Proje adı da arama kriterine dahil edildi (t.proje_adi)
     const metinUygun = 
       (t.teklif_no || "").toLocaleLowerCase("tr-TR").includes(aramaMetni) ||
-      (t.musteri_adi || "").toLocaleLowerCase("tr-TR").includes(aramaMetni);
+      (t.musteri_adi || "").toLocaleLowerCase("tr-TR").includes(aramaMetni) ||
+      (t.proje_adi || "").toLocaleLowerCase("tr-TR").includes(aramaMetni);
 
     let tarihUygun = true;
     if (secilenTarih) {
@@ -170,7 +172,7 @@ export default function GecmisTeklifler({ kullaniciRolu, onSepetiYukle }) {
       <div style={{ display: "flex", gap: "10px", marginBottom: "15px", flexWrap: "wrap", alignItems: "center" }}>
         <input
           type="text"
-          placeholder="Ara (No veya Müşteri Adı)..."
+          placeholder="Ara (No, Müşteri veya Proje Adı)..."
           value={arama}
           onChange={(e) => setArama(e.target.value)}
           style={{ flex: 2, minWidth: "180px", padding: "10px 14px", borderRadius: "6px", border: "1px solid #cbd5e1", outline: "none", fontSize: "14px" }}
@@ -229,15 +231,16 @@ export default function GecmisTeklifler({ kullaniciRolu, onSepetiYukle }) {
               <th style={{ padding: "12px 16px", borderBottom: "2px solid #0b1d2e", position: "sticky", top: 0, backgroundColor: "#0f2942", zIndex: 1, fontWeight: "600" }}>NO</th>
               <th style={{ padding: "12px 16px", borderBottom: "2px solid #0b1d2e", position: "sticky", top: 0, backgroundColor: "#0f2942", zIndex: 1, fontWeight: "600" }}>TÜR</th>
               <th style={{ padding: "12px 16px", borderBottom: "2px solid #0b1d2e", position: "sticky", top: 0, backgroundColor: "#0f2942", zIndex: 1, fontWeight: "600" }}>MÜŞTERİ</th>
+              <th style={{ padding: "12px 16px", borderBottom: "2px solid #0b1d2e", position: "sticky", top: 0, backgroundColor: "#0f2942", zIndex: 1, fontWeight: "600" }}>PROJE</th>
               <th style={{ padding: "12px 16px", borderBottom: "2px solid #0b1d2e", position: "sticky", top: 0, backgroundColor: "#0f2942", zIndex: 1, fontWeight: "600" }}>TARİH</th>
               <th style={{ padding: "12px 16px", borderBottom: "2px solid #0b1d2e", textAlign: "center", position: "sticky", top: 0, backgroundColor: "#0f2942", zIndex: 1, fontWeight: "600" }}>İŞLEM</th>
             </tr>
           </thead>
           <tbody>
             {yukleniyor ? (
-              <tr><td colSpan={kullaniciRolu === 'admin' ? "6" : "5"} style={{ padding: "20px", textAlign: "center", color: "#64748b" }}>Yükleniyor...</td></tr>
+              <tr><td colSpan={kullaniciRolu === 'admin' ? "7" : "6"} style={{ padding: "20px", textAlign: "center", color: "#64748b" }}>Yükleniyor...</td></tr>
             ) : filtrelenmisTeklifler.length === 0 ? (
-              <tr><td colSpan={kullaniciRolu === 'admin' ? "6" : "5"} style={{ padding: "20px", textAlign: "center", color: "#64748b" }}>Kayıt bulunamadı.</td></tr>
+              <tr><td colSpan={kullaniciRolu === 'admin' ? "7" : "6"} style={{ padding: "20px", textAlign: "center", color: "#64748b" }}>Kayıt bulunamadı.</td></tr>
             ) : (
               filtrelenmisTeklifler.map((t, index) => (
                 <tr key={t.id} style={{ borderBottom: "1px solid #e2e8f0", backgroundColor: index % 2 === 0 ? "#ffffff" : "#f8fafc" }}>
@@ -261,6 +264,7 @@ export default function GecmisTeklifler({ kullaniciRolu, onSepetiYukle }) {
                     </span>
                   </td>
                   <td style={{ padding: "12px 16px", color: "#334155", fontWeight: "500" }}>{t.musteri_adi}</td>
+                  <td style={{ padding: "12px 16px", color: "#0f2942", fontWeight: "600" }}>{t.proje_adi || "-"}</td>
                   <td style={{ padding: "12px 16px", color: "#64748b", fontSize: "13px" }}>
                     {t.tarih ? new Date(t.tarih).toLocaleDateString("tr-TR") : "-"}
                   </td>
