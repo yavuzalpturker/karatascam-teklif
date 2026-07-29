@@ -25,7 +25,7 @@ export default function UrunEkleFormu({
 
   const [en, setEn] = useState("");
   const [boy, setBoy] = useState("");
-  const [manuelM2, setManuelM2] = useState(""); // <--- DİREKT TOPLAM m² GİRİŞİ İÇİN
+  const [manuelM2, setManuelM2] = useState("");
   const [miktar, setMiktar] = useState("1"); 
   const [secilenBirim, setSecilenBirim] = useState("m²");
 
@@ -285,36 +285,36 @@ export default function UrunEkleFormu({
 
   if (yukleniyor) {
     return (
-      <section className="panel" style={{ backgroundColor: "white", padding: "20px", borderRadius: "10px", border: "1px solid #cbd5e1" }}>
-        <h2 className="panel__baslik" style={{ fontSize: "17px", fontWeight: "800", color: "#0f2942" }}>Ürün Ekleme Ekranı</h2>
-        <p className="bilgi-metni" style={{ fontSize: "14px", color: "#64748b" }}>Ürün listesi yükleniyor, lütfen bekleyin…</p>
+      <section className="panel" style={{ backgroundColor: "white", padding: "16px", borderRadius: "8px", border: "1px solid #cbd5e1" }}>
+        <h2 className="panel__baslik" style={{ fontSize: "15px", fontWeight: "800", color: "#0f2942" }}>Ürün Ekleme Ekranı</h2>
+        <p className="bilgi-metni" style={{ fontSize: "13px", color: "#64748b" }}>Ürün listesi yükleniyor, lütfen bekleyin…</p>
       </section>
     );
   }
 
   if (hata) {
     return (
-      <section className="panel" style={{ backgroundColor: "white", padding: "20px", borderRadius: "10px", border: "1px solid #cbd5e1" }}>
-        <h2 className="panel__baslik" style={{ fontSize: "17px", fontWeight: "800", color: "#0f2942" }}>Ürün Ekleme Ekranı</h2>
-        <p className="hata-metni" style={{ fontSize: "14px", color: "#ef4444" }}>Ürünler yüklenemedi: {hata}</p>
+      <section className="panel" style={{ backgroundColor: "white", padding: "16px", borderRadius: "8px", border: "1px solid #cbd5e1" }}>
+        <h2 className="panel__baslik" style={{ fontSize: "15px", fontWeight: "800", color: "#0f2942" }}>Ürün Ekleme Ekranı</h2>
+        <p className="hata-metni" style={{ fontSize: "13px", color: "#ef4444" }}>Ürünler yüklenemedi: {hata}</p>
       </section>
     );
   }
 
   return (
-    <section className="panel" style={{ backgroundColor: "white", padding: "24px", borderRadius: "10px", border: "1px solid #cbd5e1", marginBottom: "30px", boxShadow: "0 4px 6px -1px rgba(0,0,0,0.05)" }}>
+    <section className="panel" style={{ backgroundColor: "white", padding: "18px", borderRadius: "8px", border: "1px solid #cbd5e1", marginBottom: "20px", boxShadow: "0 2px 4px rgba(0,0,0,0.04)" }}>
       
       <CamKombinasyonSihirbazi 
         onKombinasyonSec={handleSihirbazdanGelenUrun} 
         baslangicMetni={islemVerisi ? arama : ""} 
       />
 
-      <h2 className="panel__baslik" style={{ fontSize: "18px", fontWeight: "800", color: "#0f2942", margin: "20px 0 16px 0", borderBottom: "2px solid #e2e8f0", paddingBottom: "10px" }}>
+      <h2 className="panel__baslik" style={{ fontSize: "16px", fontWeight: "800", color: "#0f2942", margin: "14px 0 12px 0", borderBottom: "2px solid #e2e8f0", paddingBottom: "8px" }}>
         {islemVerisi?.tip === "duzenle" ? "✏️ Ürünü Düzenle" : "➕ Ürün Ekleme Ekranı"}
       </h2>
 
-      <div style={{ marginBottom: "16px" }}>
-        <label style={{ display: "block", fontSize: "13px", fontWeight: "700", color: "#334155", marginBottom: "6px" }}>
+      <div style={{ marginBottom: "12px" }}>
+        <label style={{ display: "block", fontSize: "12px", fontWeight: "700", color: "#334155", marginBottom: "4px" }}>
           Ürün Ara ve Seç (En az 3 harf giriniz)
         </label>
         <div style={{ position: "relative" }}>
@@ -324,30 +324,30 @@ export default function UrunEkleFormu({
             value={arama}
             onChange={handleAramaDegisimi}
             autoComplete="off"
-            style={{ width: "100%", padding: "12px 14px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "14px", fontWeight: "600", outline: "none", backgroundColor: "#f8fafc" }}
+            style={{ width: "100%", padding: "9px 12px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "13px", fontWeight: "600", outline: "none", backgroundColor: "#f8fafc" }}
           />
           
           {listeAcik && arama.length >= 3 && (
             <ul style={{ 
-              position: "absolute", top: "100%", left: 0, right: 0, maxHeight: "250px", 
+              position: "absolute", top: "100%", left: 0, right: 0, maxHeight: "200px", 
               overflowY: "auto", backgroundColor: "white", border: "1px solid #cbd5e1", 
               borderRadius: "0 0 6px 6px", zIndex: 1000, padding: 0, margin: 0, listStyle: "none",
-              boxShadow: "0 10px 15px -3px rgba(0,0,0,0.1)"
+              boxShadow: "0 8px 12px -2px rgba(0,0,0,0.1)"
             }}>
               {filtrelenmisUrunler.length === 0 ? (
-                <li style={{ padding: "12px 14px", color: "#64748b", fontSize: "14px" }}>Veritabanında eşleşen ürün bulunamadı...</li>
+                <li style={{ padding: "10px 12px", color: "#64748b", fontSize: "13px" }}>Veritabanında eşleşen ürün bulunamadı...</li>
               ) : (
                 filtrelenmisUrunler.map((urun) => (
                   <li 
                     key={urun.id}
-                    style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px 14px", borderBottom: "1px solid #f1f5f9", cursor: "pointer", fontSize: "14px" }}
+                    style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 12px", borderBottom: "1px solid #f1f5f9", cursor: "pointer", fontSize: "13px" }}
                     onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "#f0f8ff"}
                     onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "white"}
                   >
                     <div onClick={() => handleUrunSec(urun)} style={{ flex: 1 }} onMouseDown={(e) => e.preventDefault()}>
                       <strong style={{ color: "#0f2942" }}>{koduBul(urun)}</strong> - {aciklamaBul(urun)}
                     </div>
-                    <button onClick={(e) => urunSil(urun, e)} onMouseDown={(e) => e.preventDefault()} style={{ background: '#fee2e2', border: 'none', color: '#991b1b', cursor: 'pointer', fontSize: '12px', padding: '6px 10px', borderRadius: '4px', fontWeight: 'bold' }}>
+                    <button onClick={(e) => urunSil(urun, e)} onMouseDown={(e) => e.preventDefault()} style={{ background: '#fee2e2', border: 'none', color: '#991b1b', cursor: 'pointer', fontSize: '11px', padding: '4px 8px', borderRadius: '4px', fontWeight: 'bold' }}>
                       ❌ Sil
                     </button>
                   </li>
@@ -357,7 +357,7 @@ export default function UrunEkleFormu({
               {secilenId !== "ozel_urun" && (
                 <li 
                   onClick={handleOzelUrunSec}
-                  style={{ padding: "14px", backgroundColor: "#e0f2fe", borderTop: "2px solid #bae6fd", cursor: "pointer", color: "#0369a1", fontWeight: "800", textAlign: "center", position: "sticky", bottom: 0, fontSize: "14px" }}
+                  style={{ padding: "11px", backgroundColor: "#e0f2fe", borderTop: "2px solid #bae6fd", cursor: "pointer", color: "#0369a1", fontWeight: "800", textAlign: "center", position: "sticky", bottom: 0, fontSize: "13px" }}
                   onMouseEnter={(e) => e.target.style.backgroundColor = "#bae6fd"}
                   onMouseLeave={(e) => e.target.style.backgroundColor = "#e0f2fe"}
                 >
@@ -369,59 +369,59 @@ export default function UrunEkleFormu({
         </div>
       </div>
 
-      <div style={{ display: "flex", gap: "12px", alignItems: "flex-end", flexWrap: "wrap", marginBottom: "16px" }}>
-        <div style={{ flex: "0 0 130px" }}>
-          <label style={{ display: "block", fontSize: "13px", fontWeight: "700", color: "#334155", marginBottom: "6px" }}>Poz No</label>
+      <div style={{ display: "flex", gap: "10px", alignItems: "flex-end", flexWrap: "wrap", marginBottom: "12px" }}>
+        <div style={{ flex: "0 0 110px" }}>
+          <label style={{ display: "block", fontSize: "12px", fontWeight: "700", color: "#334155", marginBottom: "4px" }}>Poz No</label>
           <input
             type="text"
             placeholder="Örn: P1"
             value={pozNo}
             onChange={(e) => setPozNo(e.target.value)}
-            style={{ width: "100%", padding: "11px 12px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "14px", fontWeight: "700", backgroundColor: "white" }}
+            style={{ width: "100%", padding: "9px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "13px", fontWeight: "700", backgroundColor: "white" }}
           />
         </div>
 
-        <div style={{ flex: 3, minWidth: "220px" }}>
-          <label style={{ display: "block", fontSize: "13px", fontWeight: "700", color: "#334155", marginBottom: "6px" }}>Ürün Açıklaması / Detay (PDF Sütununa Yazılır)</label>
+        <div style={{ flex: 3, minWidth: "200px" }}>
+          <label style={{ display: "block", fontSize: "12px", fontWeight: "700", color: "#334155", marginBottom: "4px" }}>Ürün Açıklaması / Detay</label>
           <input
             type="text"
-            placeholder="Örn: Rodajlı, Bizoteli veya Özel İmalat..."
+            placeholder="Örn: Rodajlı, Bizoteli..."
             value={ozelAciklama}
             onChange={(e) => setOzelAciklama(e.target.value)}
-            style={{ width: "100%", padding: "11px 12px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "14px", backgroundColor: "white" }}
+            style={{ width: "100%", padding: "9px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "13px", backgroundColor: "white" }}
           />
         </div>
 
-        <div style={{ flex: 1.5, minWidth: "160px" }}>
-          <label style={{ display: "block", fontSize: "13px", fontWeight: "700", color: "#0f2942", marginBottom: "6px" }}>🖼️ Ürün Görseli Ekle</label>
+        <div style={{ flex: 1.5, minWidth: "140px" }}>
+          <label style={{ display: "block", fontSize: "12px", fontWeight: "700", color: "#0f2942", marginBottom: "4px" }}>🖼️ Görsel Ekle</label>
           <input
             type="file"
             accept="image/*"
             onChange={handleGorselYukle}
-            style={{ fontSize: "12px", padding: "8px", width: "100%", border: "1px solid #cbd5e1", borderRadius: "6px", backgroundColor: "#f8fafc" }}
+            style={{ fontSize: "11px", padding: "6px", width: "100%", border: "1px solid #cbd5e1", borderRadius: "6px", backgroundColor: "#f8fafc" }}
           />
         </div>
       </div>
 
       {urunGorselBase64 && (
-        <div style={{ marginTop: "10px", marginBottom: "16px", padding: "12px", backgroundColor: "#f1f5f9", borderRadius: "6px", display: "flex", alignItems: "center", gap: "12px", border: "1px solid #cbd5e1" }}>
-          <img src={urunGorselBase64} alt="Önizleme" style={{ height: "65px", width: "auto", borderRadius: "4px", border: "1px solid #cbd5e1" }} />
-          <span style={{ fontSize: "13px", color: "#166534", fontWeight: "bold" }}>✓ PDF'e Eklenecek Görsel Seçildi</span>
+        <div style={{ marginTop: "8px", marginBottom: "12px", padding: "10px", backgroundColor: "#f1f5f9", borderRadius: "6px", display: "flex", alignItems: "center", gap: "10px", border: "1px solid #cbd5e1" }}>
+          <img src={urunGorselBase64} alt="Önizleme" style={{ height: "50px", width: "auto", borderRadius: "4px", border: "1px solid #cbd5e1" }} />
+          <span style={{ fontSize: "12px", color: "#166534", fontWeight: "bold" }}>✓ Görsel Seçildi</span>
           <button 
             type="button" 
             onClick={() => setUrunGorselBase64(null)} 
-            style={{ marginLeft: "auto", backgroundColor: "#ef4444", color: "white", border: "none", padding: "6px 12px", borderRadius: "4px", fontSize: "12px", fontWeight: "bold", cursor: "pointer" }}
+            style={{ marginLeft: "auto", backgroundColor: "#ef4444", color: "white", border: "none", padding: "5px 10px", borderRadius: "4px", fontSize: "11px", fontWeight: "bold", cursor: "pointer" }}
           >
-            Görseli Kaldır
+            Kaldır
           </button>
         </div>
       )}
 
-      {/* BİRİM, EN, BOY VEYA DİREKT m² */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: "14px", marginBottom: "16px" }}>
+      {/* BİRİM, EN, BOY VEYA DİREKT m² - KOMPAKT ÖLÇÜLER */}
+      <div style={{ display: "grid", gridTemplateColumns: "140px 120px 1fr 1fr", gap: "10px", marginBottom: "12px", alignItems: "center" }}>
         <div>
-          <label style={{ display: "block", fontSize: "13px", fontWeight: "700", color: "#334155", marginBottom: "6px" }}>Birim Seçimi</label>
-          <select value={secilenBirim} onChange={(e) => setSecilenBirim(e.target.value)} style={{ width: "100%", padding: "12px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "14px", fontWeight: "700", backgroundColor: "white" }}>
+          <label style={{ display: "block", fontSize: "12px", fontWeight: "700", color: "#334155", marginBottom: "4px" }}>Birim</label>
+          <select value={secilenBirim} onChange={(e) => setSecilenBirim(e.target.value)} style={{ width: "100%", padding: "9px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "13px", fontWeight: "700", backgroundColor: "white" }}>
             <option value="m²">Metrekare (m²)</option>
             <option value="ad">Adet (ad)</option>
             <option value="mt">Metretül (mt)</option>
@@ -431,85 +431,87 @@ export default function UrunEkleFormu({
         {secilenBirim === "m²" ? (
           <>
             <div>
-              <label style={{ display: "block", fontSize: "13px", fontWeight: "700", color: "#334155", marginBottom: "6px" }}>Toplam m² (Opsiyonel)</label>
-              <input type="number" min="0" step="0.01" placeholder="Örn: 70" value={manuelM2} onChange={(e) => setManuelM2(e.target.value)} style={{ width: "100%", padding: "12px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "14px", fontWeight: "600", backgroundColor: "white" }} />
+              <label style={{ display: "block", fontSize: "12px", fontWeight: "700", color: "#334155", marginBottom: "4px" }}>Toplam m²</label>
+              <input type="number" min="0" step="0.01" placeholder="Örn: 70" value={manuelM2} onChange={(e) => setManuelM2(e.target.value)} style={{ width: "100%", padding: "9px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "13px", fontWeight: "600", backgroundColor: "white" }} />
             </div>
             <div>
-              <label style={{ display: "block", fontSize: "13px", fontWeight: "700", color: "#64748b", marginBottom: "6px" }}>En (mm) - (Ölçü varsa)</label>
-              <input type="number" min="0" value={en} onChange={(e) => setEn(e.target.value)} style={{ width: "100%", padding: "12px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "14px", fontWeight: "600", backgroundColor: "white" }} />
+              <label style={{ display: "block", fontSize: "12px", fontWeight: "700", color: "#64748b", marginBottom: "4px" }}>En (mm)</label>
+              <input type="number" min="0" value={en} onChange={(e) => setEn(e.target.value)} style={{ width: "100%", padding: "9px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "13px", fontWeight: "600", backgroundColor: "white" }} />
             </div>
             <div>
-              <label style={{ display: "block", fontSize: "13px", fontWeight: "700", color: "#64748b", marginBottom: "6px" }}>Boy (mm) - (Ölçü varsa)</label>
-              <input type="number" min="0" value={boy} onChange={(e) => setBoy(e.target.value)} style={{ width: "100%", padding: "12px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "14px", fontWeight: "600", backgroundColor: "white" }} />
+              <label style={{ display: "block", fontSize: "12px", fontWeight: "700", color: "#64748b", marginBottom: "4px" }}>Boy (mm)</label>
+              <input type="number" min="0" value={boy} onChange={(e) => setBoy(e.target.value)} style={{ width: "100%", padding: "9px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "13px", fontWeight: "600", backgroundColor: "white" }} />
             </div>
           </>
         ) : secilenBirim === "ad" ? (
           <>
+            <div style={{ display: "none" }} />
             <div>
-              <label style={{ display: "block", fontSize: "13px", fontWeight: "700", color: "#334155", marginBottom: "6px" }}>En (mm)</label>
-              <input type="number" min="0" value={en} onChange={(e) => setEn(e.target.value)} style={{ width: "100%", padding: "12px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "14px", fontWeight: "600", backgroundColor: "white" }} />
+              <label style={{ display: "block", fontSize: "12px", fontWeight: "700", color: "#334155", marginBottom: "4px" }}>En (mm)</label>
+              <input type="number" min="0" value={en} onChange={(e) => setEn(e.target.value)} style={{ width: "100%", padding: "9px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "13px", fontWeight: "600", backgroundColor: "white" }} />
             </div>
             <div>
-              <label style={{ display: "block", fontSize: "13px", fontWeight: "700", color: "#334155", marginBottom: "6px" }}>Boy (mm)</label>
-              <input type="number" min="0" value={boy} onChange={(e) => setBoy(e.target.value)} style={{ width: "100%", padding: "12px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "14px", fontWeight: "600", backgroundColor: "white" }} />
+              <label style={{ display: "block", fontSize: "12px", fontWeight: "700", color: "#334155", marginBottom: "4px" }}>Boy (mm)</label>
+              <input type="number" min="0" value={boy} onChange={(e) => setBoy(e.target.value)} style={{ width: "100%", padding: "9px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "13px", fontWeight: "600", backgroundColor: "white" }} />
             </div>
           </>
         ) : secilenBirim === "mt" ? (
           <div>
-            <label style={{ display: "block", fontSize: "13px", fontWeight: "700", color: "#334155", marginBottom: "6px" }}>Uzunluk / Boy (mm)</label>
-            <input type="number" min="0" placeholder="Örn: 2000" value={boy} onChange={(e) => setBoy(e.target.value)} style={{ width: "100%", padding: "12px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "14px", fontWeight: "600", backgroundColor: "white" }} />
+            <label style={{ display: "block", fontSize: "12px", fontWeight: "700", color: "#334155", marginBottom: "4px" }}>Uzunluk / Boy (mm)</label>
+            <input type="number" min="0" placeholder="Örn: 2000" value={boy} onChange={(e) => setBoy(e.target.value)} style={{ width: "100%", padding: "9px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "13px", fontWeight: "600", backgroundColor: "white" }} />
           </div>
         ) : null}
       </div>
 
-      {/* ADET VE FİYATLANDIRMA */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 2fr 110px", gap: "14px", marginBottom: "20px", alignItems: "flex-end" }}>
+      {/* ADET, FİYATLANDIRMA VE PARA BİRİMİ - KOMPAKT */}
+      <div style={{ display: "grid", gridTemplateColumns: "90px 1fr 1fr 100px", gap: "10px", marginBottom: "16px", alignItems: "flex-end" }}>
         
         {/* ADET */}
         <div>
-          <label style={{ display: "block", fontSize: "13px", fontWeight: "800", color: "#0f2942", marginBottom: "6px" }}>Adet</label>
-          <input type="number" min="1" step="1" value={miktar} onChange={(e) => setMiktar(e.target.value)} style={{ width: "100%", padding: "12px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "15px", fontWeight: "700", backgroundColor: "white" }} />
+          <label style={{ display: "block", fontSize: "12px", fontWeight: "800", color: "#0f2942", marginBottom: "4px" }}>Adet</label>
+          <input type="number" min="1" step="1" value={miktar} onChange={(e) => setMiktar(e.target.value)} style={{ width: "100%", padding: "9px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "14px", fontWeight: "700", backgroundColor: "white" }} />
         </div>
 
         {/* FİYAT */}
         <div>
-          <label style={{ display: "block", fontSize: "13px", fontWeight: "800", color: "#0f2942", marginBottom: "6px" }}>Fiyatlandırma</label>
-          <div style={{ display: "flex", gap: "8px" }}>
-            {((secilenBirim !== "m²" && secilenBirim !== "ad") || fiyatAdet === "") && (
-              <input
-                type="number"
-                min="0"
-                step="0.01"
-                placeholder={(secilenBirim === "m²" || secilenBirim === "ad") ? "Birim m² Fiyatı" : "Fiyat"}
-                value={fiyatAna}
-                onChange={(e) => {
-                  setFiyatAna(e.target.value);
-                  if (secilenBirim === "m²" || secilenBirim === "ad") setFiyatAdet(""); 
-                }}
-                style={{ flex: 1, padding: "12px 14px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "15px", fontWeight: "600", backgroundColor: "white" }}
-              />
-            )}
+          <label style={{ display: "block", fontSize: "12px", fontWeight: "800", color: "#0f2942", marginBottom: "4px" }}>Fiyatlandırma</label>
+          {((secilenBirim !== "m²" && secilenBirim !== "ad") || fiyatAdet === "") && (
+            <input
+              type="number"
+              min="0"
+              step="0.01"
+              placeholder={(secilenBirim === "m²" || secilenBirim === "ad") ? "Birim m² Fiyatı" : "Fiyat"}
+              value={fiyatAna}
+              onChange={(e) => {
+                setFiyatAna(e.target.value);
+                if (secilenBirim === "m²" || secilenBirim === "ad") setFiyatAdet(""); 
+              }}
+              style={{ width: "100%", padding: "9px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "14px", fontWeight: "600", backgroundColor: "white" }}
+            />
+          )}
+        </div>
 
-            {(secilenBirim === "m²" || secilenBirim === "ad") && fiyatAna === "" && (
-              <input
-                type="number"
-                min="0"
-                step="0.01"
-                placeholder="Adet Fiyatı"
-                value={fiyatAdet}
-                onChange={(e) => {
-                  setFiyatAdet(e.target.value);
-                  setFiyatAna(""); 
-                }}
-                style={{ flex: 1, padding: "12px 14px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "15px", fontWeight: "600", backgroundColor: "white" }}
-              />
-            )}
-          </div>
+        <div>
+          <label style={{ display: "block", fontSize: "12px", fontWeight: "800", color: "#0f2942", marginBottom: "4px" }}>&nbsp;</label>
+          {(secilenBirim === "m²" || secilenBirim === "ad") && fiyatAna === "" && (
+            <input
+              type="number"
+              min="0"
+              step="0.01"
+              placeholder="Adet Fiyatı"
+              value={fiyatAdet}
+              onChange={(e) => {
+                setFiyatAdet(e.target.value);
+                setFiyatAna(""); 
+              }}
+              style={{ width: "100%", padding: "9px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "14px", fontWeight: "600", backgroundColor: "white" }}
+            />
+          )}
         </div>
 
         {/* PARA BİRİMİ */}
         <div>
-          <select value={paraBirimi} onChange={(e) => setParaBirimi(e.target.value)} style={{ width: "100%", padding: "12px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "15px", fontWeight: "800", backgroundColor: "white" }}>
+          <select value={paraBirimi} onChange={(e) => setParaBirimi(e.target.value)} style={{ width: "100%", padding: "9px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "14px", fontWeight: "800", backgroundColor: "white" }}>
             <option value="TRY">TL (₺)</option>
             <option value="USD">Dolar ($)</option>
             <option value="EUR">Euro (€)</option>
@@ -518,12 +520,12 @@ export default function UrunEkleFormu({
       </div>
 
       {/* ALT SATIR: KDV SOL ALTA VE BUTONLAR SAĞDA */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", flexWrap: "wrap", gap: "15px", borderTop: "1px solid #f1f5f9", paddingTop: "15px" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", flexWrap: "wrap", gap: "12px", borderTop: "1px solid #f1f5f9", paddingTop: "12px" }}>
         
         {/* KDV ORANI SOL ALTA */}
-        <div style={{ width: "130px" }}>
+        <div style={{ width: "110px" }}>
           <label style={{ display: "block", fontSize: "11px", fontWeight: "600", color: "#64748b", marginBottom: "3px" }}>KDV Oranı (%)</label>
-          <select value={kdvOrani} onChange={(e) => setKdvOrani(e.target.value)} style={{ width: "100%", padding: "8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "13px", fontWeight: "600", backgroundColor: "#f8fafc", color: "#475569" }}>
+          <select value={kdvOrani} onChange={(e) => setKdvOrani(e.target.value)} style={{ width: "100%", padding: "7px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "12px", fontWeight: "600", backgroundColor: "#f8fafc", color: "#475569" }}>
             <option value="0">% 0</option>
             <option value="1">% 1</option>
             <option value="10">% 10</option>
@@ -532,12 +534,12 @@ export default function UrunEkleFormu({
         </div>
 
         {/* İŞLEM BUTONLARI SAĞDA */}
-        <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
+        <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
           {islemVerisi && (
             <button 
               type="button" 
               onClick={() => { formuSifirla(); onIptal(); }}
-              style={{ backgroundColor: "#64748b", color: "white", border: "none", padding: "12px 20px", borderRadius: "6px", fontSize: "14px", fontWeight: "700", cursor: "pointer" }}
+              style={{ backgroundColor: "#64748b", color: "white", border: "none", padding: "10px 16px", borderRadius: "6px", fontSize: "13px", fontWeight: "700", cursor: "pointer" }}
             >
               İptal
             </button>
@@ -551,16 +553,16 @@ export default function UrunEkleFormu({
                 backgroundColor: "#f1f5f9", 
                 color: "#475569", 
                 border: "1px solid #cbd5e1", 
-                padding: "8px 12px", 
+                padding: "8px 10px", 
                 borderRadius: "6px", 
-                fontSize: "12px", 
+                fontSize: "11px", 
                 fontWeight: "600", 
                 cursor: "pointer",
                 transition: "all 0.2s"
               }}
               title="Aynı özellikteki seçili diğer ürünlere de bu değişiklikleri uygula"
             >
-              🔄 Seçili Ürünlere de Uygula
+              🔄 Seçili Ürünlere Uygula
             </button>
           )}
 
@@ -568,7 +570,7 @@ export default function UrunEkleFormu({
             type="button"
             onClick={ekle} 
             disabled={!arama.trim()}
-            style={{ backgroundColor: islemVerisi?.tip === "duzenle" ? "#10b981" : "#0f2942", color: "white", border: "none", padding: "12px 26px", borderRadius: "6px", fontSize: "14px", fontWeight: "800", cursor: arama.trim() ? "pointer" : "not-allowed", opacity: arama.trim() ? 1 : 0.6, boxShadow: "0 4px 6px rgba(0,0,0,0.15)" }}
+            style={{ backgroundColor: islemVerisi?.tip === "duzenle" ? "#10b981" : "#0f2942", color: "white", border: "none", padding: "10px 22px", borderRadius: "6px", fontSize: "13px", fontWeight: "800", cursor: arama.trim() ? "pointer" : "not-allowed", opacity: arama.trim() ? 1 : 0.6, boxShadow: "0 4px 6px rgba(0,0,0,0.15)" }}
           >
             {islemVerisi?.tip === "duzenle" ? "💾 Sadece Bu Ürünü Kaydet" : "📥 Sepete Ekle"}
           </button>
