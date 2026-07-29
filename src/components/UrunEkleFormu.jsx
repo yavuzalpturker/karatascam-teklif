@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { satirHesapla } from "../utils/hesaplama";
+import { satirHesapla, paraFormatla } from "../utils/hesaplama";
 import { supabase } from "../lib/supabaseClient";
 import CamKombinasyonSihirbazi from "./CamKombinasyonSihirbazi";
 
@@ -33,8 +33,9 @@ export default function UrunEkleFormu({
   const [fiyatAdet, setFiyatAdet] = useState(""); 
 
   // --- İŞÇİLİK BEDELİ STATE'LERİ ---
-  const [iscilikTuru, setIscilikTuru] = useState(""); // "", "Karolaj Bedeli", "Sıvama Bedeli", "Bonding Bedeli"
-  const [iscilikBirimFiyat, setIscilikBirimFiyat] = useState("");
+  const [iscilikTuru, setIscilikTuru] = useState(""); 
+  const [iscilikMetretul, setIscilikMetretul] = useState(""); 
+  const [iscilikBirimFiyat, setIscilikBirimFiyat] = useState(""); 
 
   const [paraBirimi, setParaBirimi] = useState("TRY");
   const [kdvOrani, setKdvOrani] = useState("20");
@@ -57,6 +58,7 @@ export default function UrunEkleFormu({
       setFiyatAna(ham.fiyatAna || "");
       setFiyatAdet(ham.fiyatAdet || "");
       setIscilikTuru(ham.iscilikTuru || "");
+      setIscilikMetretul(ham.iscilikMetretul || "");
       setIscilikBirimFiyat(ham.iscilikBirimFiyat || "");
       setParaBirimi(ham.paraBirimi || "TRY");
       setKdvOrani(ham.kdvOrani || "20");
@@ -76,6 +78,7 @@ export default function UrunEkleFormu({
     setFiyatAna("");
     setFiyatAdet("");
     setIscilikTuru("");
+    setIscilikMetretul("");
     setIscilikBirimFiyat("");
   };
 
@@ -172,6 +175,37 @@ export default function UrunEkleFormu({
   };
 
   const satirOlusturHelper = (hedefEn, hedefBoy, hedefManuelM2, hedefMiktar, hedefBirim, hedefPozNo, hedefSecili, secilenSonUrun) => {
+    // --- EĞER İŞÇİLİK SEÇİLDİYSE ---
+    if (iscilikTuru) {
+      const mtMiktari = Number(iscilikMetretul) || 0;
+      const mtBirimFiyat = Number(iscilikBirimFiyat) || 0;
+      const toplamIscilikTutari = mtMiktari * mtBirimFiyat;
+
+      const iscilikUrunu = {
+        id: "iscilik_" + Date.now(),
+        kodu: "İŞÇİLİK",
+        aciklama: iscilikTuru.toLocaleUpperCase("tr-TR"),
+        "Ana Birim": "MT"
+      };
+
+      const satir = satirHesapla(iscilikUrunu, 100, 100, mtMiktari, mtBirimFiyat, paraBirimi, Number(kdvOrani), "mt");
+      satir.toplamTutar = toplamIscilikTutari;
+      satir.pozNo = hedefPozNo || "-";
+      satir.ozelAciklama = ozelAciklama ? `${ozelAciklama} (${mtMiktari} mt × ${paraFormatla(mtBirimFiyat, paraBirimi)})` : `${mtMiktari} mt × ${paraFormatla(mtBirimFiyat, paraBirimi)}`;
+      satir.gorsel = urunGorselBase64;
+      satir.miktar = mtMiktari;
+      satir.secilenBirim = "mt";
+      satir.birimFiyat = mtBirimFiyat;
+      satir.birim = "mt";
+      satir.Birim = "mt";
+      satir.secili = hedefSecili;
+      satir.hamVeri = {
+        iscilikTuru, iscilikMetretul, iscilikBirimFiyat, pozNo: hedefPozNo, ozelAciklama, paraBirimi, kdvOrani
+      };
+      return satir;
+    }
+
+    // --- NORMAL ÜRÜN AKIŞI ---
     const enDegeri = Number(hedefEn) || 0;
     const boyDegeri = Number(hedefBoy) || 0;
     const manuelM2Degeri = Number(hedefManuelM2) || 0;
@@ -212,15 +246,6 @@ export default function UrunEkleFormu({
       nihaiBirim = "ad";
     }
 
-    // --- İŞÇİLİK BEDELİ HESAPLAMASI (Metretül Başına) ---
-    let iscilikToplamTutar = 0;
-    if (iscilikTuru && iscilikBirimFiyat && Number(iscilikBirimFiyat) > 0 && enDegeri > 0 && boyDegeri > 0) {
-      // Çevre (Metretül) = 2 * (En + Boy) / 1000 * Adet
-      const metretul = (2 * (enDegeri + boyDegeri) / 1000) * miktarDegeri;
-      iscilikToplamTutar = metretul * Number(iscilikBirimFiyat);
-      ekstraAciklama += ` [${iscilikTuru}: ${metretul.toFixed(2)} mt × ${paraFormatla(Number(iscilikBirimFiyat), paraBirimi)}]`;
-    }
-
     const duzeltilmisUrun = {
       ...secilenSonUrun,
       "Ana Birim": nihaiBirim.toUpperCase(), 
@@ -229,10 +254,6 @@ export default function UrunEkleFormu({
     };
 
     const satir = satirHesapla(duzeltilmisUrun, 100, 100, hesaplananMiktar, nihaiFiyat, paraBirimi, Number(kdvOrani), nihaiBirim);
-    
-    // İşçilik tutarını toplam tutara ekle
-    satir.toplamTutar = (satir.toplamTutar || 0) + iscilikToplamTutar;
-
     satir.pozNo = hedefPozNo || "-"; 
     satir.ozelAciklama = ozelAciklama + ekstraAciklama;
     satir.gorsel = urunGorselBase64; 
@@ -246,7 +267,7 @@ export default function UrunEkleFormu({
     satir.boy = boyDegeri;
     satir.manuelM2 = manuelM2Degeri;
     satir.hamVeri = {
-      arama, secilenId, pozNo: hedefPozNo, ozelAciklama, en: hedefEn, boy: hedefBoy, manuelM2: hedefManuelM2, miktar: hedefMiktar, secilenBirim: hedefBirim, fiyatAna, fiyatAdet, iscilikTuru, iscilikBirimFiyat, paraBirimi, kdvOrani
+      arama, secilenId, pozNo: hedefPozNo, ozelAciklama, en: hedefEn, boy: hedefBoy, manuelM2: hedefManuelM2, miktar: hedefMiktar, secilenBirim: hedefBirim, fiyatAna, fiyatAdet, paraBirimi, kdvOrani
     };
 
     return satir;
@@ -254,9 +275,9 @@ export default function UrunEkleFormu({
 
   async function ekle(e) {
     if (e) e.preventDefault();
-    if (!secilenUrun) return;
+    if (!iscilikTuru && !secilenUrun) return;
 
-    const sonUrun = await getSonUrun();
+    const sonUrun = iscilikTuru ? null : await getSonUrun();
     const anaSatir = satirOlusturHelper(en, boy, manuelM2, miktar, secilenBirim, pozNo, true, sonUrun);
 
     if (islemVerisi && islemVerisi.tip === "duzenle") {
@@ -272,14 +293,14 @@ export default function UrunEkleFormu({
 
   async function topluUygula(e) {
     if (e) e.preventDefault();
-    if (!secilenUrun) return;
+    if (!iscilikTuru && !secilenUrun) return;
     
     if (!onTopluGuncelle) {
       alert("Lütfen App.jsx dosyasını güncelleyin (onTopluGuncelle eksik).");
       return;
     }
 
-    const sonUrun = await getSonUrun();
+    const sonUrun = iscilikTuru ? null : await getSonUrun();
     const hedefSepetNo = islemVerisi?.sepetNo || 1;
     const aktifSepet = hedefSepetNo === 1 ? sepet1 : sepet2;
 
@@ -322,6 +343,8 @@ export default function UrunEkleFormu({
     );
   }
 
+  const formDoluMu = iscilikTuru ? (Number(iscilikMetretul) > 0 && Number(iscilikBirimFiyat) > 0) : arama.trim();
+
   return (
     <section className="panel" style={{ backgroundColor: "white", padding: "18px", borderRadius: "8px", border: "1px solid #cbd5e1", marginBottom: "20px", boxShadow: "0 2px 4px rgba(0,0,0,0.04)" }}>
       
@@ -334,9 +357,9 @@ export default function UrunEkleFormu({
         {islemVerisi?.tip === "duzenle" ? "✏️ Ürünü Düzenle" : "➕ Ürün Ekleme Ekranı"}
       </h2>
 
-      <div style={{ marginBottom: "12px" }}>
+      <div style={{ marginBottom: "12px", opacity: iscilikTuru ? 0.4 : 1, pointerEvents: iscilikTuru ? "none" : "auto" }}>
         <label style={{ display: "block", fontSize: "12px", fontWeight: "700", color: "#334155", marginBottom: "4px" }}>
-          Ürün Ara ve Seç (En az 3 harf giriniz)
+          Ürün Ara ve Seç {iscilikTuru && "(İşçilik seçili iken devre dışı)"}
         </label>
         <div style={{ position: "relative" }}>
           <input
@@ -348,7 +371,7 @@ export default function UrunEkleFormu({
             style={{ width: "100%", padding: "9px 12px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "13px", fontWeight: "600", outline: "none", backgroundColor: "#f8fafc" }}
           />
           
-          {listeAcik && arama.length >= 3 && (
+          {listeAcik && arama.length >= 3 && !iscilikTuru && (
             <ul style={{ 
               position: "absolute", top: "100%", left: 0, right: 0, maxHeight: "200px", 
               overflowY: "auto", backgroundColor: "white", border: "1px solid #cbd5e1", 
@@ -439,7 +462,7 @@ export default function UrunEkleFormu({
       )}
 
       {/* BİRİM, EN, BOY VEYA DİREKT m² */}
-      <div style={{ display: "grid", gridTemplateColumns: "140px 120px 1fr 1fr", gap: "10px", marginBottom: "12px", alignItems: "center" }}>
+      <div style={{ display: iscilikTuru ? "none" : "grid", gridTemplateColumns: "140px 120px 1fr 1fr", gap: "10px", marginBottom: "12px", alignItems: "center" }}>
         <div>
           <label style={{ display: "block", fontSize: "12px", fontWeight: "700", color: "#334155", marginBottom: "4px" }}>Birim</label>
           <select value={secilenBirim} onChange={(e) => setSecilenBirim(e.target.value)} style={{ width: "100%", padding: "9px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "13px", fontWeight: "700", backgroundColor: "white" }}>
@@ -485,15 +508,12 @@ export default function UrunEkleFormu({
       </div>
 
       {/* ADET, FİYATLANDIRMA VE PARA BİRİMİ */}
-      <div style={{ display: "grid", gridTemplateColumns: "90px 1fr 1fr 100px", gap: "10px", marginBottom: "12px", alignItems: "flex-end" }}>
-        
-        {/* ADET */}
+      <div style={{ display: iscilikTuru ? "none" : "grid", gridTemplateColumns: "90px 1fr 1fr 100px", gap: "10px", marginBottom: "12px", alignItems: "flex-end" }}>
         <div>
           <label style={{ display: "block", fontSize: "12px", fontWeight: "800", color: "#0f2942", marginBottom: "4px" }}>Adet</label>
           <input type="number" min="1" step="1" value={miktar} onChange={(e) => setMiktar(e.target.value)} style={{ width: "100%", padding: "9px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "14px", fontWeight: "700", backgroundColor: "white" }} />
         </div>
 
-        {/* FİYAT */}
         <div>
           <label style={{ display: "block", fontSize: "12px", fontWeight: "800", color: "#0f2942", marginBottom: "4px" }}>Fiyatlandırma</label>
           {((secilenBirim !== "m²" && secilenBirim !== "ad") || fiyatAdet === "") && (
@@ -530,7 +550,6 @@ export default function UrunEkleFormu({
           )}
         </div>
 
-        {/* PARA BİRİMİ */}
         <div>
           <select value={paraBirimi} onChange={(e) => setParaBirimi(e.target.value)} style={{ width: "100%", padding: "9px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "14px", fontWeight: "800", backgroundColor: "white" }}>
             <option value="TRY">TL (₺)</option>
@@ -540,11 +559,11 @@ export default function UrunEkleFormu({
         </div>
       </div>
 
-      {/* --- YENİ EKLENEN İŞÇİLİK BEDELİ SEÇİMİ --- */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px", marginBottom: "16px", backgroundColor: "#f1f5f9", padding: "10px", borderRadius: "8px", border: "1px solid #cbd5e1" }}>
+      {/* --- BAĞIMSIZ İŞÇİLİK BEDELİ ALANI --- */}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 100px", gap: "10px", marginBottom: "16px", backgroundColor: "#f1f5f9", padding: "12px", borderRadius: "8px", border: "1px solid #cbd5e1", alignItems: "flex-end" }}>
         <div>
           <label style={{ display: "block", fontSize: "12px", fontWeight: "800", color: "#0f2942", marginBottom: "4px" }}>İşçilik Bedeli Türü</label>
-          <select value={iscilikTuru} onChange={(e) => setIscilikTuru(e.target.value)} style={{ width: "100%", padding: "8px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "13px", fontWeight: "700", backgroundColor: "white", color: "#1e293b" }}>
+          <select value={iscilikTuru} onChange={(e) => setIscilikTuru(e.target.value)} style={{ width: "100%", padding: "9px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "13px", fontWeight: "700", backgroundColor: "white", color: "#1e293b" }}>
             <option value="">İşçilik Seçiniz (Yok)</option>
             <option value="Karolaj Bedeli">Karolaj Bedeli</option>
             <option value="Sıvama Bedeli">Sıvama Bedeli</option>
@@ -553,17 +572,39 @@ export default function UrunEkleFormu({
         </div>
 
         <div>
-          <label style={{ display: "block", fontSize: "12px", fontWeight: "800", color: "#0f2942", marginBottom: "4px" }}>İşçilik Metretül (mt) Birim Fiyatı</label>
+          <label style={{ display: "block", fontSize: "12px", fontWeight: "800", color: "#0f2942", marginBottom: "4px" }}>Metretül (mt)</label>
           <input
             type="number"
             min="0"
             step="0.01"
-            placeholder="mt Başına Fiyat"
+            placeholder="Örn: 50"
+            value={iscilikMetretul}
+            onChange={(e) => setIscilikMetretul(e.target.value)}
+            disabled={!iscilikTuru}
+            style={{ width: "100%", padding: "9px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "13px", fontWeight: "600", backgroundColor: iscilikTuru ? "white" : "#e2e8f0" }}
+          />
+        </div>
+
+        <div>
+          <label style={{ display: "block", fontSize: "12px", fontWeight: "800", color: "#0f2942", marginBottom: "4px" }}>mt Başına Fiyat</label>
+          <input
+            type="number"
+            min="0"
+            step="0.01"
+            placeholder="Örn: 360"
             value={iscilikBirimFiyat}
             onChange={(e) => setIscilikBirimFiyat(e.target.value)}
             disabled={!iscilikTuru}
-            style={{ width: "100%", padding: "8px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "13px", fontWeight: "600", backgroundColor: iscilikTuru ? "white" : "#e2e8f0" }}
+            style={{ width: "100%", padding: "9px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "13px", fontWeight: "600", backgroundColor: iscilikTuru ? "white" : "#e2e8f0" }}
           />
+        </div>
+
+        <div>
+          <select value={paraBirimi} onChange={(e) => setParaBirimi(e.target.value)} disabled={!iscilikTuru} style={{ width: "100%", padding: "9px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "14px", fontWeight: "800", backgroundColor: iscilikTuru ? "white" : "#e2e8f0" }}>
+            <option value="TRY">TL (₺)</option>
+            <option value="USD">Dolar ($)</option>
+            <option value="EUR">Euro (€)</option>
+          </select>
         </div>
       </div>
 
@@ -610,15 +651,15 @@ export default function UrunEkleFormu({
               }}
               title="Aynı özellikteki seçili diğer ürünlere de bu değişiklikleri uygula"
             >
-              🔄 Seçili Ürünlere Uygula
+              🔄 Seçili Ürünlere de Uygula
             </button>
           )}
 
           <button 
             type="button"
             onClick={ekle} 
-            disabled={!arama.trim()}
-            style={{ backgroundColor: islemVerisi?.tip === "duzenle" ? "#10b981" : "#0f2942", color: "white", border: "none", padding: "10px 22px", borderRadius: "6px", fontSize: "13px", fontWeight: "800", cursor: arama.trim() ? "pointer" : "not-allowed", opacity: arama.trim() ? 1 : 0.6, boxShadow: "0 4px 6px rgba(0,0,0,0.15)" }}
+            disabled={!formDoluMu}
+            style={{ backgroundColor: islemVerisi?.tip === "duzenle" ? "#10b981" : "#0f2942", color: "white", border: "none", padding: "10px 22px", borderRadius: "6px", fontSize: "13px", fontWeight: "800", cursor: formDoluMu ? "pointer" : "not-allowed", opacity: formDoluMu ? 1 : 0.6, boxShadow: "0 4px 6px rgba(0,0,0,0.15)" }}
           >
             {islemVerisi?.tip === "duzenle" ? "💾 Sadece Bu Ürünü Kaydet" : "📥 Sepete Ekle"}
           </button>
