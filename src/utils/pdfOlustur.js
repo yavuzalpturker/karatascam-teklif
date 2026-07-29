@@ -149,21 +149,22 @@ function sepetIcerikOlustur(sepet, baslikMetni) {
     }
 
     const elemanlar = [
-      { text: baslik, bold: true, margin: [0, 6, 0, 2] }
+      { text: baslik, bold: true, fontSize: 10, margin: [0, 6, 0, 2] }
     ];
 
     if (satir.gorsel) {
       elemanlar.push({
         image: satir.gorsel,
-        width: 150, 
-        margin: [0, 5, 0, 8]
+        width: 130, 
+        margin: [0, 4, 0, 6]
       });
     }
 
     elemanlar.push({
       text: `${satir.miktarDetay}  =  ${paraFormatla(satir.toplamTutar, satir.paraBirimi)} + KDV`,
       alignment: "right",
-      margin: [0, 0, 0, 4],
+      fontSize: 10,
+      margin: [0, 0, 0, 8],
     });
 
     return {
@@ -178,21 +179,25 @@ function sepetIcerikOlustur(sepet, baslikMetni) {
   const genelToplamSatirlari = Object.entries(genelToplamlar).map(([paraBirimi, tutar]) => {
     const kdvTutar = genelKdvler[paraBirimi] || 0;
     const kdvDahilToplam = tutar + kdvTutar;
-    // Sepetteki ilk üründen KDV oranını alalım (varsayılan %20)
     const kdvOrani = sepet[0]?.kdvOrani || 20;
 
     return [
       {
+        canvas: [{ type: 'line', x1: 250, y1: 0, x2: 515, y2: 0, lineWidth: 0.5, lineColor: '#cccccc' }],
+        margin: [0, 2, 0, 4],
+        unbreakable: true
+      },
+      {
         text: `TOPLAM (${paraBirimi}) : ${paraFormatla(tutar, paraBirimi)}`,
-        bold: true, fontSize: 10, alignment: "right", margin: [0, 4, 0, 1], unbreakable: true
+        bold: true, fontSize: 11, alignment: "right", margin: [0, 0, 0, 2], unbreakable: true
       },
       {
         text: `KDV (%${kdvOrani}) : ${paraFormatla(kdvTutar, paraBirimi)}`,
-        bold: true, fontSize: 10, alignment: "right", margin: [0, 0, 0, 1], unbreakable: true
+        bold: true, fontSize: 11, alignment: "right", margin: [0, 0, 0, 2], unbreakable: true
       },
       {
         text: `KDV DAHİL GENEL TOPLAM : ${paraFormatla(kdvDahilToplam, paraBirimi)}`,
-        bold: true, fontSize: 12, alignment: "right", margin: [0, 0, 0, 8], color: '#0f2942', unbreakable: true
+        bold: true, fontSize: 11, alignment: "right", margin: [0, 0, 0, 10], color: '#0f2942', unbreakable: true
       }
     ];
   }).flat();
@@ -202,8 +207,8 @@ function sepetIcerikOlustur(sepet, baslikMetni) {
   }
 
   return [
-    { text: baslikMetni, bold: true, fontSize: 12, color: '#0f2942', margin: [0, 10, 0, 5] },
-    { canvas: [{ type: 'line', x1: 0, y1: 0, x2: 515, y2: 0, lineWidth: 1, lineColor: '#0f2942' }], margin: [0, 0, 0, 8] },
+    { text: baslikMetni, bold: true, fontSize: 11, color: '#0f2942', margin: [0, 8, 0, 4] },
+    { canvas: [{ type: 'line', x1: 0, y1: 0, x2: 515, y2: 0, lineWidth: 1, lineColor: '#0f2942' }], margin: [0, 0, 0, 6] },
     ...urunSatirlari,
     ...genelToplamSatirlari
   ];
@@ -231,60 +236,60 @@ export async function teklifPdfIndir(teklif, sepet1, sepet2 = [], teklifNo, oniz
   const belgeNo = teklif.teklifNo || teklifNo || siradakiProformaNoGetir(); 
 
   const bankaStack = [
-    { text: 'İŞBANKASI / SİTELER ŞUBESİ', bold: true, fontSize: 10, margin: [0, 0, 0, 3] },
-    { text: `IBAN NO : ${bankaIban}`, fontSize: 10, margin: [0, 0, 0, 3] }
+    { text: 'İŞBANKASI / SİTELER ŞUBESİ', bold: true, fontSize: 9.5, margin: [0, 0, 0, 2] },
+    { text: `IBAN NO : ${bankaIban}`, fontSize: 9.5, margin: [0, 0, 0, 2] }
   ];
 
   if (teklif.odemeSekli && teklif.odemeSekli.trim() !== "") {
     bankaStack.unshift({ 
       text: `ÖDEME ŞEKLİ : ${teklif.odemeSekli}`, 
       bold: true, 
-      fontSize: 10, 
+      fontSize: 9.5, 
       color: '#0f2942', 
-      margin: [0, 0, 0, 3] 
+      margin: [0, 0, 0, 2] 
     });
   }
 
   const docDefinition = {
-    pageMargins: [40, 100, 40, 60],
+    pageMargins: [40, 95, 40, 55],
     header: ortakHeaderOlustur(logoSisecam, logoIso),
     footer: ORTAK_FOOTER,
     content: [
-      { text: "FİYAT TEKLİFİ.", fontSize: 10, margin: [0, 0, 0, 2] },
+      { text: "FİYAT TEKLİFİ.", fontSize: 9.5, margin: [0, 0, 0, 2] },
       {
         columns: [
           {
             stack: [
-              { text: teklif.musteriAdi, fontSize: 10, bold: true },
+              { text: teklif.musteriAdi, fontSize: 9.5, bold: true },
               { 
                 text: (!teklif.ilgiliKisi || teklif.ilgiliKisi.includes("Sn.")) ? teklif.ilgiliKisi : `Sn. ${teklif.ilgiliKisi} Dikkatine,`, 
-                fontSize: 10, 
-                margin: [0, 2, 0, 10] 
+                fontSize: 9.5, 
+                margin: [0, 2, 0, 8] 
               },
-              { text: `Proje Adı: ${teklif.projeAdi}`, bold: true, fontSize: 11 }
+              { text: `Proje Adı: ${teklif.projeAdi}`, bold: true, fontSize: 10 }
             ],
             alignment: 'left'
           },
           {
             stack: [
-              { text: `Tarih: ${tarihYazisi}`, fontSize: 10 },
-              { text: `No: ${belgeNo}`, fontSize: 10, bold: true },
-              teklif.siparisNo ? { text: `Sipariş No: ${teklif.siparisNo}`, fontSize: 10, bold: true, color: '#000000', margin: [0, 3, 0, 0] } : null
+              { text: `Tarih: ${tarihYazisi}`, fontSize: 9.5 },
+              { text: `No: ${belgeNo}`, fontSize: 9.5, bold: true },
+              teklif.siparisNo ? { text: `Sipariş No: ${teklif.siparisNo}`, fontSize: 9.5, bold: true, color: '#000000', margin: [0, 2, 0, 0] } : null
             ].filter(Boolean),
             alignment: 'right'
           }
         ],
-        margin: [0, 10, 0, 20]
+        margin: [0, 6, 0, 14]
       },
-      { text: "İhtiyacınız olan ürünlere ilişkin teklifimiz aşağıdaki gibidir:", fontSize: 10, margin: [0, 0, 0, 10] },
+      { text: "İhtiyacınız olan ürünlere ilişkin teklifimiz aşağıdaki gibidir:", fontSize: 9.5, margin: [0, 0, 0, 8] },
       
       ...birinciSecenekIcerik,
       ...ikinciSecenekIcerik,
       
       ...(teklif.notlar ? teklif.notlar.split('\n').map((satir) => ({
         text: `* ${satir}`,
-        fontSize: 9,
-        margin: [2, 5, 0, 2],
+        fontSize: 8.5,
+        margin: [2, 4, 0, 1],
       })) : []),
       
       {
@@ -295,24 +300,24 @@ export async function teklifPdfIndir(teklif, sepet1, sepet2 = [], teklifNo, oniz
           },
           {
             stack: [
-              { text: 'Saygılarımla,', italics: true, fontSize: 11, margin: [0, 0, 0, 2] },
-              { text: `${imzalayanKisi}`, bold: true, fontSize: 11 }
+              { text: 'Saygılarımla,', italics: true, fontSize: 10, margin: [0, 0, 0, 1] },
+              { text: `${imzalayanKisi}`, bold: true, fontSize: 10 }
             ],
             alignment: 'right'
           }
         ],
-        margin: [0, 15, 0, 15],
+        margin: [0, 10, 0, 10],
         unbreakable: true
       },
       
-      { text: "Almış olduğunuz teklifin teyidi için mutlaka onay veriniz.", bold: true, fontSize: 10 },
-      { text: "Firma ismi ve kaşesi / Onayı / Özel notlar", fontSize: 10, margin: [0, 0, 0, 70] },
+      { text: "Almış olduğunuz teklifin teyidi için mutlaka onay veriniz.", bold: true, fontSize: 9.5 },
+      { text: "Firma ismi ve kaşesi / Onayı / Özel notlar", fontSize: 9.5, margin: [0, 0, 0, 50] },
       
       {
         stack: dinamikSartlar.map(sart => ({
           text: sart,
-          fontSize: 8,
-          margin: [0, 0, 0, 2]
+          fontSize: 7.5,
+          margin: [0, 0, 0, 1.5]
         })),
         margin: [0, 0, 0, 0]
       }
@@ -334,12 +339,12 @@ function proformaTabloOlustur(sepet, baslikMetni) {
 
   const tabloGövdesi = [
     [
-      { text: baslikMetni ? `${baslikMetni} - MALIN CİNSİ` : 'MALIN CİNSİ', bold: true, fillColor: '#eeeeee', margin: [5, 5, 0, 5], alignment: 'left', colSpan: 2 },
+      { text: baslikMetni ? `${baslikMetni} - MALIN CİNSİ` : 'MALIN CİNSİ', bold: true, fontSize: 9, fillColor: '#eeeeee', margin: [4, 4, 0, 4], alignment: 'left', colSpan: 2 },
       {},
-      { text: 'ADET / METRAJ', bold: true, fillColor: '#eeeeee', margin: [0, 5, 0, 5], alignment: 'center' },
-      { text: 'BİRİM FİYAT', bold: true, fillColor: '#eeeeee', margin: [0, 5, 0, 5], alignment: 'center' },
-      { text: 'KDV ORANI', bold: true, fillColor: '#eeeeee', margin: [0, 5, 0, 5], alignment: 'center' },
-      { text: 'TUTAR', bold: true, fillColor: '#eeeeee', margin: [0, 5, 0, 5], alignment: 'center' }
+      { text: 'ADET / METRAJ', bold: true, fontSize: 9, fillColor: '#eeeeee', margin: [0, 4, 0, 4], alignment: 'center' },
+      { text: 'BİRİM FİYAT', bold: true, fontSize: 9, fillColor: '#eeeeee', margin: [0, 4, 0, 4], alignment: 'center' },
+      { text: 'KDV ORANI', bold: true, fontSize: 9, fillColor: '#eeeeee', margin: [0, 4, 0, 4], alignment: 'center' },
+      { text: 'TUTAR', bold: true, fontSize: 9, fillColor: '#eeeeee', margin: [0, 4, 0, 4], alignment: 'center' }
     ]
   ];
 
@@ -354,24 +359,24 @@ function proformaTabloOlustur(sepet, baslikMetni) {
     }
 
     const ozelAciklamaStack = [
-      { text: satir.ozelAciklama || "-", fontSize: 9, margin: [0, 0, 0, 6], alignment: 'left' }
+      { text: satir.ozelAciklama || "-", fontSize: 8.5, margin: [0, 0, 0, 4], alignment: 'left' }
     ];
 
     if (satir.gorsel) {
       ozelAciklamaStack.push({
         image: satir.gorsel,
-        width: 110,
+        width: 100,
         alignment: 'center'
       });
     }
 
     tabloGövdesi.push([
-      { text: satir.urunAciklamasi, fontSize: 9, margin: [5, 5, 0, 5], alignment: 'left' },
-      { stack: ozelAciklamaStack, margin: [5, 5, 0, 5] },
-      { text: miktarMetni, fontSize: 9, alignment: 'center', margin: [0, 5, 0, 5] },
-      { text: birimFiyatMetni, fontSize: 9, alignment: 'center', margin: [0, 5, 0, 5] },
-      { text: `% ${satir.kdvOrani}`, fontSize: 9, alignment: 'center', margin: [0, 5, 0, 5] },
-      { text: `${paraFormatla(satir.toplamTutar, satir.paraBirimi)}`, fontSize: 9, alignment: 'right', margin: [0, 5, 5, 5] }
+      { text: satir.urunAciklamasi, fontSize: 8.5, margin: [4, 4, 0, 4], alignment: 'left' },
+      { stack: ozelAciklamaStack, margin: [4, 4, 0, 4] },
+      { text: miktarMetni, fontSize: 8.5, alignment: 'center', margin: [0, 4, 0, 4] },
+      { text: birimFiyatMetni, fontSize: 8.5, alignment: 'center', margin: [0, 4, 0, 4] },
+      { text: `% ${satir.kdvOrani}`, fontSize: 8.5, alignment: 'center', margin: [0, 4, 0, 4] },
+      { text: `${paraFormatla(satir.toplamTutar, satir.paraBirimi)}`, fontSize: 8.5, alignment: 'right', margin: [0, 4, 4, 4] }
     ]);
   });
 
@@ -391,18 +396,18 @@ function proformaTabloOlustur(sepet, baslikMetni) {
     tabloGövdesi.push(
       [
         { text: '', colSpan: 4, border: [false, false, false, false] }, {}, {}, {}, 
-        { text: `TOPLAM`, alignment: 'right', bold: true, margin: [0, 3, 5, 3], fillColor: '#f5f5f5' }, 
-        { text: paraFormatla(tutar, paraBirimi), alignment: 'right', bold: true, margin: [0, 3, 5, 3], fillColor: '#f5f5f5' }
+        { text: `TOPLAM`, alignment: 'right', bold: true, fontSize: 11, margin: [0, 2, 4, 2], fillColor: '#f5f5f5' }, 
+        { text: paraFormatla(tutar, paraBirimi), alignment: 'right', bold: true, fontSize: 11, margin: [0, 2, 4, 2], fillColor: '#f5f5f5' }
       ],
       [
         { text: '', colSpan: 4, border: [false, false, false, false] }, {}, {}, {}, 
-        { text: `KDV %${kdvOrani}`, alignment: 'right', bold: true, margin: [0, 3, 5, 3], fillColor: '#f5f5f5' }, 
-        { text: paraFormatla(kdvTutar, paraBirimi), alignment: 'right', bold: true, margin: [0, 3, 5, 3], fillColor: '#f5f5f5' }
+        { text: `KDV %${kdvOrani}`, alignment: 'right', bold: true, fontSize: 11, margin: [0, 2, 4, 2], fillColor: '#f5f5f5' }, 
+        { text: paraFormatla(kdvTutar, paraBirimi), alignment: 'right', bold: true, fontSize: 11, margin: [0, 2, 4, 2], fillColor: '#f5f5f5' }
       ],
       [
         { text: '', colSpan: 4, border: [false, false, false, false] }, {}, {}, {}, 
-        { text: `GENEL TOPLAM`, alignment: 'right', bold: true, margin: [0, 3, 5, 3], fillColor: '#e0e0e0' }, 
-        { text: paraFormatla(genelToplam, paraBirimi), alignment: 'right', bold: true, margin: [0, 3, 5, 3], fillColor: '#e0e0e0' }
+        { text: `GENEL TOPLAM`, alignment: 'right', bold: true, fontSize: 11, margin: [0, 2, 4, 2], fillColor: '#e0e0e0' }, 
+        { text: paraFormatla(genelToplam, paraBirimi), alignment: 'right', bold: true, fontSize: 11, margin: [0, 2, 4, 2], fillColor: '#e0e0e0' }
       ]
     );
   });
@@ -439,17 +444,17 @@ export async function proformaPdfIndir(teklif, sepet1, sepet2 = [], teklifNo, on
   const dikkatineSatiri = kisi ? `${kisi} Dikkatine;` : "";
 
   const bankaStack = [
-    { text: 'İŞBANKASI / SİTELER ŞUBESİ', bold: true, fontSize: 10, margin: [0, 0, 0, 3] },
-    { text: `IBAN NO : ${bankaIban}`, fontSize: 10, margin: [0, 0, 0, 3] }
+    { text: 'İŞBANKASI / SİTELER ŞUBESİ', bold: true, fontSize: 9.5, margin: [0, 0, 0, 2] },
+    { text: `IBAN NO : ${bankaIban}`, fontSize: 9.5, margin: [0, 0, 0, 2] }
   ];
 
   if (teklif.odemeSekli && teklif.odemeSekli.trim() !== "") {
     bankaStack.unshift({ 
       text: `ÖDEME ŞEKLİ : ${teklif.odemeSekli}`, 
       bold: true, 
-      fontSize: 10, 
+      fontSize: 9.5, 
       color: '#0f2942', 
-      margin: [0, 0, 0, 3] 
+      margin: [0, 0, 0, 2] 
     });
   }
 
@@ -458,60 +463,60 @@ export async function proformaPdfIndir(teklif, sepet1, sepet2 = [], teklifNo, on
       columns: [
         {
           stack: [
-            { text: teklif.musteriAdi || "", fontSize: 10, bold: true }, 
-            { text: `Proje Adı: ${teklif.projeAdi || ""}`, bold: true, fontSize: 10, margin: [0, 2, 0, 0] }
+            { text: teklif.musteriAdi || "", fontSize: 9.5, bold: true }, 
+            { text: `Proje Adı: ${teklif.projeAdi || ""}`, bold: true, fontSize: 9.5, margin: [0, 2, 0, 0] }
           ],
           alignment: 'left'
         },
         {
           stack: [
-            { text: `Tarih: ${tarihYazisi}`, fontSize: 10 },
-            { text: `No: ${belgeNo}`, fontSize: 10, bold: true },
-            teklif.siparisNo ? { text: `Sipariş No: ${teklif.siparisNo}`, fontSize: 10, bold: true, color: '#000000', margin: [0, 3, 0, 0] } : null
+            { text: `Tarih: ${tarihYazisi}`, fontSize: 9.5 },
+            { text: `No: ${belgeNo}`, fontSize: 9.5, bold: true },
+            teklif.siparisNo ? { text: `Sipariş No: ${teklif.siparisNo}`, fontSize: 9.5, bold: true, color: '#000000', margin: [0, 2, 0, 0] } : null
           ].filter(Boolean),
           alignment: 'right'
         }
       ],
-      margin: [0, 10, 0, 20]
+      margin: [0, 6, 0, 14]
     },
-    { text: "PROFORMA FATURA", style: "header", alignment: "center", bold: true, fontSize: 14, margin: [0, 0, 0, 20] },
-    { text: dikkatineSatiri, bold: true, fontSize: 10, margin: [0, 0, 0, 10] },
+    { text: "PROFORMA FATURA", style: "header", alignment: "center", bold: true, fontSize: 13, margin: [0, 0, 0, 14] },
+    { text: dikkatineSatiri, bold: true, fontSize: 9.5, margin: [0, 0, 0, 8] },
     
     {
       table: {
         headerRows: 1,
         dontBreakRows: true,
-        widths: ['*', 125, 'auto', 'auto', 'auto', 'auto'],
+        widths: ['*', 120, 'auto', 'auto', 'auto', 'auto'],
         body: sonuc1.tabloGövdesi
       },
       layout: {
-        hLineWidth: function (i, node) { return 1; },
-        vLineWidth: function (i, node) { return 1; },
-        hLineColor: function (i, node) { return '#aaaaaa'; },
-        vLineColor: function (i, node) { return '#aaaaaa'; },
+        hLineWidth: function (i, node) { return 0.5; },
+        vLineWidth: function (i, node) { return 0.5; },
+        hLineColor: function (i, node) { return '#cccccc'; },
+        vLineColor: function (i, node) { return '#cccccc'; },
       }
     },
-    { text: [ {text: ikiliMi ? 'YALNIZ (1. Seçenek): ' : 'YALNIZ: ', bold: true}, `${sonuc1.yalnizMetni}.` ], fontSize: 10, alignment: 'right', margin: [0, 4, 0, 20] }
+    { text: [ {text: ikiliMi ? 'YALNIZ (1. Seçenek): ' : 'YALNIZ: ', bold: true}, `${sonuc1.yalnizMetni}.` ], fontSize: 9, alignment: 'right', margin: [0, 4, 0, 14] }
   ];
 
   if (sonuc2 && temizSepet2.length > 0) {
     icerikDizisi.push(
-      { text: "", margin: [0, 10, 0, 10] },
+      { text: "", margin: [0, 6, 0, 6] },
       {
         table: {
           headerRows: 1,
           dontBreakRows: true,
-          widths: ['*', 125, 'auto', 'auto', 'auto', 'auto'], 
+          widths: ['*', 120, 'auto', 'auto', 'auto', 'auto'], 
           body: sonuc2.tabloGövdesi
         },
         layout: {
-          hLineWidth: function (i, node) { return 1; },
-          vLineWidth: function (i, node) { return 1; },
-          hLineColor: function (i, node) { return '#aaaaaa'; },
-          vLineColor: function (i, node) { return '#aaaaaa'; },
+          hLineWidth: function (i, node) { return 0.5; },
+          vLineWidth: function (i, node) { return 0.5; },
+          hLineColor: function (i, node) { return '#cccccc'; },
+          vLineColor: function (i, node) { return '#cccccc'; },
         }
       },
-      { text: [ {text: 'YALNIZ (2. Seçenek): ', bold: true}, `${sonuc2.yalnizMetni}.` ], fontSize: 10, alignment: 'right', margin: [0, 4, 0, 20] }
+      { text: [ {text: 'YALNIZ (2. Seçenek): ', bold: true}, `${sonuc2.yalnizMetni}.` ], fontSize: 9, alignment: 'right', margin: [0, 4, 0, 14] }
     );
   }
 
@@ -524,29 +529,29 @@ export async function proformaPdfIndir(teklif, sepet1, sepet2 = [], teklifNo, on
         },
         {
           stack: [
-            { text: 'Saygılarımla,', italics: true, fontSize: 11, margin: [0, 0, 0, 2] },
-            { text: `${imzalayanKisi}`, bold: true, fontSize: 11 }
+            { text: 'Saygılarımla,', italics: true, fontSize: 10, margin: [0, 0, 0, 1] },
+            { text: `${imzalayanKisi}`, bold: true, fontSize: 10 }
           ],
           alignment: 'right'
         }
       ],
-      margin: [0, 10, 0, 15],
+      margin: [0, 8, 0, 10],
       unbreakable: true
     },
-    { text: "Almış olduğunuz teklifin teyidi için mutlaka onay veriniz.", bold: true, fontSize: 10 },
-    { text: "Firma ismi ve kaşesi / Onayı / Özel notlar", fontSize: 10, margin: [0, 0, 0, 70] },
+    { text: "Almış olduğunuz teklifin teyidi için mutlaka onay veriniz.", bold: true, fontSize: 9.5 },
+    { text: "Firma ismi ve kaşesi / Onayı / Özel notlar", fontSize: 9.5, margin: [0, 0, 0, 50] },
     {
       stack: dinamikSartlar.map(sart => ({
         text: sart,
-        fontSize: 8,
-        margin: [0, 0, 0, 2]
+        fontSize: 7.5,
+        margin: [0, 0, 0, 1.5]
       })),
       margin: [0, 0, 0, 0]
     }
   );
 
   const docDefinition = {
-    pageMargins: [40, 100, 40, 60],
+    pageMargins: [40, 95, 40, 55],
     header: ortakHeaderOlustur(logoSisecam, logoIso),
     footer: ORTAK_FOOTER,
     content: icerikDizisi,
