@@ -166,7 +166,6 @@ function sepetIcerikOlustur(sepet, baslikMetni) {
       margin: [0, 0, 0, 4],
     });
 
-    // TEKLİF PDF İÇİN SATIR BÖLÜNMESİNİ ENGELLER
     return {
       stack: elemanlar,
       unbreakable: true
@@ -179,15 +178,21 @@ function sepetIcerikOlustur(sepet, baslikMetni) {
   const genelToplamSatirlari = Object.entries(genelToplamlar).map(([paraBirimi, tutar]) => {
     const kdvTutar = genelKdvler[paraBirimi] || 0;
     const kdvDahilToplam = tutar + kdvTutar;
+    // Sepetteki ilk üründen KDV oranını alalım (varsayılan %20)
+    const kdvOrani = sepet[0]?.kdvOrani || 20;
 
     return [
       {
-        text: `GENEL TOPLAM (${paraBirimi}) : ${paraFormatla(tutar, paraBirimi)} + KDV`,
-        bold: true, fontSize: 11, alignment: "right", margin: [0, 4, 0, 2], unbreakable: true
+        text: `TOPLAM (${paraBirimi}) : ${paraFormatla(tutar, paraBirimi)}`,
+        bold: true, fontSize: 10, alignment: "right", margin: [0, 4, 0, 1], unbreakable: true
       },
       {
-        text: `KDV DAHİL TOPLAM : ${paraFormatla(kdvDahilToplam, paraBirimi)}`,
-        bold: true, fontSize: 12, alignment: "right", margin: [0, 0, 0, 8], color: '#333', unbreakable: true
+        text: `KDV (%${kdvOrani}) : ${paraFormatla(kdvTutar, paraBirimi)}`,
+        bold: true, fontSize: 10, alignment: "right", margin: [0, 0, 0, 1], unbreakable: true
+      },
+      {
+        text: `KDV DAHİL GENEL TOPLAM : ${paraFormatla(kdvDahilToplam, paraBirimi)}`,
+        bold: true, fontSize: 12, alignment: "right", margin: [0, 0, 0, 8], color: '#0f2942', unbreakable: true
       }
     ];
   }).flat();
@@ -371,7 +376,8 @@ function proformaTabloOlustur(sepet, baslikMetni) {
   });
 
   const genelToplamlar = genelToplamHesapla(sepet);
-  const genelKdvler = genelKdvHesapla(sepet);
+  const genelKdvler = genelKdvHesapla(sepet); 
+  const kdvOrani = sepet[0]?.kdvOrani || 20;
   
   let yalnizMetni = "";
 
@@ -390,7 +396,7 @@ function proformaTabloOlustur(sepet, baslikMetni) {
       ],
       [
         { text: '', colSpan: 4, border: [false, false, false, false] }, {}, {}, {}, 
-        { text: `KDV %20`, alignment: 'right', bold: true, margin: [0, 3, 5, 3], fillColor: '#f5f5f5' }, 
+        { text: `KDV %${kdvOrani}`, alignment: 'right', bold: true, margin: [0, 3, 5, 3], fillColor: '#f5f5f5' }, 
         { text: paraFormatla(kdvTutar, paraBirimi), alignment: 'right', bold: true, margin: [0, 3, 5, 3], fillColor: '#f5f5f5' }
       ],
       [
@@ -471,7 +477,6 @@ export async function proformaPdfIndir(teklif, sepet1, sepet2 = [], teklifNo, on
     { text: "PROFORMA FATURA", style: "header", alignment: "center", bold: true, fontSize: 14, margin: [0, 0, 0, 20] },
     { text: dikkatineSatiri, bold: true, fontSize: 10, margin: [0, 0, 0, 10] },
     
-    // DONTBREAKROWS: TRUE EKLENDİ - TABLO SATIRLARI ASLA BÖLÜNMEZ!
     {
       table: {
         headerRows: 1,
@@ -495,7 +500,7 @@ export async function proformaPdfIndir(teklif, sepet1, sepet2 = [], teklifNo, on
       {
         table: {
           headerRows: 1,
-          dontBreakRows: true, // DONTBREAKROWS: TRUE EKLENDİ
+          dontBreakRows: true,
           widths: ['*', 125, 'auto', 'auto', 'auto', 'auto'], 
           body: sonuc2.tabloGövdesi
         },
