@@ -138,23 +138,18 @@ export default function CamKombinasyonSihirbazi({ onKombinasyonSec, baslangicMet
   const [tekDelik, setTekDelik] = useState("Delik Yok");
   const [tekOygu, setTekOygu] = useState("Oygu Yok");
 
-  const [lam1Kalinlik, setLam1Kalinlik] = useState("4 mm");
-  const [lam1Renk, setLam1Renk] = useState("Clear (Şeffaf)");
-  const [lam1Kaplama, setLam1Kaplama] = useState("Kaplamasız (Düzcam)");
-  const [lam1Kenar, setLam1Kenar] = useState("Düz Kesim (İşlemsiz)");
-  const [lam1Temper, setLam1Temper] = useState("Tempersiz");
-  const [lam1Delik, setLam1Delik] = useState("Delik Yok");
-  const [lam1Oygu, setLam1Oygu] = useState("Oygu Yok");
-
-  const [pvbTuru, setPvbTuru] = useState("Şeffaf PVB (0.38)");
-
-  const [lam2Kalinlik, setLam2Kalinlik] = useState("4 mm");
-  const [lam2Renk, setLam2Renk] = useState("Clear (Şeffaf)");
-  const [lam2Kaplama, setLam2Kaplama] = useState("Kaplamasız (Düzcam)");
-  const [lam2Kenar, setLam2Kenar] = useState("Düz Kesim (İşlemsiz)");
-  const [lam2Temper, setLam2Temper] = useState("Tempersiz");
-  const [lam2Delik, setLam2Delik] = useState("Delik Yok");
-  const [lam2Oygu, setLam2Oygu] = useState("Oygu Yok");
+  // --- DİNAMİK LAMİNE CAM STATE'LERİ ---
+  const [lamineKatmanSayisi, setLamineKatmanSayisi] = useState(2); // 2'li, 3'lü, 4'lü, 5'li
+  const [lamCamlar, setLamCamlar] = useState([
+    { kalinlik: "4 mm", renk: "Clear (Şeffaf)", kaplama: "Kaplamasız (Düzcam)", kenar: "Düz Kesim (İşlemsiz)", temper: "Tempersiz", delik: "Delik Yok", oygu: "Oygu Yok" },
+    { kalinlik: "4 mm", renk: "Clear (Şeffaf)", kaplama: "Kaplamasız (Düzcam)", kenar: "Düz Kesim (İşlemsiz)", temper: "Tempersiz", delik: "Delik Yok", oygu: "Oygu Yok" },
+    { kalinlik: "4 mm", renk: "Clear (Şeffaf)", kaplama: "Kaplamasız (Düzcam)", kenar: "Düz Kesim (İşlemsiz)", temper: "Tempersiz", delik: "Delik Yok", oygu: "Oygu Yok" },
+    { kalinlik: "4 mm", renk: "Clear (Şeffaf)", kaplama: "Kaplamasız (Düzcam)", kenar: "Düz Kesim (İşlemsiz)", temper: "Tempersiz", delik: "Delik Yok", oygu: "Oygu Yok" },
+    { kalinlik: "4 mm", renk: "Clear (Şeffaf)", kaplama: "Kaplamasız (Düzcam)", kenar: "Düz Kesim (İşlemsiz)", temper: "Tempersiz", delik: "Delik Yok", oygu: "Oygu Yok" }
+  ]);
+  const [lamPvbLer, setLamPvbLer] = useState([
+    "Şeffaf PVB (0.38)", "Şeffaf PVB (0.38)", "Şeffaf PVB (0.38)", "Şeffaf PVB (0.38)"
+  ]);
 
   const [disCamTipi, setDisCamTipi] = useState("tek");
   const [disCamKalinlik, setDisCamKalinlik] = useState("4 mm");
@@ -232,6 +227,18 @@ export default function CamKombinasyonSihirbazi({ onKombinasyonSec, baslangicMet
   const [uIcOygu, setUIcOygu] = useState("Oygu Yok");
 
   const [olusturulanIsim, setOlusturulanIsim] = useState("");
+
+  const handleLamCamGuncelle = (index, alan, deger) => {
+    const yeniCamlar = [...lamCamlar];
+    yeniCamlar[index] = { ...yeniCamlar[index], [alan]: deger };
+    setLamCamlar(yeniCamlar);
+  };
+
+  const handlePvbGuncelle = (index, deger) => {
+    const yeniPvb = [...lamPvbLer];
+    yeniPvb[index] = deger;
+    setLamPvbLer(yeniPvb);
+  };
 
   // --- AKILLI PARSER ---
   useEffect(() => {
@@ -335,15 +342,14 @@ export default function CamKombinasyonSihirbazi({ onKombinasyonSec, baslangicMet
       if (parts[2]) parseCamStr(parts[2], setIcCamTipi, setIcCamKalinlik, setIcCamLamK1, setIcCamLamK2, setIcCamLamPVB, setIcCamRenk, setIcCamKaplama, setIcKenar, setIcTemper, setIcDelik, setIcOygu);
     }
     else if (upperM.includes("LAMİNE CAM")) {
-      if (parts[0]) parseCamStr(parts[0], () => {}, setLam1Kalinlik, setLam1Kalinlik, setLam1Kalinlik, () => {}, setLam1Renk, setLam1Kaplama, setLam1Kenar, setLam1Temper, setLam1Delik, setLam1Oygu);
-      let pvbBulundu = "Şeffaf PVB (0.38)";
-      if (parts[1]) {
-         for(let p of PVB_TURLERI) {
-           if (parts[1].includes(p)) { pvbBulundu = p; break; }
-         }
-      }
-      setPvbTuru(pvbBulundu);
-      if (parts[2]) parseCamStr(parts[2], () => {}, setLam2Kalinlik, setLam2Kalinlik, setLam2Kalinlik, () => {}, setLam2Renk, setLam2Kaplama, setLam2Kenar, setLam2Temper, setLam2Delik, setLam2Oygu);
+      // Çok katmanlı lamine desteği (Kaç cam varsa)
+      const camParcalari = parts.filter((_, idx) => idx % 2 === 0);
+      setLamineKatmanSayisi(Math.min(Math.max(camParcalari.length, 2), 5));
+      camParcalari.forEach((parca, idx) => {
+        if (idx < 5) {
+          parseCamStr(parca, () => {}, (val) => handleLamCamGuncelle(idx, 'kalinlik', val), () => {}, () => {}, () => {}, (val) => handleLamCamGuncelle(idx, 'renk', val), (val) => handleLamCamGuncelle(idx, 'kaplama', val), (val) => handleLamCamGuncelle(idx, 'kenar', val), (val) => handleLamCamGuncelle(idx, 'temper', val), (val) => handleLamCamGuncelle(idx, 'delik', val), (val) => handleLamCamGuncelle(idx, 'oygu', val));
+        }
+      });
     }
     else if (upperM.includes("CAM")) {
       parseCamStr(m, () => {}, setTekCamKalinlik, setTekCamKalinlik, setTekCamKalinlik, () => {}, setTekCamRenk, setTekCamKaplama, setTekKenar, setTekTemper, setTekDelik, setTekOygu);
@@ -383,9 +389,18 @@ export default function CamKombinasyonSihirbazi({ onKombinasyonSec, baslangicMet
       isim = formatPane("tek", tekCamKalinlik, "", "", "", tekCamRenk, tekCamKaplama, tekKenar, tekTemper, tekDelik, tekOygu) + " CAM";
     } 
     else if (camTuru === "lamine") {
-      const cam1Str = formatPane("tek", lam1Kalinlik, "", "", "", lam1Renk, lam1Kaplama, lam1Kenar, lam1Temper, lam1Delik, lam1Oygu);
-      const cam2Str = formatPane("tek", lam2Kalinlik, "", "", "", lam2Renk, lam2Kaplama, lam2Kenar, lam2Temper, lam2Delik, lam2Oygu);
-      isim = `(${cam1Str}) + (${pvbTuru}) + (${cam2Str}) LAMİNE CAM`;
+      let parcalar = [];
+      for (let i = 0; i < lamineKatmanSayisi; i++) {
+        const c = lamCamlar[i];
+        const camStr = formatPane("tek", c.kalinlik, "", "", "", c.renk, c.kaplama, c.kenar, c.temper, c.delik, c.oygu);
+        parcalar.push(`(${camStr})`);
+
+        if (i < lamineKatmanSayisi - 1) {
+          const pvb = lamPvbLer[i] || "Şeffaf PVB (0.38)";
+          parcalar.push(`(${pvb})`);
+        }
+      }
+      isim = `${parcalar.join(" + ")} LAMİNE CAM`;
     } 
     else if (camTuru === "isicam") {
       const disCamStr = formatPane(disCamTipi, disCamKalinlik, disCamLamK1, disCamLamK2, disCamLamPVB, disCamRenk, disCamKaplama, disKenar, disTemper, disDelik, disOygu);
@@ -416,8 +431,7 @@ export default function CamKombinasyonSihirbazi({ onKombinasyonSec, baslangicMet
   }, [
     camTuru, 
     tekCamKalinlik, tekCamRenk, tekCamKaplama, tekKenar, tekTemper, tekDelik, tekOygu,
-    lam1Kalinlik, lam1Renk, lam1Kaplama, lam1Kenar, lam1Temper, lam1Delik, lam1Oygu, pvbTuru,
-    lam2Kalinlik, lam2Renk, lam2Kaplama, lam2Kenar, lam2Temper, lam2Delik, lam2Oygu,
+    lamineKatmanSayisi, lamCamlar, lamPvbLer,
     disCamTipi, disCamKalinlik, disCamLamK1, disCamLamK2, disCamLamPVB, disCamRenk, disCamKaplama, disKenar, disTemper, disDelik, disOygu,
     citaKalinlik, citaTipi, gazTipi, dolguTipi,
     icCamTipi, icCamKalinlik, icCamLamK1, icCamLamK2, icCamLamPVB, icCamRenk, icCamKaplama, icKenar, icTemper, icDelik, icOygu,
@@ -483,41 +497,56 @@ export default function CamKombinasyonSihirbazi({ onKombinasyonSec, baslangicMet
           />
         )}
 
-        {/* 2. LAMİNE CAM ALANI */}
+        {/* 2. ÇOKLU LAMİNE CAM ALANI (2'li, 3'lü, 4'lü, 5'li) */}
         {camTuru === "lamine" && (
-          <div style={{ display: "flex", gap: "14px", width: "100%", alignItems: "center", flexWrap: "nowrap" }}>
-            <CamKatmaniSecici 
-              title="1. Dış Cam Katmanı" bgColor="#f8fafc" borderColor="#cbd5e1"
-              kalinlik={lam1Kalinlik} setKalinlik={setLam1Kalinlik}
-              renk={lam1Renk} setRenk={setLam1Renk}
-              kaplama={lam1Kaplama} setKaplama={setLam1Kaplama}
-              kenar={lam1Kenar} setKenar={setLam1Kenar}
-              temper={lam1Temper} setTemper={setLam1Temper}
-              delik={lam1Delik} setDelik={setLam1Delik}
-              oygu={lam1Oygu} setOygu={setLam1Oygu}
-            />
-
-            <div style={{ fontWeight: "900", color: "#64748b", fontSize: "26px", padding: "0 6px" }}>+</div>
-
-            <div style={{ flex: 2, padding: "18px", backgroundColor: "#f1f5f9", borderRadius: "10px", border: "1px solid #cbd5e1", alignSelf: "stretch", display: "flex", flexDirection: "column", justifyContent: "center" }}>
-              <label style={{ display: "block", fontSize: "14px", fontWeight: "900", color: "#334155", marginBottom: "10px" }}>Ara Katman (PVB Film)</label>
-              <select value={pvbTuru} onChange={(e) => setPvbTuru(e.target.value)} style={{ width: "100%", padding: "13px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "15px", fontWeight: "800", color: "#1e293b", backgroundColor: "white" }}>
-                {PVB_TURLERI.map(p => <option key={p} value={p}>{p}</option>)}
+          <div style={{ width: "100%" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px", backgroundColor: "#e2e8f0", padding: "12px 16px", borderRadius: "8px" }}>
+              <label style={{ fontSize: "15px", fontWeight: "900", color: "#0f2942" }}>Lamine Cam Katman Sayısı:</label>
+              <select 
+                value={lamineKatmanSayisi} 
+                onChange={(e) => setLamineKatmanSayisi(parseInt(e.target.value))}
+                style={{ padding: "8px 16px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "15px", fontWeight: "800", color: "#0f2942", backgroundColor: "white", cursor: "pointer" }}
+              >
+                <option value={2}>2'li Lamine (2 Cam, 1 PVB)</option>
+                <option value={3}>3'lü Lamine (3 Cam, 2 PVB)</option>
+                <option value={4}>4'lü Lamine (4 Cam, 3 PVB)</option>
+                <option value={5}>5'li Lamine (5 Cam, 4 PVB)</option>
               </select>
             </div>
 
-            <div style={{ fontWeight: "900", color: "#64748b", fontSize: "26px", padding: "0 6px" }}>+</div>
+            <div style={{ display: "flex", gap: "12px", alignItems: "center", overflowX: "auto", paddingBottom: "10px" }}>
+              {Array.from({ length: lamineKatmanSayisi }).map((_, i) => (
+                <div key={i} style={{ display: "flex", alignItems: "center", gap: "12px", flexShrink: 0 }}>
+                  <CamKatmaniSecici 
+                    title={`${i + 1}. Cam Katmanı`} bgColor="#f8fafc" borderColor="#cbd5e1"
+                    kalinlik={lamCamlar[i].kalinlik} setKalinlik={(val) => handleLamCamGuncelle(i, 'kalinlik', val)}
+                    renk={lamCamlar[i].renk} setRenk={(val) => handleLamCamGuncelle(i, 'renk', val)}
+                    kaplama={lamCamlar[i].kaplama} setKaplama={(val) => handleLamCamGuncelle(i, 'kaplama', val)}
+                    kenar={lamCamlar[i].kenar} setKenar={(val) => handleLamCamGuncelle(i, 'kenar', val)}
+                    temper={lamCamlar[i].temper} setTemper={(val) => handleLamCamGuncelle(i, 'temper', val)}
+                    delik={lamCamlar[i].delik} setDelik={(val) => handleLamCamGuncelle(i, 'delik', val)}
+                    oygu={lamCamlar[i].oygu} setOygu={(val) => handleLamCamGuncelle(i, 'oygu', val)}
+                  />
 
-            <CamKatmaniSecici 
-              title="2. İç Cam Katmanı" bgColor="#f8fafc" borderColor="#cbd5e1"
-              kalinlik={lam2Kalinlik} setKalinlik={setLam2Kalinlik}
-              renk={lam2Renk} setRenk={setLam2Renk}
-              kaplama={lam2Kaplama} setKaplama={setLam2Kaplama}
-              kenar={lam2Kenar} setKenar={setLam2Kenar}
-              temper={lam2Temper} setTemper={setLam2Temper}
-              delik={lam2Delik} setDelik={setLam2Delik}
-              oygu={lam2Oygu} setOygu={setLam2Oygu}
-            />
+                  {i < lamineKatmanSayisi - 1 && (
+                    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "6px" }}>
+                      <span style={{ fontWeight: "900", color: "#64748b", fontSize: "22px" }}>+</span>
+                      <div style={{ padding: "14px", backgroundColor: "#f1f5f9", borderRadius: "8px", border: "1px solid #cbd5e1", width: "160px" }}>
+                        <label style={{ display: "block", fontSize: "12px", fontWeight: "900", color: "#334155", marginBottom: "6px" }}>Ara PVB Film</label>
+                        <select 
+                          value={lamPvbLer[i] || "Şeffaf PVB (0.38)"} 
+                          onChange={(e) => handlePvbGuncelle(i, e.target.value)} 
+                          style={{ width: "100%", padding: "10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "13px", fontWeight: "800", color: "#1e293b", backgroundColor: "white" }}
+                        >
+                          {PVB_TURLERI.map(p => <option key={p} value={p}>{p}</option>)}
+                        </select>
+                      </div>
+                      <span style={{ fontWeight: "900", color: "#64748b", fontSize: "22px" }}>+</span>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
           </div>
         )}
 
