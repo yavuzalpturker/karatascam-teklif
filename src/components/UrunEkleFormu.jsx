@@ -32,15 +32,36 @@ export default function UrunEkleFormu({
   const [fiyatAna, setFiyatAna] = useState(""); 
   const [fiyatAdet, setFiyatAdet] = useState(""); 
 
-  // --- İŞÇİLİK BEDELİ STATE'LERİ ---
+  // --- İŞÇİLİK VE KAROLAJ STATE'LERİ ---
   const [iscilikTuru, setIscilikTuru] = useState(""); 
   const [iscilikMetretul, setIscilikMetretul] = useState(""); 
   const [iscilikBirimFiyat, setIscilikBirimFiyat] = useState(""); 
+  const [karolajEnAdet, setKarolajEnAdet] = useState("");
+  const [karolajBoyAdet, setKarolajBoyAdet] = useState("");
 
   const [paraBirimi, setParaBirimi] = useState("TRY");
   const [kdvOrani, setKdvOrani] = useState("20");
 
   const [eklenenOzelUrunler, setEklenenOzelUrunler] = useState([]);
+
+  // --- CAM ÖLÇÜLERİNE VE ADETE GÖRE OTOMATİK KAROLAJ METRETÜL HESABI ---
+  useEffect(() => {
+    if (iscilikTuru === "Karolaj Bedeli") {
+      const eMm = Number(en) || 0;       
+      const bMm = Number(boy) || 0;       
+      const eAdet = Number(karolajEnAdet) || 0; 
+      const bAdet = Number(karolajBoyAdet) || 0; 
+      const urunAdeti = Number(miktar) || 1;    
+
+      if (eMm > 0 && bMm > 0 && (eAdet > 0 || bAdet > 0)) {
+        const birCamKarolajMt = ((eAdet * bMm) + (bAdet * eMm)) / 1000;
+        const toplamKarolajMt = birCamKarolajMt * urunAdeti;
+        setIscilikMetretul(toplamKarolajMt.toFixed(2));
+      } else {
+        setIscilikMetretul("");
+      }
+    }
+  }, [en, boy, karolajEnAdet, karolajBoyAdet, miktar, iscilikTuru]);
 
   useEffect(() => {
     if (islemVerisi && islemVerisi.satir && islemVerisi.satir.hamVeri) {
@@ -60,6 +81,8 @@ export default function UrunEkleFormu({
       setIscilikTuru(ham.iscilikTuru || "");
       setIscilikMetretul(ham.iscilikMetretul || "");
       setIscilikBirimFiyat(ham.iscilikBirimFiyat || "");
+      setKarolajEnAdet(ham.karolajEnAdet || "");
+      setKarolajBoyAdet(ham.karolajBoyAdet || "");
       setParaBirimi(ham.paraBirimi || "TRY");
       setKdvOrani(ham.kdvOrani || "20");
     }
@@ -80,6 +103,8 @@ export default function UrunEkleFormu({
     setIscilikTuru("");
     setIscilikMetretul("");
     setIscilikBirimFiyat("");
+    setKarolajEnAdet("");
+    setKarolajBoyAdet("");
   };
 
   const tumUrunler = [...(urunler || []), ...eklenenOzelUrunler];
@@ -175,7 +200,6 @@ export default function UrunEkleFormu({
   };
 
   const satirOlusturHelper = (hedefEn, hedefBoy, hedefManuelM2, hedefMiktar, hedefBirim, hedefPozNo, hedefSecili, secilenSonUrun) => {
-    // --- EĞER İŞÇİLİK SEÇİLDİYSE ---
     if (iscilikTuru) {
       const mtMiktari = Number(iscilikMetretul) || 0;
       const mtBirimFiyat = Number(iscilikBirimFiyat) || 0;
@@ -185,27 +209,31 @@ export default function UrunEkleFormu({
         id: "iscilik_" + Date.now(),
         kodu: "İŞÇİLİK",
         aciklama: iscilikTuru.toLocaleUpperCase("tr-TR"),
-        "Ana Birim": "MT"
+        "Ana Birim": "mt"
       };
 
       const satir = satirHesapla(iscilikUrunu, 100, 100, mtMiktari, mtBirimFiyat, paraBirimi, Number(kdvOrani), "mt");
       satir.toplamTutar = toplamIscilikTutari;
       satir.pozNo = hedefPozNo || "-";
-      satir.ozelAciklama = ozelAciklama ? `${ozelAciklama} (${mtMiktari} mt × ${paraFormatla(mtBirimFiyat, paraBirimi)})` : `${mtMiktari} mt × ${paraFormatla(mtBirimFiyat, paraBirimi)}`;
+      
+      let karolajDetay = iscilikTuru === "Karolaj Bedeli" && karolajEnAdet && karolajBoyAdet ? ` (${karolajEnAdet} En Karolaj Adet / ${karolajBoyAdet} Boy Karolaj Adet)` : "";
+      satir.ozelAciklama = ozelAciklama ? `${ozelAciklama}${karolajDetay} - (${mtMiktari} mt × ${paraFormatla(mtBirimFiyat, paraBirimi)})` : `${mtMiktari} mt × ${paraFormatla(mtBirimFiyat, paraBirimi)}${karolajDetay}`;
+      
       satir.gorsel = urunGorselBase64;
       satir.miktar = mtMiktari;
       satir.secilenBirim = "mt";
       satir.birimFiyat = mtBirimFiyat;
       satir.birim = "mt";
       satir.Birim = "mt";
+      satir.en = Number(hedefEn) || 0;
+      satir.boy = Number(hedefBoy) || 0;
       satir.secili = hedefSecili;
       satir.hamVeri = {
-        iscilikTuru, iscilikMetretul, iscilikBirimFiyat, pozNo: hedefPozNo, ozelAciklama, paraBirimi, kdvOrani
+        iscilikTuru, iscilikMetretul, iscilikBirimFiyat, karolajEnAdet, karolajBoyAdet, pozNo: hedefPozNo, ozelAciklama, paraBirimi, kdvOrani, en: hedefEn, boy: hedefBoy
       };
       return satir;
     }
 
-    // --- NORMAL ÜRÜN AKIŞI ---
     const enDegeri = Number(hedefEn) || 0;
     const boyDegeri = Number(hedefBoy) || 0;
     const manuelM2Degeri = Number(hedefManuelM2) || 0;
@@ -267,7 +295,7 @@ export default function UrunEkleFormu({
     satir.boy = boyDegeri;
     satir.manuelM2 = manuelM2Degeri;
     satir.hamVeri = {
-      arama, secilenId, pozNo: hedefPozNo, ozelAciklama, en: hedefEn, boy: hedefBoy, manuelM2: hedefManuelM2, miktar: hedefMiktar, secilenBirim: hedefBirim, fiyatAna, fiyatAdet, paraBirimi, kdvOrani
+      arama, secilenId, pozNo: hedefPozNo, ozelAciklama, en: hedefEn, boy: hedefBoy, manuelM2: manuelM2Degeri, miktar: hedefMiktar, secilenBirim: hedefBirim, fiyatAna, fiyatAdet, paraBirimi, kdvOrani
     };
 
     return satir;
@@ -281,8 +309,18 @@ export default function UrunEkleFormu({
     const anaSatir = satirOlusturHelper(en, boy, manuelM2, miktar, secilenBirim, pozNo, true, sonUrun);
 
     if (islemVerisi && islemVerisi.tip === "duzenle") {
-      if (onGuncelle) onGuncelle(islemVerisi.index, anaSatir);
-      if (onIptal) onIptal();
+      const hedefSepetNo = islemVerisi?.sepetNo || 1;
+      const aktifSepet = hedefSepetNo === 1 ? sepet1 : sepet2;
+
+      if (iscilikTuru && onTopluGuncelle && aktifSepet) {
+        const yeniSepet = [...aktifSepet];
+        yeniSepet.splice(islemVerisi.index + 1, 0, anaSatir);
+        onTopluGuncelle(hedefSepetNo, yeniSepet);
+        if (onIptal) onIptal();
+      } else {
+        if (onGuncelle) onGuncelle(islemVerisi.index, anaSatir);
+        if (onIptal) onIptal();
+      }
     } else {
       if (onEkle) onEkle(anaSatir);
       if (islemVerisi && islemVerisi.tip === "tekrar" && onIptal) onIptal(); 
@@ -559,52 +597,83 @@ export default function UrunEkleFormu({
         </div>
       </div>
 
-      {/* --- BAĞIMSIZ İŞÇİLİK BEDELİ ALANI --- */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 100px", gap: "10px", marginBottom: "16px", backgroundColor: "#f1f5f9", padding: "12px", borderRadius: "8px", border: "1px solid #cbd5e1", alignItems: "flex-end" }}>
-        <div>
-          <label style={{ display: "block", fontSize: "12px", fontWeight: "800", color: "#0f2942", marginBottom: "4px" }}>İşçilik Bedeli Türü</label>
-          <select value={iscilikTuru} onChange={(e) => setIscilikTuru(e.target.value)} style={{ width: "100%", padding: "9px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "13px", fontWeight: "700", backgroundColor: "white", color: "#1e293b" }}>
-            <option value="">İşçilik Seçiniz (Yok)</option>
-            <option value="Karolaj Bedeli">Karolaj Bedeli</option>
-            <option value="Sıvama Bedeli">Sıvama Bedeli</option>
-            <option value="Bonding Bedeli">Bonding Bedeli</option>
-          </select>
-        </div>
+      {/* --- İŞÇİLİK VE EN KAROLAJ / BOY KAROLAJ ADETİ ALANI --- */}
+      <div style={{ backgroundColor: "#f1f5f9", padding: "12px", borderRadius: "8px", border: "1px solid #cbd5e1", marginBottom: "16px" }}>
+        <div style={{ display: "grid", gridTemplateColumns: iscilikTuru === "Karolaj Bedeli" ? "1.2fr 1fr 1fr 1fr 100px" : "1fr 1fr 1fr 100px", gap: "10px", alignItems: "flex-end" }}>
+          <div>
+            <label style={{ display: "block", fontSize: "12px", fontWeight: "800", color: "#0f2942", marginBottom: "4px" }}>İşçilik Bedeli Türü</label>
+            <select value={iscilikTuru} onChange={(e) => setIscilikTuru(e.target.value)} style={{ width: "100%", padding: "9px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "13px", fontWeight: "700", backgroundColor: "white", color: "#1e293b" }}>
+              <option value="">İşçilik Seçiniz (Yok)</option>
+              <option value="Karolaj Bedeli">Karolaj Bedeli</option>
+              <option value="Sıvama Bedeli">Sıvama Bedeli</option>
+              <option value="Bonding Bedeli">Bonding Bedeli</option>
+            </select>
+          </div>
 
-        <div>
-          <label style={{ display: "block", fontSize: "12px", fontWeight: "800", color: "#0f2942", marginBottom: "4px" }}>Metretül (mt)</label>
-          <input
-            type="number"
-            min="0"
-            step="0.01"
-            placeholder="Örn: 50"
-            value={iscilikMetretul}
-            onChange={(e) => setIscilikMetretul(e.target.value)}
-            disabled={!iscilikTuru}
-            style={{ width: "100%", padding: "9px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "13px", fontWeight: "600", backgroundColor: iscilikTuru ? "white" : "#e2e8f0" }}
-          />
-        </div>
+          {iscilikTuru === "Karolaj Bedeli" && (
+            <div style={{ display: "flex", gap: "4px" }}>
+              <div style={{ flex: 1 }}>
+                <label style={{ display: "block", fontSize: "11px", fontWeight: "800", color: "#0f2942", marginBottom: "4px" }}>En Karolaj Adet</label>
+                <input
+                  type="number"
+                  min="0"
+                  step="1"
+                  placeholder="Örn: 2"
+                  value={karolajEnAdet}
+                  onChange={(e) => setKarolajEnAdet(e.target.value)}
+                  style={{ width: "100%", padding: "9px 6px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "13px", fontWeight: "600", backgroundColor: "white" }}
+                />
+              </div>
+              <div style={{ flex: 1 }}>
+                <label style={{ display: "block", fontSize: "11px", fontWeight: "800", color: "#0f2942", marginBottom: "4px" }}>Boy Karolaj Adet</label>
+                <input
+                  type="number"
+                  min="0"
+                  step="1"
+                  placeholder="Örn: 4"
+                  value={karolajBoyAdet}
+                  onChange={(e) => setKarolajBoyAdet(e.target.value)}
+                  style={{ width: "100%", padding: "9px 6px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "13px", fontWeight: "600", backgroundColor: "white" }}
+                />
+              </div>
+            </div>
+          )}
 
-        <div>
-          <label style={{ display: "block", fontSize: "12px", fontWeight: "800", color: "#0f2942", marginBottom: "4px" }}>mt Başına Fiyat</label>
-          <input
-            type="number"
-            min="0"
-            step="0.01"
-            placeholder="Örn: 360"
-            value={iscilikBirimFiyat}
-            onChange={(e) => setIscilikBirimFiyat(e.target.value)}
-            disabled={!iscilikTuru}
-            style={{ width: "100%", padding: "9px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "13px", fontWeight: "600", backgroundColor: iscilikTuru ? "white" : "#e2e8f0" }}
-          />
-        </div>
+          <div>
+            <label style={{ display: "block", fontSize: "12px", fontWeight: "800", color: "#0f2942", marginBottom: "4px" }}>Metretül (mt)</label>
+            <input
+              type="number"
+              min="0"
+              step="0.01"
+              placeholder="Örn: 50"
+              value={iscilikMetretul}
+              onChange={(e) => setIscilikMetretul(e.target.value)}
+              disabled={!iscilikTuru}
+              style={{ width: "100%", padding: "9px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "13px", fontWeight: "600", backgroundColor: iscilikTuru ? "white" : "#e2e8f0" }}
+            />
+          </div>
 
-        <div>
-          <select value={paraBirimi} onChange={(e) => setParaBirimi(e.target.value)} disabled={!iscilikTuru} style={{ width: "100%", padding: "9px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "14px", fontWeight: "800", backgroundColor: iscilikTuru ? "white" : "#e2e8f0" }}>
-            <option value="TRY">TL (₺)</option>
-            <option value="USD">Dolar ($)</option>
-            <option value="EUR">Euro (€)</option>
-          </select>
+          <div>
+            <label style={{ display: "block", fontSize: "12px", fontWeight: "800", color: "#0f2942", marginBottom: "4px" }}>mt Başına Fiyat</label>
+            <input
+              type="number"
+              min="0"
+              step="0.01"
+              placeholder="Örn: 360"
+              value={iscilikBirimFiyat}
+              onChange={(e) => setIscilikBirimFiyat(e.target.value)}
+              disabled={!iscilikTuru}
+              style={{ width: "100%", padding: "9px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "13px", fontWeight: "600", backgroundColor: iscilikTuru ? "white" : "#e2e8f0" }}
+            />
+          </div>
+
+          <div>
+            <select value={paraBirimi} onChange={(e) => setParaBirimi(e.target.value)} disabled={!iscilikTuru} style={{ width: "100%", padding: "9px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "14px", fontWeight: "800", backgroundColor: iscilikTuru ? "white" : "#e2e8f0" }}>
+              <option value="TRY">TL (₺)</option>
+              <option value="USD">Dolar ($)</option>
+              <option value="EUR">Euro (€)</option>
+            </select>
+          </div>
         </div>
       </div>
 
