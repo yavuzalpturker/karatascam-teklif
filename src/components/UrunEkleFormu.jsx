@@ -63,30 +63,64 @@ export default function UrunEkleFormu({
     }
   }, [en, boy, karolajEnAdet, karolajBoyAdet, miktar, iscilikTuru]);
 
+  // --- DÜZENLEME MODUNDA VERİLERİ YÜKLEME ---
   useEffect(() => {
-    if (islemVerisi && islemVerisi.satir && islemVerisi.satir.hamVeri) {
-      const ham = islemVerisi.satir.hamVeri;
-      setArama(ham.arama || "");
-      setSecilenId(ham.secilenId || "");
-      setPozNo(ham.pozNo || ""); 
-      setOzelAciklama(ham.ozelAciklama || "");
-      setUrunGorselBase64(islemVerisi.satir.gorsel || null);
-      setEn(ham.en || "");
-      setBoy(ham.boy || "");
-      setManuelM2(ham.manuelM2 || "");
-      setMiktar(ham.miktar || "1");
-      setSecilenBirim(ham.secilenBirim || "m²");
-      setFiyatAna(ham.fiyatAna || "");
-      setFiyatAdet(ham.fiyatAdet || "");
-      setIscilikTuru(ham.iscilikTuru || "");
-      setIscilikMetretul(ham.iscilikMetretul || "");
-      setIscilikBirimFiyat(ham.iscilikBirimFiyat || "");
-      setKarolajEnAdet(ham.karolajEnAdet || "");
-      setKarolajBoyAdet(ham.karolajBoyAdet || "");
-      setParaBirimi(ham.paraBirimi || "TRY");
-      setKdvOrani(ham.kdvOrani || "20");
+    if (islemVerisi && islemVerisi.satir) {
+      const satir = islemVerisi.satir;
+      const ham = satir.hamVeri || {};
+
+      setPozNo(satir.pozNo || "");
+      setUrunGorselBase64(satir.gorsel || null);
+      setParaBirimi(satir.paraBirimi || "TRY");
+      setKdvOrani(satir.kdvOrani ? String(satir.kdvOrani) : "20");
+
+      if (satir.kodu === "İŞÇİLİK" || ham.iscilikTuru) {
+        const hedefSepetNo = islemVerisi?.sepetNo || 1;
+        const aktifSepet = hedefSepetNo === 1 ? sepet1 : sepet2;
+        const idx = islemVerisi.index;
+
+        let bagliCamEn = ham.en || satir.en || "";
+        let bagliCamBoy = ham.boy || satir.boy || "";
+        let bagliCamMiktar = ham.miktar || satir.orijinalMiktar || "1";
+        let bagliCamAdi = ham.arama || "";
+
+        if (idx > 0 && aktifSepet && aktifSepet[idx - 1] && aktifSepet[idx - 1].kodu !== "İŞÇİLİK") {
+          const ustUrun = aktifSepet[idx - 1];
+          bagliCamEn = ustUrun.en || ustUrun.hamVeri?.en || bagliCamEn;
+          bagliCamBoy = ustUrun.boy || ustUrun.hamVeri?.boy || bagliCamBoy;
+          bagliCamMiktar = ustUrun.hamVeri?.miktar || ustUrun.orijinalMiktar || bagliCamMiktar;
+          bagliCamAdi = ustUrun.hamVeri?.arama || ustUrun.aciklama || ustUrun.Açıklama || bagliCamAdi;
+        }
+
+        setIscilikTuru(ham.iscilikTuru || "Karolaj Bedeli");
+        setIscilikMetretul(satir.miktar || ham.iscilikMetretul || "");
+        setIscilikBirimFiyat(satir.birimFiyat || ham.iscilikBirimFiyat || "");
+        setKarolajEnAdet(ham.karolajEnAdet || "");
+        setKarolajBoyAdet(ham.karolajBoyAdet || "");
+        setEn(bagliCamEn);
+        setBoy(bagliCamBoy);
+        setMiktar(bagliCamMiktar);
+        setArama(bagliCamAdi);
+        setSecilenId("ozel_urun");
+        setOzelAciklama(ham.ozelAciklama || "");
+      } else {
+        setIscilikTuru("");
+        setIscilikMetretul("");
+        setIscilikBirimFiyat("");
+        setKarolajEnAdet(ham.karolajEnAdet || "");
+        setKarolajBoyAdet(ham.karolajBoyAdet || "");
+        setArama(ham.arama || satir.aciklama || "");
+        setSecilenId(ham.secilenId || "");
+        setOzelAciklama(ham.ozelAciklama || "");
+        setEn(satir.en || ham.en || "");
+        setBoy(satir.boy || ham.boy || "");
+        setManuelM2(satir.manuelM2 || ham.manuelM2 || "");
+        setMiktar(ham.miktar || satir.orijinalMiktar || "1");
+        setSecilenBirim(satir.secilenBirim || ham.secilenBirim || "m²");
+        setFiyatAna(satir.birimFiyat || ham.fiyatAna || "");
+      }
     }
-  }, [islemVerisi]);
+  }, [islemVerisi, sepet1, sepet2]);
 
   const formuSifirla = () => {
     setArama("");
@@ -200,6 +234,8 @@ export default function UrunEkleFormu({
   };
 
   const satirOlusturHelper = (hedefEn, hedefBoy, hedefManuelM2, hedefMiktar, hedefBirim, hedefPozNo, hedefSecili, secilenSonUrun) => {
+    const miktarDegeri = Number(hedefMiktar) || 1;
+
     if (iscilikTuru) {
       const mtMiktari = Number(iscilikMetretul) || 0;
       const mtBirimFiyat = Number(iscilikBirimFiyat) || 0;
@@ -216,11 +252,29 @@ export default function UrunEkleFormu({
       satir.toplamTutar = toplamIscilikTutari;
       satir.pozNo = hedefPozNo || "-";
       
-      let karolajDetay = iscilikTuru === "Karolaj Bedeli" && karolajEnAdet && karolajBoyAdet ? ` (${karolajEnAdet} En Karolaj Adet / ${karolajBoyAdet} Boy Karolaj Adet)` : "";
-      satir.ozelAciklama = ozelAciklama ? `${ozelAciklama}${karolajDetay} - (${mtMiktari} mt × ${paraFormatla(mtBirimFiyat, paraBirimi)})` : `${mtMiktari} mt × ${paraFormatla(mtBirimFiyat, paraBirimi)}${karolajDetay}`;
+      let parcalar = [];
+      if (ozelAciklama) parcalar.push(ozelAciklama);
+
+      let urunVeAdetBilgisi = hedefEn && hedefBoy ? `${hedefEn}×${hedefBoy} mm` : "Ürün Ölçüsü Yok";
+
+      if (iscilikTuru === "Karolaj Bedeli" && (karolajEnAdet || karolajBoyAdet)) {
+        urunVeAdetBilgisi += ` (${miktarDegeri} Adet Cam İçin -> Cam Başına ${karolajEnAdet || 0} En / ${karolajBoyAdet || 0} Boy Karolaj)`;
+      } else {
+        urunVeAdetBilgisi += ` (${miktarDegeri} Adet İçin)`;
+      }
+      parcalar.push(urunVeAdetBilgisi);
+      parcalar.push(`Toplam İşlem: ${mtMiktari} mt × ${paraFormatla(mtBirimFiyat, paraBirimi)}`);
+
+      satir.ozelAciklama = parcalar.join(" | ");
       
       satir.gorsel = urunGorselBase64;
-      satir.miktar = mtMiktari;
+      
+      // TABLOYU KANDIRMAK İÇİN TÜM ALTERNATİFLERE GERÇEK ADETİ GİRİYORUZ
+      satir.orijinalMiktar = miktarDegeri; 
+      satir.adet = miktarDegeri;
+      satir.Adet = miktarDegeri;
+      
+      satir.miktar = mtMiktari; // Matematik ve mt sütunu için miktar 64.54 kalmak zorunda
       satir.secilenBirim = "mt";
       satir.birimFiyat = mtBirimFiyat;
       satir.birim = "mt";
@@ -229,7 +283,7 @@ export default function UrunEkleFormu({
       satir.boy = Number(hedefBoy) || 0;
       satir.secili = hedefSecili;
       satir.hamVeri = {
-        iscilikTuru, iscilikMetretul, iscilikBirimFiyat, karolajEnAdet, karolajBoyAdet, pozNo: hedefPozNo, ozelAciklama, paraBirimi, kdvOrani, en: hedefEn, boy: hedefBoy
+        iscilikTuru, iscilikMetretul, iscilikBirimFiyat, karolajEnAdet, karolajBoyAdet, pozNo: hedefPozNo, ozelAciklama, paraBirimi, kdvOrani, en: hedefEn, boy: hedefBoy, miktar: miktarDegeri, arama
       };
       return satir;
     }
@@ -237,7 +291,6 @@ export default function UrunEkleFormu({
     const enDegeri = Number(hedefEn) || 0;
     const boyDegeri = Number(hedefBoy) || 0;
     const manuelM2Degeri = Number(hedefManuelM2) || 0;
-    const miktarDegeri = Number(hedefMiktar) || 1;
     let ekstraAciklama = "";
     let nihaiFiyat = Number(fiyatAna) || Number(fiyatAdet) || 0;
     let nihaiBirim = hedefBirim;
@@ -285,6 +338,11 @@ export default function UrunEkleFormu({
     satir.pozNo = hedefPozNo || "-"; 
     satir.ozelAciklama = ozelAciklama + ekstraAciklama;
     satir.gorsel = urunGorselBase64; 
+    
+    satir.orijinalMiktar = miktarDegeri;
+    satir.adet = miktarDegeri;
+    satir.Adet = miktarDegeri;
+    
     satir.miktar = Number(hesaplananMiktar.toFixed(3)); 
     satir.secilenBirim = nihaiBirim;
     satir.birimFiyat = nihaiFiyat;
@@ -295,7 +353,7 @@ export default function UrunEkleFormu({
     satir.boy = boyDegeri;
     satir.manuelM2 = manuelM2Degeri;
     satir.hamVeri = {
-      arama, secilenId, pozNo: hedefPozNo, ozelAciklama, en: hedefEn, boy: hedefBoy, manuelM2: manuelM2Degeri, miktar: hedefMiktar, secilenBirim: hedefBirim, fiyatAna, fiyatAdet, paraBirimi, kdvOrani
+      arama, secilenId, pozNo: hedefPozNo, ozelAciklama, en: hedefEn, boy: hedefBoy, manuelM2: manuelM2Degeri, miktar: miktarDegeri, secilenBirim: hedefBirim, fiyatAna, fiyatAdet, paraBirimi, kdvOrani, karolajEnAdet, karolajBoyAdet
     };
 
     return satir;
@@ -312,9 +370,16 @@ export default function UrunEkleFormu({
       const hedefSepetNo = islemVerisi?.sepetNo || 1;
       const aktifSepet = hedefSepetNo === 1 ? sepet1 : sepet2;
 
-      if (iscilikTuru && onTopluGuncelle && aktifSepet) {
+      if (onTopluGuncelle && aktifSepet) {
         const yeniSepet = [...aktifSepet];
-        yeniSepet.splice(islemVerisi.index + 1, 0, anaSatir);
+        
+        if (iscilikTuru && islemVerisi.satir.kodu !== "İŞÇİLİK") {
+          yeniSepet[islemVerisi.index] = satirOlusturHelper(en, boy, manuelM2, miktar, secilenBirim, pozNo, islemVerisi.satir.secili, sonUrun);
+          yeniSepet.splice(islemVerisi.index + 1, 0, anaSatir);
+        } else {
+          yeniSepet[islemVerisi.index] = anaSatir;
+        }
+
         onTopluGuncelle(hedefSepetNo, yeniSepet);
         if (onIptal) onIptal();
       } else {
@@ -395,9 +460,9 @@ export default function UrunEkleFormu({
         {islemVerisi?.tip === "duzenle" ? "✏️ Ürünü Düzenle" : "➕ Ürün Ekleme Ekranı"}
       </h2>
 
-      <div style={{ marginBottom: "12px", opacity: iscilikTuru ? 0.4 : 1, pointerEvents: iscilikTuru ? "none" : "auto" }}>
+      <div style={{ marginBottom: "12px" }}>
         <label style={{ display: "block", fontSize: "12px", fontWeight: "700", color: "#334155", marginBottom: "4px" }}>
-          Ürün Ara ve Seç {iscilikTuru && "(İşçilik seçili iken devre dışı)"}
+          Ürün Ara ve Seç
         </label>
         <div style={{ position: "relative" }}>
           <input
@@ -409,7 +474,7 @@ export default function UrunEkleFormu({
             style={{ width: "100%", padding: "9px 12px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "13px", fontWeight: "600", outline: "none", backgroundColor: "#f8fafc" }}
           />
           
-          {listeAcik && arama.length >= 3 && !iscilikTuru && (
+          {listeAcik && arama.length >= 3 && (
             <ul style={{ 
               position: "absolute", top: "100%", left: 0, right: 0, maxHeight: "200px", 
               overflowY: "auto", backgroundColor: "white", border: "1px solid #cbd5e1", 
@@ -500,7 +565,7 @@ export default function UrunEkleFormu({
       )}
 
       {/* BİRİM, EN, BOY VEYA DİREKT m² */}
-      <div style={{ display: iscilikTuru ? "none" : "grid", gridTemplateColumns: "140px 120px 1fr 1fr", gap: "10px", marginBottom: "12px", alignItems: "center" }}>
+      <div style={{ display: "grid", gridTemplateColumns: "140px 120px 1fr 1fr", gap: "10px", marginBottom: "12px", alignItems: "center" }}>
         <div>
           <label style={{ display: "block", fontSize: "12px", fontWeight: "700", color: "#334155", marginBottom: "4px" }}>Birim</label>
           <select value={secilenBirim} onChange={(e) => setSecilenBirim(e.target.value)} style={{ width: "100%", padding: "9px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "13px", fontWeight: "700", backgroundColor: "white" }}>
@@ -525,7 +590,7 @@ export default function UrunEkleFormu({
               <input type="number" min="0" value={boy} onChange={(e) => setBoy(e.target.value)} style={{ width: "100%", padding: "9px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "13px", fontWeight: "600", backgroundColor: "white" }} />
             </div>
           </>
-        ) : secilenBirim === "ad" ? (
+        ) : (
           <>
             <div style={{ display: "none" }} />
             <div>
@@ -537,12 +602,7 @@ export default function UrunEkleFormu({
               <input type="number" min="0" value={boy} onChange={(e) => setBoy(e.target.value)} style={{ width: "100%", padding: "9px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "13px", fontWeight: "600", backgroundColor: "white" }} />
             </div>
           </>
-        ) : secilenBirim === "mt" ? (
-          <div>
-            <label style={{ display: "block", fontSize: "12px", fontWeight: "700", color: "#334155", marginBottom: "4px" }}>Uzunluk / Boy (mm)</label>
-            <input type="number" min="0" placeholder="Örn: 2000" value={boy} onChange={(e) => setBoy(e.target.value)} style={{ width: "100%", padding: "9px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "13px", fontWeight: "600", backgroundColor: "white" }} />
-          </div>
-        ) : null}
+        )}
       </div>
 
       {/* ADET, FİYATLANDIRMA VE PARA BİRİMİ */}

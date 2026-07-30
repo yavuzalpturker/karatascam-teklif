@@ -354,8 +354,15 @@ function proformaTabloOlustur(sepet, baslikMetni) {
     
     if (satir.miktarDetay && satir.miktarDetay.includes(" x ")) {
       const parcalar = satir.miktarDetay.split(" x ");
-      miktarMetni = parcalar[0].trim();
       birimFiyatMetni = parcalar[1].trim();
+      
+      const birimMi = satir.secilenBirim === "mt" || satir.Birim === "mt" || satir.kodu === "İŞÇİLİK";
+      if (!birimMi) {
+        const gercekAdet = satir.orijinalMiktar || satir.hamVeri?.miktar || satir.adet || 1;
+        miktarMetni = `${gercekAdet} Adet`;
+      } else {
+        miktarMetni = parcalar[0].trim();
+      }
     }
 
     const ozelAciklamaStack = [

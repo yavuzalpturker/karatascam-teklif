@@ -63,15 +63,47 @@ export default function App() {
     siparisNo: "",
     odemeSekli: "",
     tarih: new Date(),
-    onayDurumu: "onaylandi" // Onay mekanizması iptal edildiği için direkt onaylı/serbest
+    onayDurumu: "onaylandi"
   });
   
   const [sepet1, setSepet1] = useState([]);
   const [sepet2, setSepet2] = useState([]);
+
+  // --- GERİ AL (UNDO) İÇİN GEÇMİŞ (HISTORY) STATE'LERİ ---
+  const [sepet1Gecmis, setSepet1Gecmis] = useState([]);
+  const [sepet2Gecmis, setSepet2Gecmis] = useState([]);
+
   const [aktifSepetNumarasi, setAktifSepetNumarasi] = useState(1);
   const [islemVerisi, setIslemVerisi] = useState(null);
 
+  // --- GÜVENLİ SEPET GÜNCELLEME VE GERİ AL FONKSİYONLARI ---
+  const sepetGuncelle1 = (yeniSepet) => {
+    setSepet1Gecmis(prev => [...prev, sepet1]);
+    setSepet1(yeniSepet);
+  };
+
+  const sepetGuncelle2 = (yeniSepet) => {
+    setSepet2Gecmis(prev => [...prev, sepet2]);
+    setSepet2(yeniSepet);
+  };
+
+  const geriAl1 = () => {
+    if (sepet1Gecmis.length === 0) return;
+    const oncekiHal = sepet1Gecmis[sepet1Gecmis.length - 1];
+    setSepet1(oncekiHal);
+    setSepet1Gecmis(prev => prev.slice(0, prev.length - 1));
+  };
+
+  const geriAl2 = () => {
+    if (sepet2Gecmis.length === 0) return;
+    const oncekiHal = sepet2Gecmis[sepet2Gecmis.length - 1];
+    setSepet2(oncekiHal);
+    setSepet2Gecmis(prev => prev.slice(0, prev.length - 1));
+  };
+
   const secenekleriYerDegistir = () => {
+    setSepet1Gecmis(prev => [...prev, sepet1]);
+    setSepet2Gecmis(prev => [...prev, sepet2]);
     const geciciSepet = [...sepet1];
     setSepet1([...sepet2]);
     setSepet2(geciciSepet);
@@ -79,9 +111,9 @@ export default function App() {
 
   const sepettenUrunSil = (silinecekIndex, sepetNo) => {
     if (sepetNo === 1) {
-      setSepet1(sepet1.filter((_, index) => index !== silinecekIndex));
+      sepetGuncelle1(sepet1.filter((_, index) => index !== silinecekIndex));
     } else {
-      setSepet2(sepet2.filter((_, index) => index !== silinecekIndex));
+      sepetGuncelle2(sepet2.filter((_, index) => index !== silinecekIndex));
     }
   };
 
@@ -89,11 +121,11 @@ export default function App() {
     if (sepetNo === 1) {
       const yeniSepet = [...sepet1];
       yeniSepet[index] = guncelSatir;
-      setSepet1(yeniSepet);
+      sepetGuncelle1(yeniSepet);
     } else {
       const yeniSepet = [...sepet2];
       yeniSepet[index] = guncelSatir;
-      setSepet2(yeniSepet);
+      sepetGuncelle2(yeniSepet);
     }
   };
 
@@ -221,16 +253,16 @@ export default function App() {
                 sepet2={sepet2}
                 onTopluGuncelle={(hedefSepetNo, guncelSepet) => {
                   if (hedefSepetNo === 1) {
-                    setSepet1(guncelSepet);
+                    sepetGuncelle1(guncelSepet);
                   } else {
-                    setSepet2(guncelSepet);
+                    sepetGuncelle2(guncelSepet);
                   }
                 }}
                 onEkle={(satir) => {
                   if (aktifSepetNumarasi === 1) {
-                    setSepet1((mevcut) => [...mevcut, satir]);
+                    sepetGuncelle1([...sepet1, satir]);
                   } else {
-                    setSepet2((mevcut) => [...mevcut, satir]);
+                    sepetGuncelle2([...sepet2, satir]);
                   }
                 }}
                 islemVerisi={islemVerisi}
@@ -247,7 +279,9 @@ export default function App() {
                 </h3>
                 <SepetTablosu 
                   sepet={sepet1} 
-                  onTemizle={() => setSepet1([])} 
+                  gecmisUzunluk={sepet1Gecmis.length}
+                  onGeriAl={geriAl1}
+                  onTemizle={() => sepetGuncelle1([])} 
                   onSil={(index) => sepettenUrunSil(index, 1)} 
                   onDuzenle={(index, satir) => {
                     setIslemVerisi({ tip: "duzenle", index, satir, sepetNo: 1 });
@@ -257,7 +291,7 @@ export default function App() {
                     setIslemVerisi({ tip: "tekrar", satir, sepetNo: 1 });
                     window.scrollTo({ top: 0, behavior: 'smooth' });
                   }}
-                  onTopluFiyatGuncelle={(yeniSepet) => setSepet1(yeniSepet)}
+                  onTopluFiyatGuncelle={(yeniSepet) => sepetGuncelle1(yeniSepet)}
                 />
               </div>
 
@@ -267,7 +301,9 @@ export default function App() {
                 </h3>
                 <SepetTablosu 
                   sepet={sepet2} 
-                  onTemizle={() => setSepet2([])} 
+                  gecmisUzunluk={sepet2Gecmis.length}
+                  onGeriAl={geriAl2}
+                  onTemizle={() => sepetGuncelle2([])} 
                   onSil={(index) => sepettenUrunSil(index, 2)} 
                   onDuzenle={(index, satir) => {
                     setIslemVerisi({ tip: "duzenle", index, satir, sepetNo: 2 });
@@ -277,7 +313,7 @@ export default function App() {
                     setIslemVerisi({ tip: "tekrar", satir, sepetNo: 2 });
                     window.scrollTo({ top: 0, behavior: 'smooth' });
                   }}
-                  onTopluFiyatGuncelle={(yeniSepet) => setSepet2(yeniSepet)}
+                  onTopluFiyatGuncelle={(yeniSepet) => sepetGuncelle2(yeniSepet)}
                 />
               </div>
 
@@ -300,8 +336,8 @@ export default function App() {
                     tarih: new Date(),
                     onayDurumu: "onaylandi"
                   });
-                  setSepet1(yuklenenSepet1 || []);
-                  setSepet2(yuklenenSepet2 || []);
+                  sepetGuncelle1(yuklenenSepet1 || []);
+                  sepetGuncelle2(yuklenenSepet2 || []);
                   window.scrollTo({ top: 0, behavior: 'smooth' });
                 }}
               />

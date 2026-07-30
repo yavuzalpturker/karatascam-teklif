@@ -3,6 +3,8 @@ import { paraFormatla, genelToplamHesapla, genelKdvHesapla } from "../utils/hesa
 
 export default function SepetTablosu({ 
   sepet = [], 
+  gecmisUzunluk = 0,
+  onGeriAl,
   onTemizle, 
   onSil, 
   onDuzenle, 
@@ -15,8 +17,17 @@ export default function SepetTablosu({
 
   if (!sepet || sepet.length === 0) {
     return (
-      <div style={{ padding: "15px", backgroundColor: "#f8fafc", borderRadius: "6px", border: "1px dashed #cbd5e1", textAlign: "center", color: "#64748b", fontSize: "13px" }}>
-        Sepette henüz ürün bulunmuyor.
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "15px", backgroundColor: "#f8fafc", borderRadius: "6px", border: "1px dashed #cbd5e1" }}>
+        <span style={{ color: "#64748b", fontSize: "13px" }}>Sepette henüz ürün bulunmuyor.</span>
+        {gecmisUzunluk > 0 && onGeriAl && (
+          <button
+            type="button"
+            onClick={onGeriAl}
+            style={{ backgroundColor: "#d97706", color: "white", border: "none", padding: "5px 12px", borderRadius: "4px", fontSize: "11.5px", fontWeight: "600", cursor: "pointer", display: "flex", alignItems: "center", gap: "4px" }}
+          >
+            ↩️ Geri Al
+          </button>
+        )}
       </div>
     );
   }
@@ -107,6 +118,16 @@ export default function SepetTablosu({
     <div style={{ backgroundColor: "white", borderRadius: "8px", border: "1px solid #cbd5e1", padding: "12px", boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }}>
       
       <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px", marginBottom: "10px" }}>
+        {gecmisUzunluk > 0 && onGeriAl && (
+          <button
+            type="button"
+            onClick={onGeriAl}
+            style={{ backgroundColor: "#d97706", color: "white", border: "none", padding: "6px 14px", borderRadius: "5px", fontSize: "12px", fontWeight: "600", cursor: "pointer", display: "flex", alignItems: "center", gap: "5px" }}
+          >
+            ↩️ Geri Al
+          </button>
+        )}
+
         <button
           type="button"
           onClick={() => setModalAcik(true)}
@@ -182,8 +203,7 @@ export default function SepetTablosu({
               const olcuMatch = tamMetin.match(/(\d+)\s*[xX×]\s*(\d+)/);
               const enBoyMetni = olcuMatch ? `${olcuMatch[1]} × ${olcuMatch[2]} mm` : "-";
 
-              const adetMatch = tamMetin.match(/(?:-\s*)?(\d+)\s*Adet/i);
-              const adetDegeri = satir.miktar && !String(satir.miktarDetay).includes("m²") ? satir.miktar : (adetMatch ? adetMatch[1] : "1");
+              const gercekAdet = satir.orijinalMiktar || satir.hamVeri?.miktar || satir.adet || 1;
 
               return (
                 <tr 
@@ -223,7 +243,7 @@ export default function SepetTablosu({
                     {enBoyMetni}
                   </td>
                   <td style={{ padding: "10px", textAlign: "center", fontWeight: "800", color: "#0f2942", fontSize: "14px", backgroundColor: "#f8fafc" }}>
-                    {adetDegeri} Adet
+                    {gercekAdet} Adet
                   </td>
                   <td style={{ padding: "10px", textAlign: "center", color: "#334155" }}>
                     {satir.miktarDetay}
