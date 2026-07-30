@@ -7,6 +7,10 @@ const CAM_RENKLERI = [
   "Düz Ayna", "Füme Ayna", "Bronz Ayna", "Eskitme Ayna"
 ];
 
+const AYNA_RENKLERI = [
+  "Düz Ayna", "Füme Ayna", "Bronz Ayna", "Eskitme Ayna"
+];
+
 // --- ŞİŞECAM GLASSTOOL TÜM KAPLAMA SERİLERİ ---
 const KAPLAMA_TURLERI = [
   "Kaplamasız (Düzcam)",
@@ -86,8 +90,9 @@ const CamKatmaniSecici = ({
   title, bgColor, borderColor, 
   tip, setTip, kalinlik, setKalinlik, 
   lamK1, setLamK1, lamK2, setLamK2, lamPVB, setLamPVB, 
-  renk, setRenk, kaplama, setKaplama,
-  kenar, setKenar, temper, setTemper, delik, setDelik, oygu, setOygu
+  renk, setRenk, renkListesi = CAM_RENKLERI, kaplama, setKaplama,
+  kenar, setKenar, temper, setTemper, delik, setDelik, oygu, setOygu,
+  isAyna = false
 }) => (
   <div style={{ flex: 3, minWidth: "240px", padding: "10px", backgroundColor: bgColor, borderRadius: "8px", border: `1px solid ${borderColor}`, boxShadow: "0 1px 3px rgba(0,0,0,0.03)" }}>
     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "6px" }}>
@@ -103,7 +108,7 @@ const CamKatmaniSecici = ({
     {tip === "tek" || !tip ? (
       <div style={{ display: "flex", gap: "6px", marginBottom: "6px" }}>
         <select value={kalinlik} onChange={(e) => setKalinlik(e.target.value)} style={{ flex: 1, padding: "7px", borderRadius: "5px", border: "1px solid #cbd5e1", fontSize: "12px", fontWeight: "700", color: "#1e293b", backgroundColor: "white" }}>{KALINLIKLAR.map(k => <option key={k} value={k}>{k}</option>)}</select>
-        <select value={renk} onChange={(e) => setRenk(e.target.value)} style={{ flex: 2, padding: "7px", borderRadius: "5px", border: "1px solid #cbd5e1", fontSize: "12px", fontWeight: "600", color: "#1e293b", backgroundColor: "white" }}>{CAM_RENKLERI.map(r => <option key={r} value={r}>{r}</option>)}</select>
+        <select value={renk} onChange={(e) => setRenk(e.target.value)} style={{ flex: 2, padding: "7px", borderRadius: "5px", border: "1px solid #cbd5e1", fontSize: "12px", fontWeight: "600", color: "#1e293b", backgroundColor: "white" }}>{renkListesi.map(r => <option key={r} value={r}>{r}</option>)}</select>
       </div>
     ) : (
       <div style={{ display: "flex", flexDirection: "column", gap: "6px", marginBottom: "6px" }}>
@@ -113,10 +118,13 @@ const CamKatmaniSecici = ({
           <select value={lamK2} onChange={(e) => setLamK2(e.target.value)} style={{ flex: 1, padding: "7px", borderRadius: "5px", border: "1px solid #cbd5e1", fontSize: "12px", fontWeight: "700", color: "#1e293b", backgroundColor: "white" }}>{KALINLIKLAR.map(k => <option key={k} value={k}>{k}</option>)}</select>
         </div>
         <select value={lamPVB} onChange={(e) => setLamPVB(e.target.value)} style={{ width: "100%", padding: "7px", borderRadius: "5px", border: "1px solid #cbd5e1", fontSize: "11px", fontWeight: "600", color: "#1e293b", backgroundColor: "white" }}>{PVB_TURLERI.map(p => <option key={p} value={p}>{p}</option>)}</select>
-        <select value={renk} onChange={(e) => setRenk(e.target.value)} style={{ width: "100%", padding: "7px", borderRadius: "5px", border: "1px solid #cbd5e1", fontSize: "11px", fontWeight: "600", color: "#1e293b", backgroundColor: "white" }}>{CAM_RENKLERI.map(r => <option key={r} value={r}>{r}</option>)}</select>
+        <select value={renk} onChange={(e) => setRenk(e.target.value)} style={{ width: "100%", padding: "7px", borderRadius: "5px", border: "1px solid #cbd5e1", fontSize: "11px", fontWeight: "600", color: "#1e293b", backgroundColor: "white" }}>{renkListesi.map(r => <option key={r} value={r}>{r}</option>)}</select>
       </div>
     )}
-    <select value={kaplama} onChange={(e) => setKaplama(e.target.value)} style={{ width: "100%", padding: "7px", borderRadius: "5px", border: "1px solid #cbd5e1", fontSize: "12px", fontWeight: "700", color: "#0f2942", backgroundColor: "#f8fafc" }}>{KAPLAMA_TURLERI.map(kp => <option key={kp} value={kp}>{kp}</option>)}</select>
+
+    {!isAyna && (
+      <select value={kaplama} onChange={(e) => setKaplama(e.target.value)} style={{ width: "100%", padding: "7px", borderRadius: "5px", border: "1px solid #cbd5e1", fontSize: "12px", fontWeight: "700", color: "#0f2942", backgroundColor: "#f8fafc" }}>{KAPLAMA_TURLERI.map(kp => <option key={kp} value={kp}>{kp}</option>)}</select>
+    )}
 
     <CamIslemleriPaneli 
       kenar={kenar} setKenar={setKenar} 
@@ -130,13 +138,21 @@ const CamKatmaniSecici = ({
 export default function CamKombinasyonSihirbazi({ onKombinasyonSec, baslangicMetni }) {
   const [camTuru, setCamTuru] = useState("isicam");
 
-  const [tekCamKalinlik, setTekCamKalinlik] = useState("6 mm");
+  const [tekCamKalinlik, setTekCamKalinlik] = useState("4 mm");
   const [tekCamRenk, setTekCamRenk] = useState("Clear (Şeffaf)");
   const [tekCamKaplama, setTekCamKaplama] = useState("Kaplamasız (Düzcam)");
   const [tekKenar, setTekKenar] = useState("Düz Kesim (İşlemsiz)");
   const [tekTemper, setTekTemper] = useState("Tempersiz");
   const [tekDelik, setTekDelik] = useState("Delik Yok");
   const [tekOygu, setTekOygu] = useState("Oygu Yok");
+
+  // --- AYNA İÇİN STATE'LER ---
+  const [aynaKalinlik, setAynaKalinlik] = useState("4 mm");
+  const [aynaRenk, setAynaRenk] = useState("Düz Ayna");
+  const [aynaKenar, setAynaKenar] = useState("Düz Kesim (İşlemsiz)");
+  const [aynaTemper, setAynaTemper] = useState("Tempersiz");
+  const [aynaDelik, setAynaDelik] = useState("Delik Yok");
+  const [aynaOygu, setAynaOygu] = useState("Oygu Yok");
 
   // --- LAMİNE İÇİN ÇOKLU KATMAN STATE'LERİ ---
   const [lamineKatmanSayisi, setLamineKatmanSayisi] = useState(2);
@@ -263,6 +279,7 @@ export default function CamKombinasyonSihirbazi({ onKombinasyonSec, baslangicMet
     if (upperM.includes("ÜÇLÜ ISICAM")) setCamTuru("ucIliIsicam");
     else if (upperM.includes("ISICAM")) setCamTuru("isicam");
     else if (upperM.includes("LAMİNE CAM")) setCamTuru("lamine");
+    else if (upperM.includes("AYNA")) setCamTuru("ayna");
     else if (upperM.includes("CAM")) setCamTuru("tek");
 
     const parseCamStr = (str, setTip, setKal, setK1, setK2, setPvb, setRenk, setKap, setKenar, setTemper, setDelik, setOygu) => {
@@ -339,7 +356,7 @@ export default function CamKombinasyonSihirbazi({ onKombinasyonSec, baslangicMet
     let parts = m.split(/\)\s*\+\s*\(/);
     if (parts.length > 0) {
       parts[0] = parts[0].replace(/^\(/, "");
-      parts[parts.length - 1] = parts[parts.length - 1].replace(/\)\s*(ISICAM|ÜÇLÜ ISICAM|LAMİNE CAM|CAM).*$/i, "");
+      parts[parts.length - 1] = parts[parts.length - 1].replace(/\)\s*(ISICAM|ÜÇLÜ ISICAM|LAMİNE CAM|AYNA|CAM).*$/i, "");
     }
 
     if (upperM.includes("ÜÇLÜ ISICAM")) {
@@ -387,7 +404,7 @@ export default function CamKombinasyonSihirbazi({ onKombinasyonSec, baslangicMet
               (val) => tempCamlar[cIdx].kaplama = val,
               (val) => tempCamlar[cIdx].kenar = val,
               (val) => tempCamlar[cIdx].temper = val,
-              (val) => templar[cIdx].delik = val,
+              (val) => tempCamlar[cIdx].delik = val,
               (val) => tempCamlar[cIdx].oygu = val
             );
             cIdx++;
@@ -398,15 +415,18 @@ export default function CamKombinasyonSihirbazi({ onKombinasyonSec, baslangicMet
       setLamCamlar(tempCamlar);
       setLamPvbLer(tempPvbler);
     }
+    else if (upperM.includes("AYNA")) {
+      parseCamStr(m, () => {}, setAynaKalinlik, setAynaKalinlik, setAynaKalinlik, () => {}, setAynaRenk, () => {}, setAynaKenar, setAynaTemper, setAynaDelik, setAynaOygu);
+    }
     else if (upperM.includes("CAM")) {
       parseCamStr(m, () => {}, setTekCamKalinlik, setTekCamKalinlik, setTekCamKalinlik, () => {}, setTekCamRenk, setTekCamKaplama, setTekKenar, setTekTemper, setTekDelik, setTekOygu);
     }
 
   }, [baslangicMetni]);
 
-  // --- İSİM OLUŞTURUCU (PARANTEZ KARIŞIKLIĞINI ÖNLEYEN TEMİZ FORMAT) ---
-  const formatPane = (tip, kal, lamK1, lamK2, pvb, renk, kap, kenar, temper, delik, oygu) => {
-    const kapStr = kap !== "Kaplamasız (Düzcam)" ? ` ${kap}` : "";
+  // --- İSİM OLUŞTURUCU ---
+  const formatPane = (tip, kal, lamK1, lamK2, pvb, renk, kap, kenar, temper, delik, oygu, isAyna = false) => {
+    const kapStr = (!isAyna && kap !== "Kaplamasız (Düzcam)") ? ` ${kap}` : "";
     let base = "";
     if (tip === "lamine") {
       const l1 = lamK1.replace(" mm", "");
@@ -433,6 +453,9 @@ export default function CamKombinasyonSihirbazi({ onKombinasyonSec, baslangicMet
     if (camTuru === "tek") {
       isim = formatPane("tek", tekCamKalinlik, "", "", "", tekCamRenk, tekCamKaplama, tekKenar, tekTemper, tekDelik, tekOygu) + " CAM";
     } 
+    else if (camTuru === "ayna") {
+      isim = formatPane("tek", aynaKalinlik, "", "", "", aynaRenk, "", aynaKenar, aynaTemper, aynaDelik, aynaOygu, true);
+    }
     else if (camTuru === "lamine") {
       let parcalar = [];
       for (let i = 0; i < lamineKatmanSayisi; i++) {
@@ -468,6 +491,7 @@ export default function CamKombinasyonSihirbazi({ onKombinasyonSec, baslangicMet
     setOlusturulanIsim(isim);
   }, [
     camTuru, tekCamKalinlik, tekCamRenk, tekCamKaplama, tekKenar, tekTemper, tekDelik, tekOygu,
+    aynaKalinlik, aynaRenk, aynaKenar, aynaTemper, aynaDelik, aynaOygu,
     lamineKatmanSayisi, lamCamlar, lamPvbLer,
     disCamTipi, disCamKalinlik, disCamLamK1, disCamLamK2, disCamLamPVB, disCamRenk, disCamKaplama, disKenar, disTemper, disDelik, disOygu,
     citaKalinlik, citaTipi, gazTipi, dolguTipi,
@@ -495,7 +519,8 @@ export default function CamKombinasyonSihirbazi({ onKombinasyonSec, baslangicMet
           { id: "isicam", label: "Isıcam (Çift Cam)" },
           { id: "ucIliIsicam", label: "Üçlü Isıcam" },
           { id: "lamine", label: "Lamine Cam" },
-          { id: "tek", label: "Tek Cam" }
+          { id: "tek", label: "Tek Cam" },
+          { id: "ayna", label: "Ayna" }
         ].map(item => (
           <button
             key={item.id}
@@ -532,7 +557,21 @@ export default function CamKombinasyonSihirbazi({ onKombinasyonSec, baslangicMet
           />
         )}
 
-        {/* 2. LAMİNE CAM */}
+        {/* 2. AYNA */}
+        {camTuru === "ayna" && (
+          <CamKatmaniSecici 
+            title="Ayna Seçimi" bgColor="#f8fafc" borderColor="#cbd5e1"
+            kalinlik={aynaKalinlik} setKalinlik={setAynaKalinlik}
+            renk={aynaRenk} setRenk={setAynaRenk} renkListesi={AYNA_RENKLERI}
+            kenar={aynaKenar} setKenar={setAynaKenar}
+            temper={aynaTemper} setTemper={setAynaTemper}
+            delik={aynaDelik} setDelik={setAynaDelik}
+            oygu={aynaOygu} setOygu={setAynaOygu}
+            isAyna={true}
+          />
+        )}
+
+        {/* 3. LAMİNE CAM */}
         {camTuru === "lamine" && (
           <div style={{ width: "100%" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "10px", backgroundColor: "#e2e8f0", padding: "6px 10px", borderRadius: "6px" }}>
@@ -585,7 +624,7 @@ export default function CamKombinasyonSihirbazi({ onKombinasyonSec, baslangicMet
           </div>
         )}
 
-        {/* 3. ISICAM (ÇİFT CAM) */}
+        {/* 4. ISICAM (ÇİFT CAM) */}
         {camTuru === "isicam" && (
           <div style={{ display: "flex", gap: "10px", width: "100%", alignItems: "center" }}>
             <CamKatmaniSecici 
@@ -632,7 +671,7 @@ export default function CamKombinasyonSihirbazi({ onKombinasyonSec, baslangicMet
           </div>
         )}
 
-        {/* 4. ÜÇLÜ ISICAM */}
+        {/* 5. ÜÇLÜ ISICAM */}
         {camTuru === "ucIliIsicam" && (
           <div style={{ display: "flex", gap: "6px", width: "100%", alignItems: "center" }}>
             <CamKatmaniSecici 
