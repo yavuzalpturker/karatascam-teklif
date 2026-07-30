@@ -232,7 +232,6 @@ export default function CamKombinasyonSihirbazi({ onKombinasyonSec, baslangicMet
     const yeniCamlar = [...lamCamlar];
     yeniCamlar[index] = { ...yeniCamlar[index], [alan]: deger };
 
-    // İLK CAMDA YAPILAN TÜM DEĞİŞİKLİKLERİ DİĞER KATMANLARA OTOMATİK UYARLA
     if (index === 0) {
       for (let i = 1; i < yeniCamlar.length; i++) {
         yeniCamlar[i] = { ...yeniCamlar[i], [alan]: deger };
@@ -246,7 +245,6 @@ export default function CamKombinasyonSihirbazi({ onKombinasyonSec, baslangicMet
     const yeniPvb = [...lamPvbLer];
     yeniPvb[index] = deger;
 
-    // İLK PVB DEĞİŞTİRİLDİYSE DİĞER PVB'LERİ DE OTOMATİK EŞİTLE
     if (index === 0) {
       for (let i = 1; i < yeniPvb.length; i++) {
         yeniPvb[i] = deger;
@@ -389,7 +387,7 @@ export default function CamKombinasyonSihirbazi({ onKombinasyonSec, baslangicMet
               (val) => tempCamlar[cIdx].kaplama = val,
               (val) => tempCamlar[cIdx].kenar = val,
               (val) => tempCamlar[cIdx].temper = val,
-              (val) => tempCamlar[cIdx].delik = val,
+              (val) => templar[cIdx].delik = val,
               (val) => tempCamlar[cIdx].oygu = val
             );
             cIdx++;
@@ -406,7 +404,7 @@ export default function CamKombinasyonSihirbazi({ onKombinasyonSec, baslangicMet
 
   }, [baslangicMetni]);
 
-  // --- İSİM OLUŞTURUCU ---
+  // --- İSİM OLUŞTURUCU (PARANTEZ KARIŞIKLIĞINI ÖNLEYEN TEMİZ FORMAT) ---
   const formatPane = (tip, kal, lamK1, lamK2, pvb, renk, kap, kenar, temper, delik, oygu) => {
     const kapStr = kap !== "Kaplamasız (Düzcam)" ? ` ${kap}` : "";
     let base = "";
@@ -440,10 +438,10 @@ export default function CamKombinasyonSihirbazi({ onKombinasyonSec, baslangicMet
       for (let i = 0; i < lamineKatmanSayisi; i++) {
         const c = lamCamlar[i];
         const camStr = formatPane("tek", c.kalinlik, "", "", "", c.renk, c.kaplama, c.kenar, c.temper, c.delik, c.oygu);
-        parcalar.push(`(${camStr})`);
+        parcalar.push(camStr);
         if (i < lamineKatmanSayisi - 1) {
           const pvb = lamPvbLer[i] || "Şeffaf PVB (0.38)";
-          parcalar.push(`(${pvb})`);
+          parcalar.push(`${pvb}`);
         }
       }
       isim = `${parcalar.join(" + ")} LAMİNE CAM`;
@@ -453,7 +451,7 @@ export default function CamKombinasyonSihirbazi({ onKombinasyonSec, baslangicMet
       const icCamStr = formatPane(icCamTipi, icCamKalinlik, icCamLamK1, icCamLamK2, icCamLamPVB, icCamRenk, icCamKaplama, icKenar, icTemper, icDelik, icOygu);
       let boslukStr = `${citaKalinlik} ${citaTipi} (${gazTipi})`;
       if (dolguTipi && dolguTipi !== "Dolgu Yok") boslukStr += ` + ${dolguTipi}`;
-      isim = `(${disCamStr}) + (${boslukStr}) + (${icCamStr}) ISICAM`;
+      isim = `${disCamStr} + ${boslukStr} + ${icCamStr} ISICAM`;
     }
     else if (camTuru === "ucIliIsicam") {
       const disCamStr = formatPane(uDisCamTipi, uDisCamKalinlik, uDisLamK1, uDisLamK2, uDisLamPVB, uDisCamRenk, uDisCamKaplama, uDisKenar, uDisTemper, uDisDelik, uDisOygu);
@@ -465,7 +463,7 @@ export default function CamKombinasyonSihirbazi({ onKombinasyonSec, baslangicMet
       let bosluk2Str = `${uCita2Kalinlik} ${uCita2Tipi} (${uGaz2Tipi})`;
       if (uDolgu2Tipi && uDolgu2Tipi !== "Dolgu Yok") bosluk2Str += ` + ${uDolgu2Tipi}`;
 
-      isim = `(${disCamStr}) + (${bosluk1Str}) + (${ortaCamStr}) + (${bosluk2Str}) + (${icCamStr}) ÜÇLÜ ISICAM`;
+      isim = `${disCamStr} + ${bosluk1Str} + ${ortaCamStr} + ${bosluk2Str} + ${icCamStr} ÜÇLÜ ISICAM`;
     }
     setOlusturulanIsim(isim);
   }, [
@@ -534,7 +532,7 @@ export default function CamKombinasyonSihirbazi({ onKombinasyonSec, baslangicMet
           />
         )}
 
-        {/* 2. LAMİNE CAM (ÇOKLU KATMAN DESTEKLİ, GENİŞ PVB KUTUSU VE TÜM ÖZELLİKLER SENKRONİZE) */}
+        {/* 2. LAMİNE CAM */}
         {camTuru === "lamine" && (
           <div style={{ width: "100%" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "10px", backgroundColor: "#e2e8f0", padding: "6px 10px", borderRadius: "6px" }}>
