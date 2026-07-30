@@ -1,10 +1,9 @@
 import { useState, useEffect } from "react";
 
-// --- ŞİŞECAM GENİŞ CAM RENK VE TİP LİSTESİ ---
+// --- ŞİŞECAM GENİŞ CAM RENK VE TİP LİSTESİ (Aynalar Temizlendi) ---
 const CAM_RENKLERI = [
   "Clear (Şeffaf)", "Extra Clear", "Ultra Clear", "Satine Cam", "Füme", "Bronz", "Mavi", "Yeşil", 
-  "Koyu Füme", "Derin Füme", "Açık Füme", "Turkuaz", "Ara Yeşil",
-  "Düz Ayna", "Füme Ayna", "Bronz Ayna", "Eskitme Ayna"
+  "Koyu Füme", "Derin Füme", "Açık Füme", "Turkuaz", "Ara Yeşil"
 ];
 
 const AYNA_RENKLERI = [
@@ -282,7 +281,7 @@ export default function CamKombinasyonSihirbazi({ onKombinasyonSec, baslangicMet
     else if (upperM.includes("AYNA")) setCamTuru("ayna");
     else if (upperM.includes("CAM")) setCamTuru("tek");
 
-    const parseCamStr = (str, setTip, setKal, setK1, setK2, setPvb, setRenk, setKap, setKenar, setTemper, setDelik, setOygu) => {
+    const parseCamStr = (str, setTip, setKal, setK1, setK2, setPvb, setRenk, setKap, setKenar, setTemper, setDelik, setOygu, isAyna = false) => {
       if (!str) return;
       
       if (str.toLocaleUpperCase("tr-TR").includes("LAMİNE")) {
@@ -303,8 +302,9 @@ export default function CamKombinasyonSihirbazi({ onKombinasyonSec, baslangicMet
         if (kalMatch) setKal(kalMatch[1]);
       }
 
-      let renkBulundu = "Clear (Şeffaf)";
-      for (let r of CAM_RENKLERI) {
+      let renkBulundu = isAyna ? "Düz Ayna" : "Clear (Şeffaf)";
+      const kaynakListe = isAyna ? AYNA_RENKLERI : CAM_RENKLERI;
+      for (let r of kaynakListe) {
         if (str.includes(r)) { renkBulundu = r; break; }
       }
       setRenk(renkBulundu);
@@ -416,7 +416,7 @@ export default function CamKombinasyonSihirbazi({ onKombinasyonSec, baslangicMet
       setLamPvbLer(tempPvbler);
     }
     else if (upperM.includes("AYNA")) {
-      parseCamStr(m, () => {}, setAynaKalinlik, setAynaKalinlik, setAynaKalinlik, () => {}, setAynaRenk, () => {}, setAynaKenar, setAynaTemper, setAynaDelik, setAynaOygu);
+      parseCamStr(m, () => {}, setAynaKalinlik, setAynaKalinlik, setAynaKalinlik, () => {}, setAynaRenk, () => {}, setAynaKenar, setAynaTemper, setAynaDelik, setAynaOygu, true);
     }
     else if (upperM.includes("CAM")) {
       parseCamStr(m, () => {}, setTekCamKalinlik, setTekCamKalinlik, setTekCamKalinlik, () => {}, setTekCamRenk, setTekCamKaplama, setTekKenar, setTekTemper, setTekDelik, setTekOygu);
@@ -548,7 +548,7 @@ export default function CamKombinasyonSihirbazi({ onKombinasyonSec, baslangicMet
           <CamKatmaniSecici 
             title="Tek Cam Katmanı" bgColor="#f8fafc" borderColor="#cbd5e1"
             kalinlik={tekCamKalinlik} setKalinlik={setTekCamKalinlik}
-            renk={tekCamRenk} setRenk={setTekCamRenk}
+            renk={tekCamRenk} setRenk={setTekCamRenk} renkListesi={CAM_RENKLERI}
             kaplama={tekCamKaplama} setKaplama={setTekCamKaplama}
             kenar={tekKenar} setKenar={setTekKenar}
             temper={tekTemper} setTemper={setTekTemper}
@@ -594,7 +594,7 @@ export default function CamKombinasyonSihirbazi({ onKombinasyonSec, baslangicMet
                   <CamKatmaniSecici 
                     title={`${i + 1}. Cam Katmanı`} bgColor="#f8fafc" borderColor="#cbd5e1"
                     kalinlik={lamCamlar[i].kalinlik} setKalinlik={(val) => handleLamCamGuncelle(i, 'kalinlik', val)}
-                    renk={lamCamlar[i].renk} setRenk={(val) => handleLamCamGuncelle(i, 'renk', val)}
+                    renk={lamCamlar[i].renk} setRenk={(val) => handleLamCamGuncelle(i, 'renk', val)} renkListesi={CAM_RENKLERI}
                     kaplama={lamCamlar[i].kaplama} setKaplama={(val) => handleLamCamGuncelle(i, 'kaplama', val)}
                     kenar={lamCamlar[i].kenar} setKenar={(val) => handleLamCamGuncelle(i, 'kenar', val)}
                     temper={lamCamlar[i].temper} setTemper={(val) => handleLamCamGuncelle(i, 'temper', val)}
@@ -631,7 +631,7 @@ export default function CamKombinasyonSihirbazi({ onKombinasyonSec, baslangicMet
               title="1. Dış Cam" bgColor="#f8fafc" borderColor="#cbd5e1"
               tip={disCamTipi} setTip={setDisCamTipi} kalinlik={disCamKalinlik} setKalinlik={setDisCamKalinlik}
               lamK1={disCamLamK1} setLamK1={setDisCamLamK1} lamK2={disCamLamK2} setLamK2={setDisCamLamK2} lamPVB={disCamLamPVB} setLamPVB={setDisCamLamPVB}
-              renk={disCamRenk} setRenk={setDisCamRenk} kaplama={disCamKaplama} setKaplama={setDisCamKaplama}
+              renk={disCamRenk} setRenk={setDisCamRenk} renkListesi={CAM_RENKLERI} kaplama={disCamKaplama} setKaplama={setDisCamKaplama}
               kenar={disKenar} setKenar={setDisKenar} temper={disTemper} setTemper={setDisTemper}
               delik={disDelik} setDelik={setDisDelik} oygu={disOygu} setOygu={setDisOygu}
             />
@@ -664,7 +664,7 @@ export default function CamKombinasyonSihirbazi({ onKombinasyonSec, baslangicMet
               title="2. İç Cam" bgColor="#f8fafc" borderColor="#cbd5e1"
               tip={icCamTipi} setTip={setIcCamTipi} kalinlik={icCamKalinlik} setKalinlik={setIcCamKalinlik}
               lamK1={icCamLamK1} setLamK1={setIcCamLamK1} lamK2={icCamLamK2} setLamK2={setIcCamLamK2} lamPVB={icCamLamPVB} setLamPVB={setIcCamLamPVB}
-              renk={icCamRenk} setRenk={setIcCamRenk} kaplama={icCamKaplama} setKaplama={setIcCamKaplama}
+              renk={icCamRenk} setRenk={setIcCamRenk} renkListesi={CAM_RENKLERI} kaplama={icCamKaplama} setKaplama={setIcCamKaplama}
               kenar={icKenar} setKenar={setIcKenar} temper={icTemper} setTemper={setIcTemper}
               delik={icDelik} setDelik={setIcDelik} oygu={icOygu} setOygu={setIcOygu}
             />
@@ -678,7 +678,7 @@ export default function CamKombinasyonSihirbazi({ onKombinasyonSec, baslangicMet
               title="1. Dış" bgColor="#f8fafc" borderColor="#cbd5e1" 
               tip={uDisCamTipi} setTip={setUDisCamTipi} kalinlik={uDisCamKalinlik} setKalinlik={setUDisCamKalinlik} 
               lamK1={uDisLamK1} setLamK1={setUDisLamK1} lamK2={uDisLamK2} setLamK2={setUDisLamK2} lamPVB={uDisLamPVB} setLamPVB={setUDisLamPVB} 
-              renk={uDisCamRenk} setRenk={setUDisCamRenk} kaplama={uDisCamKaplama} setKaplama={setUDisCamKaplama} 
+              renk={uDisCamRenk} setRenk={setUDisCamRenk} renkListesi={CAM_RENKLERI} kaplama={uDisCamKaplama} setKaplama={setUDisCamKaplama} 
               kenar={uDisKenar} setKenar={setUDisKenar} temper={uDisTemper} setTemper={setUDisTemper}
               delik={uDisDelik} setDelik={setUDisDelik} oygu={uDisOygu} setOygu={setUDisOygu}
             />
@@ -703,7 +703,7 @@ export default function CamKombinasyonSihirbazi({ onKombinasyonSec, baslangicMet
               title="2. Orta" bgColor="#f8fafc" borderColor="#cbd5e1" 
               tip={uOrtaCamTipi} setTip={setUOrtaCamTipi} kalinlik={uOrtaCamKalinlik} setKalinlik={setUOrtaCamKalinlik} 
               lamK1={uOrtaLamK1} setLamK1={setUOrtaLamK1} lamK2={uOrtaLamK2} setLamK2={setUOrtaLamK2} lamPVB={uOrtaLamPVB} setLamPVB={setUOrtaLamPVB} 
-              renk={uOrtaCamRenk} setRenk={setUOrtaCamRenk} kaplama={uOrtaCamKaplama} setKaplama={setUOrtaCamKaplama} 
+              renk={uOrtaCamRenk} setRenk={setUOrtaCamRenk} renkListesi={CAM_RENKLERI} kaplama={uOrtaCamKaplama} setKaplama={setUOrtaCamKaplama} 
               kenar={uOrtaKenar} setKenar={setUOrtaKenar} temper={uOrtaTemper} setTemper={setUOrtaTemper}
               delik={uOrtaDelik} setDelik={setUOrtaDelik} oygu={uOrtaOygu} setOygu={setUOrtaOygu}
             />
@@ -728,7 +728,7 @@ export default function CamKombinasyonSihirbazi({ onKombinasyonSec, baslangicMet
               title="3. İç" bgColor="#f8fafc" borderColor="#cbd5e1" 
               tip={uIcCamTipi} setTip={setUIcCamTipi} kalinlik={uIcCamKalinlik} setKalinlik={setUIcCamKalinlik} 
               lamK1={uIcLamK1} setLamK1={setUIcLamK1} lamK2={uIcLamK2} setLamK2={setUIcLamK2} lamPVB={uIcLamPVB} setLamPVB={setUIcLamPVB} 
-              renk={uIcCamRenk} setRenk={setUIcCamRenk} kaplama={uIcCamKaplama} setKaplama={setUIcCamKaplama} 
+              renk={uIcCamRenk} setRenk={setUIcCamRenk} renkListesi={CAM_RENKLERI} kaplama={uIcCamKaplama} setKaplama={setUIcCamKaplama} 
               kenar={uIcKenar} setKenar={setUIcKenar} temper={uIcTemper} setTemper={setUIcTemper}
               delik={uIcDelik} setDelik={setUIcDelik} oygu={uIcOygu} setOygu={setUIcOygu}
             />
