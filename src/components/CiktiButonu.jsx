@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React, { useState } from 'react';
 import { supabase } from "../lib/supabaseClient";
 import { teklifPdfIndir, proformaPdfIndir } from "../utils/pdfOlustur";
 import { imalatPdfIndir } from "../utils/pdfImalatOlustur";
@@ -6,14 +6,12 @@ import { imalatPdfIndir } from "../utils/pdfImalatOlustur";
 export default function CiktiButonu({ teklif, sepet, sepet2 = [], kullaniciRolu }) {
   const [islemDurumu, setIslemDurumu] = useState(null);
   
-  // AKILLI SAYAÇ VE HAFIZA STATE'LERİ (Orijinal Kodun)
   const [imalatSayaci, setImalatSayaci] = useState(1);
   const [sonSiparisNo, setSonSiparisNo] = useState("");
   const [sonSeciliUrunler, setSonSeciliUrunler] = useState("");
 
   if (sepet.length === 0 && sepet2.length === 0) return null;
 
-  // Seçilen ürünleri ve sipariş numarasını izleyen Akıllı Fonksiyon (Orijinal Kodun)
   const getAkilliImalatTeklifi = (seciliSepet1, seciliSepet2, tumuSeciliMi) => {
     const islemTeklifi = { ...teklif };
     if (!islemTeklifi.siparisNo) return islemTeklifi; 
@@ -46,6 +44,22 @@ export default function CiktiButonu({ teklif, sepet, sepet2 = [], kullaniciRolu 
     const yil = new Date().getFullYear();
     const belgeNo = `${yil}/${sayac.toString().padStart(3, "0")}`;
 
+    // Oturumdan ad soyad bilgisini güvenli bir şekilde çekiyoruz
+    let hazirlayanKisi = sessionStorage.getItem("karatas_personel_adi");
+    if (!hazirlayanKisi) {
+      try {
+        const oturumVerisi = JSON.parse(sessionStorage.getItem("karatas_oturum"));
+        if (oturumVerisi && oturumVerisi.kullanici) {
+          hazirlayanKisi = oturumVerisi.kullanici;
+        }
+      } catch (e) {
+        hazirlayanKisi = null;
+      }
+    }
+    if (!hazirlayanKisi) {
+      hazirlayanKisi = kullaniciRolu === 'admin' ? 'Yönetici' : 'Personel';
+    }
+
     const yeniKayit = {
       teklif_no: belgeNo,
       siparis_no: aktifTeklif.siparisNo || null, 
@@ -58,7 +72,8 @@ export default function CiktiButonu({ teklif, sepet, sepet2 = [], kullaniciRolu 
       tarih: new Date().toISOString(),
       sepet: imalatSepet1,
       sepet2: imalatSepet2,
-      onay_durumu: onayDurumu 
+      onay_durumu: onayDurumu,
+      hazirlayan: hazirlayanKisi // <-- Girdiğin Ad Soyad arşive yazılıyor
     };
 
     const { error } = await supabase.from("teklifler").insert([yeniKayit]);
@@ -132,7 +147,6 @@ export default function CiktiButonu({ teklif, sepet, sepet2 = [], kullaniciRolu 
     }
   }
 
-  // PERSONEL İÇİN TEK ONAY İSTEME FONKSİYONU
   async function personelOnayGonder() {
     setIslemDurumu("ONAY_GONDER");
     try {
@@ -147,7 +161,6 @@ export default function CiktiButonu({ teklif, sepet, sepet2 = [], kullaniciRolu 
     }
   }
 
-  // YETKİ KONTROLÜ: Yöneticiyse VEYA personel geçmişten onaylanmış belgeyi yüklediyse tam yetki açılır
   const belgeOnaylanmisMi = teklif.onayDurumu === 'onaylandi';
   const tamYetki = kullaniciRolu === 'admin' || belgeOnaylanmisMi;
 
@@ -158,11 +171,7 @@ export default function CiktiButonu({ teklif, sepet, sepet2 = [], kullaniciRolu 
       <div style={{ display: "flex", gap: "2rem", flexWrap: "wrap", alignItems: "flex-start", justifyContent: tamYetki ? 'flex-start' : 'center' }}>
         
         {tamYetki ? (
-          // ==========================================
-          // YÖNETİCİ VEYA ONAYLI BELGE EKRANI (Senin Orijinal Tasarımın)
-          // ==========================================
           <>
-            {/* TEKLİF BUTONLARI */}
             <div style={{ display: "flex", flexDirection: "column", gap: "5px" }}>
               <button 
                 className="buton" 
@@ -180,7 +189,6 @@ export default function CiktiButonu({ teklif, sepet, sepet2 = [], kullaniciRolu 
               </button>
             </div>
 
-            {/* PROFORMA BUTONLARI */}
             <div style={{ display: "flex", flexDirection: "column", gap: "5px" }}>
               <button 
                 className="buton" 
@@ -198,7 +206,6 @@ export default function CiktiButonu({ teklif, sepet, sepet2 = [], kullaniciRolu 
               </button>
             </div>
 
-            {/* İMALAT / KESİM LİSTESİ BUTONLARI */}
             <div style={{ display: "flex", flexDirection: "column", gap: "5px" }}>
               <button 
                 className="buton" 
@@ -226,9 +233,6 @@ export default function CiktiButonu({ teklif, sepet, sepet2 = [], kullaniciRolu 
             </div>
           </>
         ) : (
-          /* =========================================
-             PERSONEL EKRANI (Tek Onay Butonu - Orijinal Tasarıma Uygun)
-             ========================================= */
           <div style={{ width: '100%', maxWidth: '550px', textAlign: 'center' }}>
             <button 
               className="buton" 

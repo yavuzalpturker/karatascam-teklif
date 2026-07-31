@@ -48,11 +48,28 @@ export default function App() {
   };
 
   const cikisYap = () => {
+    // ÇIKIŞ YAPILDIĞINDA ESKİ SEPETLERİ VE FORM BİLGİLERİNİ TEMİZLİYORUZ
     sessionStorage.removeItem('karatas_oturum');
     sessionStorage.removeItem('karatas_rol');
+    sessionStorage.removeItem('karatas_personel_adi');
+    
     setGirisBasarili(false);
     setKullaniciRolu(null);
     setAktifSayfa("teklif");
+    setTeklif({
+      musteriAdi: "",
+      ilgiliKisi: "",
+      projeAdi: "",
+      teklifNo: "",
+      siparisNo: "",
+      odemeSekli: "",
+      tarih: new Date(),
+      onayDurumu: "onaylandi"
+    });
+    setSepet1([]);
+    setSepet2([]);
+    setSepet1Gecmis([]);
+    setSepet2Gecmis([]);
   };
 
   const [teklif, setTeklif] = useState({
@@ -69,14 +86,33 @@ export default function App() {
   const [sepet1, setSepet1] = useState([]);
   const [sepet2, setSepet2] = useState([]);
 
-  // --- GERİ AL (UNDO) İÇİN GEÇMİŞ (HISTORY) STATE'LERİ ---
   const [sepet1Gecmis, setSepet1Gecmis] = useState([]);
   const [sepet2Gecmis, setSepet2Gecmis] = useState([]);
 
   const [aktifSepetNumarasi, setAktifSepetNumarasi] = useState(1);
   const [islemVerisi, setIslemVerisi] = useState(null);
 
-  // --- GÜVENLİ SEPET GÜNCELLEME VE GERİ AL FONKSİYONLARI ---
+  const yeniTeklifBaslat = () => {
+    const onay = window.confirm("Mevcut sepet ve teklif bilgileri sıfırlanacak. Yeni teklif başlatmak istiyor musunuz?");
+    if (!onay) return;
+
+    setTeklif({
+      musteriAdi: "",
+      ilgiliKisi: "",
+      projeAdi: "",
+      teklifNo: "",
+      siparisNo: "",
+      odemeSekli: "",
+      tarih: new Date(),
+      onayDurumu: "onaylandi"
+    });
+    setSepet1([]);
+    setSepet2([]);
+    setSepet1Gecmis([]);
+    setSepet2Gecmis([]);
+    setIslemVerisi(null);
+  };
+
   const sepetGuncelle1 = (yeniSepet) => {
     setSepet1Gecmis(prev => [...prev, sepet1]);
     setSepet1(yeniSepet);
@@ -164,22 +200,31 @@ export default function App() {
           />
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', position: 'relative', zIndex: 9999, alignItems: 'flex-end' }}>
-            {kullaniciRolu === 'admin' && (
-              <div style={{ display: 'flex', gap: '8px' }}>
-                <button 
-                  onClick={() => setAktifSayfa(aktifSayfa === "onaylar" ? "teklif" : "onaylar")} 
-                  style={{ backgroundColor: '#0f2942', color: 'white', padding: '9px 16px', border: '1px solid rgba(255,255,255,0.35)', borderRadius: '6px', cursor: 'pointer', fontWeight: '700', fontSize: '13px', transition: 'all 0.2s ease' }}
-                >
-                  {aktifSayfa === "onaylar" ? "Teklif Ekranına Dön" : "Onay Bekleyenler"}
-                </button>
-                <button 
-                  onClick={() => setAktifSayfa(aktifSayfa === "ayarlar" ? "teklif" : "ayarlar")} 
-                  style={{ backgroundColor: '#ffffff', color: '#0f2942', padding: '9px 16px', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: '700', fontSize: '13px', transition: 'all 0.2s ease' }}
-                >
-                  {aktifSayfa === "ayarlar" ? "Teklif Ekranına Dön" : "Ayarlar"}
-                </button>
-              </div>
-            )}
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <button 
+                onClick={yeniTeklifBaslat}
+                style={{ backgroundColor: '#10b981', color: 'white', padding: '9px 16px', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: '700', fontSize: '13px', transition: 'all 0.2s ease', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}
+              >
+                ➕ Yeni Teklif (Temizle)
+              </button>
+
+              {kullaniciRolu === 'admin' && (
+                <>
+                  <button 
+                    onClick={() => setAktifSayfa(aktifSayfa === "onaylar" ? "teklif" : "onaylar")} 
+                    style={{ backgroundColor: '#0f2942', color: 'white', padding: '9px 16px', border: '1px solid rgba(255,255,255,0.35)', borderRadius: '6px', cursor: 'pointer', fontWeight: '700', fontSize: '13px', transition: 'all 0.2s ease' }}
+                  >
+                    {aktifSayfa === "onaylar" ? "Teklif Ekranına Dön" : "Onay Bekleyenler"}
+                  </button>
+                  <button 
+                    onClick={() => setAktifSayfa(aktifSayfa === "ayarlar" ? "teklif" : "ayarlar")} 
+                    style={{ backgroundColor: '#ffffff', color: '#0f2942', padding: '9px 16px', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: '700', fontSize: '13px', transition: 'all 0.2s ease' }}
+                  >
+                    {aktifSayfa === "ayarlar" ? "Teklif Ekranına Dön" : "Ayarlar"}
+                  </button>
+                </>
+              )}
+            </div>
 
             <button 
               onClick={cikisYap} 

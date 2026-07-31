@@ -1,12 +1,29 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
 export default function Login({ onLogin }) {
+  const [adSoyad, setAdSoyad] = useState('');
   const [kullaniciAdi, setKullaniciAdi] = useState('');
   const [sifre, setSifre] = useState('');
   const [hata, setHata] = useState('');
 
+  // Sayfa açıldığında bu bilgisayara daha önce kaydedilmiş bir isim varsa otomatik getir
+  useEffect(() => {
+    const kaydedilenIsim = localStorage.getItem('karatas_pc_hazirlayan_adi');
+    if (kaydedilenIsim) {
+      setAdSoyad(kaydedilenIsim);
+    }
+  }, []);
+
   const girisYap = (e) => {
     e.preventDefault();
+    
+    if (!adSoyad.trim()) {
+      setHata('Lütfen adınızı ve soyadınızı giriniz!');
+      return;
+    }
+    
+    // İsmi bu bilgisayarın hafızasına kalıcı olarak (localStorage ile) gömüyoruz
+    localStorage.setItem('karatas_pc_hazirlayan_adi', adSoyad.trim());
     
     const kayitliSifreler = JSON.parse(localStorage.getItem('karatas_sifreler')) || {
       adminKadi: 'karatas',
@@ -16,12 +33,13 @@ export default function Login({ onLogin }) {
     };
     
     if (kullaniciAdi === kayitliSifreler.adminKadi && sifre === kayitliSifreler.admin) {
-      // Sekme/tarayıcı kapanınca sıfırlanması için sessionStorage kullanıyoruz
-      sessionStorage.setItem('karatas_oturum', JSON.stringify({ aktif: true, rol: 'admin' }));
-      onLogin(true, 'admin');
+      sessionStorage.setItem('karatas_personel_adi', adSoyad.trim());
+      sessionStorage.setItem('karatas_oturum', JSON.stringify({ aktif: true, rol: 'admin', kullanici: adSoyad.trim() }));
+      onLogin(true, 'admin', adSoyad.trim());
     } else if (kullaniciAdi === kayitliSifreler.personelKadi && sifre === kayitliSifreler.personel) {
-      sessionStorage.setItem('karatas_oturum', JSON.stringify({ aktif: true, rol: 'calisan' }));
-      onLogin(true, 'calisan');
+      sessionStorage.setItem('karatas_personel_adi', adSoyad.trim());
+      sessionStorage.setItem('karatas_oturum', JSON.stringify({ aktif: true, rol: 'calisan', kullanici: adSoyad.trim() }));
+      onLogin(true, 'calisan', adSoyad.trim());
     } else {
       setHata('Kullanıcı adı veya şifre hatalı!');
     }
@@ -135,30 +153,48 @@ export default function Login({ onLogin }) {
           Teklif & Proforma Sistemi
         </div>
 
-        <div style={{ marginBottom: '30px' }}>
+        <div style={{ marginBottom: '25px' }}>
           <h2 style={{ color: '#2b3035', fontSize: '18px', margin: '0 0 5px 0', fontWeight: '700' }}>Sisteme Hoş Geldiniz 👋</h2>
-          <p style={{ color: '#6c757d', fontSize: '14px', margin: '0' }}>Devam etmek için lütfen giriş yapınız.</p>
+          <p style={{ color: '#6c757d', fontSize: '14px', margin: '0' }}>Bu bilgisayar için bilgilerinizi giriniz.</p>
         </div>
         
         <form onSubmit={girisYap}>
-          <div style={{ marginBottom: '20px', textAlign: 'left' }}>
-            <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', color: '#495057', fontWeight: '700' }}>Kullanıcı Adı</label>
+          <div style={{ marginBottom: '16px', textAlign: 'left' }}>
+            <label style={{ display: 'block', marginBottom: '6px', fontSize: '13px', color: '#495057', fontWeight: '700' }}>Adınız Soyadınız </label>
             <input 
               type="text" 
               className="input-focus"
-              value={kullaniciAdi} 
-              onChange={(e) => setKullaniciAdi(e.target.value)} 
+              value={adSoyad} 
+              onChange={(e) => setAdSoyad(e.target.value)} 
+              
               style={{ 
-                width: '100%', padding: '14px 16px', borderRadius: '10px', 
-                border: '1px solid #dee2e6', fontSize: '15px', boxSizing: 'border-box',
+                width: '100%', padding: '12px 16px', borderRadius: '10px', 
+                border: '1px solid #dee2e6', fontSize: '14px', boxSizing: 'border-box',
                 outline: 'none', backgroundColor: '#f8f9fa', transition: 'all 0.2s'
               }} 
               required 
             />
           </div>
 
-          <div style={{ marginBottom: '30px', textAlign: 'left' }}>
-            <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', color: '#495057', fontWeight: '700' }}>Şifre</label>
+          <div style={{ marginBottom: '16px', textAlign: 'left' }}>
+            <label style={{ display: 'block', marginBottom: '6px', fontSize: '13px', color: '#495057', fontWeight: '700' }}>Kullanıcı Adı</label>
+            <input 
+              type="text" 
+              className="input-focus"
+              value={kullaniciAdi} 
+              onChange={(e) => setKullaniciAdi(e.target.value)} 
+              placeholder="Sistem kullanıcı adı"
+              style={{ 
+                width: '100%', padding: '12px 16px', borderRadius: '10px', 
+                border: '1px solid #dee2e6', fontSize: '14px', boxSizing: 'border-box',
+                outline: 'none', backgroundColor: '#f8f9fa', transition: 'all 0.2s'
+              }} 
+              required 
+            />
+          </div>
+
+          <div style={{ marginBottom: '25px', textAlign: 'left' }}>
+            <label style={{ display: 'block', marginBottom: '6px', fontSize: '13px', color: '#495057', fontWeight: '700' }}>Şifre</label>
             <input 
               type="password" 
               className="input-focus"
@@ -166,8 +202,8 @@ export default function Login({ onLogin }) {
               onChange={(e) => setSifre(e.target.value)} 
               placeholder="••••••••"
               style={{ 
-                width: '100%', padding: '14px 16px', borderRadius: '10px', 
-                border: '1px solid #dee2e6', fontSize: '15px', boxSizing: 'border-box',
+                width: '100%', padding: '12px 16px', borderRadius: '10px', 
+                border: '1px solid #dee2e6', fontSize: '14px', boxSizing: 'border-box',
                 outline: 'none', backgroundColor: '#f8f9fa', transition: 'all 0.2s'
               }} 
               required 
@@ -176,9 +212,9 @@ export default function Login({ onLogin }) {
           
           {hata && (
             <div style={{ 
-              color: '#842029', backgroundColor: '#f8d7da', padding: '12px', 
-              borderRadius: '8px', marginBottom: '20px', fontSize: '14px', fontWeight: 'bold',
-              border: '1px solid #f5c2c7', animation: 'fadeUp 0.3s ease-out'
+              color: '#842029', backgroundColor: '#f8d7da', padding: '10px', 
+              borderRadius: '8px', marginBottom: '15px', fontSize: '13px', fontWeight: 'bold',
+              border: '1px solid #f5c2c7'
             }}>
               {hata}
             </div>
@@ -188,18 +224,17 @@ export default function Login({ onLogin }) {
             type="submit" 
             className="login-btn"
             style={{ 
-              width: '100%', padding: '16px', backgroundColor: '#1a4f76', 
+              width: '100%', padding: '15px', backgroundColor: '#1a4f76', 
               color: 'white', border: 'none', borderRadius: '10px', 
-              fontSize: '16px', fontWeight: 'bold', cursor: 'pointer',
-              boxShadow: '0 4px 6px rgba(26, 79, 118, 0.2)',
-              marginTop: '5px'
+              fontSize: '15px', fontWeight: 'bold', cursor: 'pointer',
+              boxShadow: '0 4px 6px rgba(26, 79, 118, 0.2)'
             }}
           >
             GÜVENLİ GİRİŞ YAP
           </button>
         </form>
 
-        <div style={{ marginTop: '30px', fontSize: '13px', color: '#adb5bd', fontWeight: '500' }}>
+        <div style={{ marginTop: '25px', fontSize: '12px', color: '#adb5bd', fontWeight: '500' }}>
           &copy; {new Date().getFullYear()} Karataşcam Şişecam. Tüm hakları saklıdır.
         </div>
       </div>

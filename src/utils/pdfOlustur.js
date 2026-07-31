@@ -325,10 +325,13 @@ export async function teklifPdfIndir(teklif, sepet1, sepet2 = [], teklifNo, oniz
     defaultStyle: { font: "Roboto" },
   };
 
-  const dosyaAdi = `Karatascam_Teklif_${teklif.musteriAdi || "Yeni"}_${belgeNo}.pdf`;
+  const temizMusteri = (teklif.musteriAdi || "Yeni").replace(/[^a-zA-Z0-9çÇğĞıİöÖşŞüÜ]/g, "_");
+  const temizProje = (teklif.projeAdi || "Proje").replace(/[^a-zA-Z0-9çÇğĞıİöÖşŞüÜ]/g, "_");
+  const dosyaAdi = `Karatascam_Teklif_${temizMusteri}_${temizProje}_${belgeNo}.pdf`;
+
   const pdfDoc = pdfMake.createPdf(docDefinition);
   if (onizlemeMi) {
-    pdfDoc.open();
+    pdfDoc.open({ filename: dosyaAdi });
   } else {
     pdfDoc.download(dosyaAdi);
   }
@@ -441,7 +444,7 @@ export async function proformaPdfIndir(teklif, sepet1, sepet2 = [], teklifNo, on
   const ikiliMi = temizSepet2 && temizSepet2.length > 0;
 
   const sonuc1 = proformaTabloOlustur(temizSepet1, ikiliMi ? "1. SEÇENEK" : null);
-  const sonuc2 = ikiliMi ? proformaTabloOlustur(temizSepet2, "2. SEÇENEK") : null;
+  const sonuc2 = ikiliMi ? proformaTabloOlustur(temizSepet2, "2. Seçenek") : null;
 
   let kisi = (teklif.ilgiliKisi || "").toLocaleUpperCase("tr-TR");
   kisi = kisi.replace(/DİKKATİNE/g, "").replace(/[,;]/g, "").trim();
@@ -565,10 +568,13 @@ export async function proformaPdfIndir(teklif, sepet1, sepet2 = [], teklifNo, on
     defaultStyle: { font: "Roboto" },
   };
 
-  const dosyaAdi = `Proforma_Fatura_${teklif.musteriAdi || "Yeni"}_${belgeNo}.pdf`;
+  const temizMusteri = (teklif.musteriAdi || "Yeni").replace(/[^a-zA-Z0-9çÇğĞıİöÖşŞüÜ]/g, "_");
+  const temizProje = (teklif.projeAdi || "Proje").replace(/[^a-zA-Z0-9çÇğĞıİöÖşŞüÜ]/g, "_");
+  const dosyaAdi = `Proforma_Fatura_${temizMusteri}_${temizProje}_${belgeNo}.pdf`;
+
   const pdfDoc = pdfMake.createPdf(docDefinition);
   if (onizlemeMi) {
-    pdfDoc.open();
+    pdfDoc.open({ filename: dosyaAdi });
   } else {
     pdfDoc.download(dosyaAdi);
   }
