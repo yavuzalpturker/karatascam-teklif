@@ -134,7 +134,7 @@ const CamKatmaniSecici = ({
   </div>
 );
 
-export default function CamKombinasyonSihirbazi({ onKombinasyonSec, baslangicMetni }) {
+export default function CamKombinasyonSihirbazi({ onKombinasyonSec, baslangicMetni, baslangicVerisi }) {
   const [camTuru, setCamTuru] = useState("isicam");
 
   const [tekCamKalinlik, setTekCamKalinlik] = useState("4 mm");
@@ -269,8 +269,109 @@ export default function CamKombinasyonSihirbazi({ onKombinasyonSec, baslangicMet
     setLamPvbLer(yeniPvb);
   };
 
-  // --- AKILLI PARSER ---
+  // --- ARTIK PARSER İLE UĞRAŞMIYORUZ: DOĞRUDAN HAFIZADAN GERİ YÜKLEME ---
   useEffect(() => {
+    if (baslangicVerisi) {
+      if(baslangicVerisi.camTuru) setCamTuru(baslangicVerisi.camTuru);
+
+      if(baslangicVerisi.tekCamKalinlik) setTekCamKalinlik(baslangicVerisi.tekCamKalinlik);
+      if(baslangicVerisi.tekCamRenk) setTekCamRenk(baslangicVerisi.tekCamRenk);
+      if(baslangicVerisi.tekCamKaplama) setTekCamKaplama(baslangicVerisi.tekCamKaplama);
+      if(baslangicVerisi.tekKenar) setTekKenar(baslangicVerisi.tekKenar);
+      if(baslangicVerisi.tekTemper) setTekTemper(baslangicVerisi.tekTemper);
+      if(baslangicVerisi.tekDelik) setTekDelik(baslangicVerisi.tekDelik);
+      if(baslangicVerisi.tekOygu) setTekOygu(baslangicVerisi.tekOygu);
+
+      if(baslangicVerisi.aynaKalinlik) setAynaKalinlik(baslangicVerisi.aynaKalinlik);
+      if(baslangicVerisi.aynaRenk) setAynaRenk(baslangicVerisi.aynaRenk);
+      if(baslangicVerisi.aynaKenar) setAynaKenar(baslangicVerisi.aynaKenar);
+      if(baslangicVerisi.aynaTemper) setAynaTemper(baslangicVerisi.aynaTemper);
+      if(baslangicVerisi.aynaDelik) setAynaDelik(baslangicVerisi.aynaDelik);
+      if(baslangicVerisi.aynaOygu) setAynaOygu(baslangicVerisi.aynaOygu);
+
+      if(baslangicVerisi.lamineKatmanSayisi) setLamineKatmanSayisi(baslangicVerisi.lamineKatmanSayisi);
+      if(baslangicVerisi.lamCamlar) setLamCamlar(baslangicVerisi.lamCamlar);
+      if(baslangicVerisi.lamPvbLer) setLamPvbLer(baslangicVerisi.lamPvbLer);
+
+      if(baslangicVerisi.disCamTipi) setDisCamTipi(baslangicVerisi.disCamTipi);
+      if(baslangicVerisi.disCamKalinlik) setDisCamKalinlik(baslangicVerisi.disCamKalinlik);
+      if(baslangicVerisi.disCamLamK1) setDisCamLamK1(baslangicVerisi.disCamLamK1);
+      if(baslangicVerisi.disCamLamK2) setDisCamLamK2(baslangicVerisi.disCamLamK2);
+      if(baslangicVerisi.disCamLamPVB) setDisCamLamPVB(baslangicVerisi.disCamLamPVB);
+      if(baslangicVerisi.disCamRenk) setDisCamRenk(baslangicVerisi.disCamRenk);
+      if(baslangicVerisi.disCamKaplama) setDisCamKaplama(baslangicVerisi.disCamKaplama);
+      if(baslangicVerisi.disKenar) setDisKenar(baslangicVerisi.disKenar);
+      if(baslangicVerisi.disTemper) setDisTemper(baslangicVerisi.disTemper);
+      if(baslangicVerisi.disDelik) setDisDelik(baslangicVerisi.disDelik);
+      if(baslangicVerisi.disOygu) setDisOygu(baslangicVerisi.disOygu);
+
+      if(baslangicVerisi.citaKalinlik) setCitaKalinlik(baslangicVerisi.citaKalinlik);
+      if(baslangicVerisi.citaTipi) setCitaTipi(baslangicVerisi.citaTipi);
+      if(baslangicVerisi.gazTipi) setGazTipi(baslangicVerisi.gazTipi);
+      if(baslangicVerisi.dolguTipi) setDolguTipi(baslangicVerisi.dolguTipi);
+
+      if(baslangicVerisi.icCamTipi) setIcCamTipi(baslangicVerisi.icCamTipi);
+      if(baslangicVerisi.icCamKalinlik) setIcCamKalinlik(baslangicVerisi.icCamKalinlik);
+      if(baslangicVerisi.icCamLamK1) setIcCamLamK1(baslangicVerisi.icCamLamK1);
+      if(baslangicVerisi.icCamLamK2) setIcCamLamK2(baslangicVerisi.icCamLamK2);
+      if(baslangicVerisi.icCamLamPVB) setIcCamLamPVB(baslangicVerisi.icCamLamPVB);
+      if(baslangicVerisi.icCamRenk) setIcCamRenk(baslangicVerisi.icCamRenk);
+      if(baslangicVerisi.icCamKaplama) setIcCamKaplama(baslangicVerisi.icCamKaplama);
+      if(baslangicVerisi.icKenar) setIcKenar(baslangicVerisi.icKenar);
+      if(baslangicVerisi.icTemper) setIcTemper(baslangicVerisi.icTemper);
+      if(baslangicVerisi.icDelik) setIcDelik(baslangicVerisi.icDelik);
+      if(baslangicVerisi.icOygu) setIcOygu(baslangicVerisi.icOygu);
+
+      if(baslangicVerisi.uDisCamTipi) setUDisCamTipi(baslangicVerisi.uDisCamTipi);
+      if(baslangicVerisi.uDisCamKalinlik) setUDisCamKalinlik(baslangicVerisi.uDisCamKalinlik);
+      if(baslangicVerisi.uDisLamK1) setUDisLamK1(baslangicVerisi.uDisLamK1);
+      if(baslangicVerisi.uDisLamK2) setUDisLamK2(baslangicVerisi.uDisLamK2);
+      if(baslangicVerisi.uDisLamPVB) setUDisLamPVB(baslangicVerisi.uDisLamPVB);
+      if(baslangicVerisi.uDisCamRenk) setUDisCamRenk(baslangicVerisi.uDisCamRenk);
+      if(baslangicVerisi.uDisCamKaplama) setUDisCamKaplama(baslangicVerisi.uDisCamKaplama);
+      if(baslangicVerisi.uDisKenar) setUDisKenar(baslangicVerisi.uDisKenar);
+      if(baslangicVerisi.uDisTemper) setUDisTemper(baslangicVerisi.uDisTemper);
+      if(baslangicVerisi.uDisDelik) setUDisDelik(baslangicVerisi.uDisDelik);
+      if(baslangicVerisi.uDisOygu) setUDisOygu(baslangicVerisi.uDisOygu);
+
+      if(baslangicVerisi.uCita1Kalinlik) setUCita1Kalinlik(baslangicVerisi.uCita1Kalinlik);
+      if(baslangicVerisi.uCita1Tipi) setUCita1Tipi(baslangicVerisi.uCita1Tipi);
+      if(baslangicVerisi.uGaz1Tipi) setUGaz1Tipi(baslangicVerisi.uGaz1Tipi);
+      if(baslangicVerisi.uDolgu1Tipi) setUDolgu1Tipi(baslangicVerisi.uDolgu1Tipi);
+
+      if(baslangicVerisi.uOrtaCamTipi) setUOrtaCamTipi(baslangicVerisi.uOrtaCamTipi);
+      if(baslangicVerisi.uOrtaCamKalinlik) setUOrtaCamKalinlik(baslangicVerisi.uOrtaCamKalinlik);
+      if(baslangicVerisi.uOrtaLamK1) setUOrtaLamK1(baslangicVerisi.uOrtaLamK1);
+      if(baslangicVerisi.uOrtaLamK2) setUOrtaLamK2(baslangicVerisi.uOrtaLamK2);
+      if(baslangicVerisi.uOrtaLamPVB) setUOrtaLamPVB(baslangicVerisi.uOrtaLamPVB);
+      if(baslangicVerisi.uOrtaCamRenk) setUOrtaCamRenk(baslangicVerisi.uOrtaCamRenk);
+      if(baslangicVerisi.uOrtaCamKaplama) setUOrtaCamKaplama(baslangicVerisi.uOrtaCamKaplama);
+      if(baslangicVerisi.uOrtaKenar) setUOrtaKenar(baslangicVerisi.uOrtaKenar);
+      if(baslangicVerisi.uOrtaTemper) setUOrtaTemper(baslangicVerisi.uOrtaTemper);
+      if(baslangicVerisi.uOrtaDelik) setUOrtaDelik(baslangicVerisi.uOrtaDelik);
+      if(baslangicVerisi.uOrtaOygu) setUOrtaOygu(baslangicVerisi.uOrtaOygu);
+
+      if(baslangicVerisi.uCita2Kalinlik) setUCita2Kalinlik(baslangicVerisi.uCita2Kalinlik);
+      if(baslangicVerisi.uCita2Tipi) setUCita2Tipi(baslangicVerisi.uCita2Tipi);
+      if(baslangicVerisi.uGaz2Tipi) setUGaz2Tipi(baslangicVerisi.uGaz2Tipi);
+      if(baslangicVerisi.uDolgu2Tipi) setUDolgu2Tipi(baslangicVerisi.uDolgu2Tipi);
+
+      if(baslangicVerisi.uIcCamTipi) setUIcCamTipi(baslangicVerisi.uIcCamTipi);
+      if(baslangicVerisi.uIcCamKalinlik) setUIcCamKalinlik(baslangicVerisi.uIcCamKalinlik);
+      if(baslangicVerisi.uIcLamK1) setUIcLamK1(baslangicVerisi.uIcLamK1);
+      if(baslangicVerisi.uIcLamK2) setUIcLamK2(baslangicVerisi.uIcLamK2);
+      if(baslangicVerisi.uIcLamPVB) setUIcLamPVB(baslangicVerisi.uIcLamPVB);
+      if(baslangicVerisi.uIcCamRenk) setUIcCamRenk(baslangicVerisi.uIcCamRenk);
+      if(baslangicVerisi.uIcCamKaplama) setUIcCamKaplama(baslangicVerisi.uIcCamKaplama);
+      if(baslangicVerisi.uIcKenar) setUIcKenar(baslangicVerisi.uIcKenar);
+      if(baslangicVerisi.uIcTemper) setUIcTemper(baslangicVerisi.uIcTemper);
+      if(baslangicVerisi.uIcDelik) setUIcDelik(baslangicVerisi.uIcDelik);
+      if(baslangicVerisi.uIcOygu) setUIcOygu(baslangicVerisi.uIcOygu);
+      
+      return; // HAFIZA VARSA, STRING PARÇALAMA YAPMA ÇÜNKÜ ZATEN TAM 12'DEN VERİ GELDİ!
+    }
+
+    // (Eskiden kalan, hafızası olmayan eski sepet ürünleri için geliştirilmiş parselama yedeği)
     if (!baslangicMetni) return;
     const m = baslangicMetni;
     const upperM = m.toLocaleUpperCase("tr-TR");
@@ -283,18 +384,15 @@ export default function CamKombinasyonSihirbazi({ onKombinasyonSec, baslangicMet
 
     const parseCamStr = (str, setTip, setKal, setK1, setK2, setPvb, setRenk, setKap, setKenar, setTemper, setDelik, setOygu, isAyna = false) => {
       if (!str) return;
-      
-      if (str.toLocaleUpperCase("tr-TR").includes("LAMİNE")) {
+      const lamineMatch = str.match(/(\d+)\s*\+\s*(\d+)\s*mm/);
+      if (lamineMatch || str.toLocaleUpperCase("tr-TR").includes("LAMİNE")) {
         setTip("lamine");
-        const lamineMatch = str.match(/(\d+)\+(\d+)\s*mm/);
         if (lamineMatch) {
           setK1(`${lamineMatch[1]} mm`);
           setK2(`${lamineMatch[2]} mm`);
         }
         let pvbBulundu = "Şeffaf PVB (0.38)";
-        for(let p of PVB_TURLERI) {
-          if (str.includes(p)) { pvbBulundu = p; break; }
-        }
+        for(let p of PVB_TURLERI) { if (str.includes(p)) { pvbBulundu = p; break; } }
         setPvb(pvbBulundu);
       } else {
         setTip("tek");
@@ -304,19 +402,12 @@ export default function CamKombinasyonSihirbazi({ onKombinasyonSec, baslangicMet
 
       let renkBulundu = isAyna ? "Düz Ayna" : "Clear (Şeffaf)";
       const kaynakListe = isAyna ? AYNA_RENKLERI : CAM_RENKLERI;
-      for (let r of kaynakListe) {
-        if (str.includes(r)) { renkBulundu = r; break; }
-      }
+      for (let r of kaynakListe) { if (str.includes(r)) { renkBulundu = r; break; } }
       setRenk(renkBulundu);
 
       let kapBulundu = "Kaplamasız (Düzcam)";
       const siraliKaplamalar = [...KAPLAMA_TURLERI].sort((a,b) => b.length - a.length);
-      for (let kp of siraliKaplamalar) {
-        if (kp !== "Kaplamasız (Düzcam)" && str.includes(kp)) {
-          kapBulundu = kp;
-          break;
-        }
-      }
+      for (let kp of siraliKaplamalar) { if (kp !== "Kaplamasız (Düzcam)" && str.includes(kp)) { kapBulundu = kp; break; } }
       setKap(kapBulundu);
 
       if (str.includes("Rodajlı")) setKenar("Rodajlı");
@@ -337,92 +428,29 @@ export default function CamKombinasyonSihirbazi({ onKombinasyonSec, baslangicMet
       if (!str) return;
       const kalMatch = str.match(/(\d+\s*mm)/);
       if (kalMatch) setKal(kalMatch[1]);
-
-      for (let ct of CITA_TIPLERI) {
-        if (str.includes(ct)) { setTip(ct); break; }
-      }
-
-      for (let g of GAZ_TIPLERI) {
-        if (str.includes(g)) { setGaz(g); break; }
-      }
-
+      for (let ct of CITA_TIPLERI) { if (str.includes(ct)) { setTip(ct); break; } }
+      for (let g of GAZ_TIPLERI) { if (str.includes(g)) { setGaz(g); break; } }
       let dolguBulundu = "Dolgu Yok";
-      for (let dt of DOLGU_TIPLERI) {
-        if (dt !== "Dolgu Yok" && str.includes(dt)) { dolguBulundu = dt; break; }
-      }
+      for (let dt of DOLGU_TIPLERI) { if (dt !== "Dolgu Yok" && str.includes(dt)) { dolguBulundu = dt; break; } }
       setDolgu(dolguBulundu);
     };
 
-    let parts = m.split(/\)\s*\+\s*\(/);
-    if (parts.length > 0) {
-      parts[0] = parts[0].replace(/^\(/, "");
-      parts[parts.length - 1] = parts[parts.length - 1].replace(/\)\s*(ISICAM|ÜÇLÜ ISICAM|LAMİNE CAM|AYNA|CAM).*$/i, "");
-    }
+    let parts = m.replace(/\s*(ISICAM|ÜÇLÜ ISICAM|LAMİNE CAM|AYNA|CAM)$/i, "").split(/\s+\+\s+/);
 
-    if (upperM.includes("ÜÇLÜ ISICAM")) {
-      if (parts[0]) parseCamStr(parts[0], setUDisCamTipi, setUDisCamKalinlik, setUDisLamK1, setUDisLamK2, setUDisLamPVB, setUDisCamRenk, setUDisCamKaplama, setUDisKenar, setUDisTemper, setUDisDelik, setUDisOygu);
-      if (parts[1]) parseBoslukStr(parts[1], setUCita1Kalinlik, setUCita1Tipi, setUGaz1Tipi, setUDolgu1Tipi);
-      if (parts[2]) parseCamStr(parts[2], setUOrtaCamTipi, setUOrtaCamKalinlik, setUOrtaLamK1, setUOrtaLamK2, setUOrtaLamPVB, setUOrtaCamRenk, setUOrtaCamKaplama, setUOrtaKenar, setUOrtaTemper, setUOrtaDelik, setUOrtaOygu);
-      if (parts[3]) parseBoslukStr(parts[3], setUCita2Kalinlik, setUCita2Tipi, setUGaz2Tipi, setUDolgu2Tipi);
-      if (parts[4]) parseCamStr(parts[4], setUIcCamTipi, setUIcCamKalinlik, setUIcLamK1, setUIcLamK2, setUIcLamPVB, setUIcCamRenk, setUIcCamKaplama, setUIcKenar, setUIcTemper, setUIcDelik, setUIcOygu);
-    } 
-    else if (upperM.includes("ISICAM")) {
+    if (upperM.includes("ISICAM") && !upperM.includes("ÜÇLÜ")) {
       if (parts[0]) parseCamStr(parts[0], setDisCamTipi, setDisCamKalinlik, setDisCamLamK1, setDisCamLamK2, setDisCamLamPVB, setDisCamRenk, setDisCamKaplama, setDisKenar, setDisTemper, setDisDelik, setDisOygu);
       if (parts[1]) parseBoslukStr(parts[1], setCitaKalinlik, setCitaTipi, setGazTipi, setDolguTipi);
-      if (parts[2]) parseCamStr(parts[2], setIcCamTipi, setIcCamKalinlik, setIcCamLamK1, setIcCamLamK2, setIcCamLamPVB, setIcCamRenk, setIcCamKaplama, setIcKenar, setIcTemper, setIcDelik, setIcOygu);
+      if (parts.length === 4) {
+        parseBoslukStr(parts[2], () => {}, () => {}, () => {}, setDolguTipi);
+        parseCamStr(parts[3], setIcCamTipi, setIcCamKalinlik, setIcCamLamK1, setIcCamLamK2, setIcCamLamPVB, setIcCamRenk, setIcCamKaplama, setIcKenar, setIcTemper, setIcDelik, setIcOygu);
+      } else if (parts[2]) {
+        parseCamStr(parts[2], setIcCamTipi, setIcCamKalinlik, setIcCamLamK1, setIcCamLamK2, setIcCamLamPVB, setIcCamRenk, setIcCamKaplama, setIcKenar, setIcTemper, setIcDelik, setIcOygu);
+      }
     }
-    else if (upperM.includes("LAMİNE CAM")) {
-      const camPvbList = parts.filter(p => p.trim() !== "");
-      
-      const tempCamlar = [
-        { kalinlik: "4 mm", renk: "Clear (Şeffaf)", kaplama: "Kaplamasız (Düzcam)", kenar: "Düz Kesim (İşlemsiz)", temper: "Tempersiz", delik: "Delik Yok", oygu: "Oygu Yok" },
-        { kalinlik: "4 mm", renk: "Clear (Şeffaf)", kaplama: "Kaplamasız (Düzcam)", kenar: "Düz Kesim (İşlemsiz)", temper: "Tempersiz", delik: "Delik Yok", oygu: "Oygu Yok" },
-        { kalinlik: "4 mm", renk: "Clear (Şeffaf)", kaplama: "Kaplamasız (Düzcam)", kenar: "Düz Kesim (İşlemsiz)", temper: "Tempersiz", delik: "Delik Yok", oygu: "Oygu Yok" },
-        { kalinlik: "4 mm", renk: "Clear (Şeffaf)", kaplama: "Kaplamasız (Düzcam)", kenar: "Düz Kesim (İşlemsiz)", temper: "Tempersiz", delik: "Delik Yok", oygu: "Oygu Yok" },
-        { kalinlik: "4 mm", renk: "Clear (Şeffaf)", kaplama: "Kaplamasız (Düzcam)", kenar: "Düz Kesim (İşlemsiz)", temper: "Tempersiz", delik: "Delik Yok", oygu: "Oygu Yok" }
-      ];
-      const tempPvbler = ["Şeffaf PVB (0.38)", "Şeffaf PVB (0.38)", "Şeffaf PVB (0.38)", "Şeffaf PVB (0.38)"];
-      
-      let cIdx = 0;
-      let pIdx = 0;
-      
-      camPvbList.forEach((part) => {
-        let isPvb = false;
-        let pvbVal = "Şeffaf PVB (0.38)";
-        for (let p of PVB_TURLERI) {
-          if (part.includes(p)) { isPvb = true; pvbVal = p; break; }
-        }
-        
-        if (isPvb) {
-          if (pIdx < 4) tempPvbler[pIdx++] = pvbVal;
-        } else {
-          if (cIdx < 5) {
-            parseCamStr(part, () => {}, 
-              (val) => tempCamlar[cIdx].kalinlik = val,
-              () => {}, () => {}, () => {}, 
-              (val) => tempCamlar[cIdx].renk = val,
-              (val) => tempCamlar[cIdx].kaplama = val,
-              (val) => tempCamlar[cIdx].kenar = val,
-              (val) => tempCamlar[cIdx].temper = val,
-              (val) => tempCamlar[cIdx].delik = val,
-              (val) => tempCamlar[cIdx].oygu = val
-            );
-            cIdx++;
-          }
-        }
-      });
-      setLamineKatmanSayisi(cIdx > 1 ? cIdx : 2);
-      setLamCamlar(tempCamlar);
-      setLamPvbLer(tempPvbler);
-    }
-    else if (upperM.includes("AYNA")) {
-      parseCamStr(m, () => {}, setAynaKalinlik, setAynaKalinlik, setAynaKalinlik, () => {}, setAynaRenk, () => {}, setAynaKenar, setAynaTemper, setAynaDelik, setAynaOygu, true);
-    }
-    else if (upperM.includes("CAM")) {
-      parseCamStr(m, () => {}, setTekCamKalinlik, setTekCamKalinlik, setTekCamKalinlik, () => {}, setTekCamRenk, setTekCamKaplama, setTekKenar, setTekTemper, setTekDelik, setTekOygu);
-    }
+    else if (upperM.includes("AYNA")) parseCamStr(m, () => {}, setAynaKalinlik, setAynaKalinlik, setAynaKalinlik, () => {}, setAynaRenk, () => {}, setAynaKenar, setAynaTemper, setAynaDelik, setAynaOygu, true);
+    else if (upperM.includes("CAM")) parseCamStr(m, () => {}, setTekCamKalinlik, setTekCamKalinlik, setTekCamKalinlik, () => {}, setTekCamRenk, setTekCamKaplama, setTekKenar, setTekTemper, setTekDelik, setTekOygu);
 
-  }, [baslangicMetni]);
+  }, [baslangicMetni, baslangicVerisi]);
 
   // --- İSİM OLUŞTURUCU ---
   const formatPane = (tip, kal, lamK1, lamK2, pvb, renk, kap, kenar, temper, delik, oygu, isAyna = false) => {
@@ -504,7 +532,22 @@ export default function CamKombinasyonSihirbazi({ onKombinasyonSec, baslangicMet
   ]);
 
   const aktar = () => {
-    if (onKombinasyonSec) onKombinasyonSec(olusturulanIsim);
+    // SİHİRBAZ KENDİ HAFIZASINI DA FORMA YEDEKLEYİP GÖNDERİYOR (GERİ YÜKLEME İÇİN)
+    const durum = {
+      camTuru,
+      tekCamKalinlik, tekCamRenk, tekCamKaplama, tekKenar, tekTemper, tekDelik, tekOygu,
+      aynaKalinlik, aynaRenk, aynaKenar, aynaTemper, aynaDelik, aynaOygu,
+      lamineKatmanSayisi, lamCamlar, lamPvbLer,
+      disCamTipi, disCamKalinlik, disCamLamK1, disCamLamK2, disCamLamPVB, disCamRenk, disCamKaplama, disKenar, disTemper, disDelik, disOygu,
+      citaKalinlik, citaTipi, gazTipi, dolguTipi,
+      icCamTipi, icCamKalinlik, icCamLamK1, icCamLamK2, icCamLamPVB, icCamRenk, icCamKaplama, icKenar, icTemper, icDelik, icOygu,
+      uDisCamTipi, uDisCamKalinlik, uDisLamK1, uDisLamK2, uDisLamPVB, uDisCamRenk, uDisCamKaplama, uDisKenar, uDisTemper, uDisDelik, uDisOygu,
+      uCita1Kalinlik, uCita1Tipi, uGaz1Tipi, uDolgu1Tipi,
+      uOrtaCamTipi, uOrtaCamKalinlik, uOrtaLamK1, uOrtaLamK2, uOrtaLamPVB, uOrtaCamRenk, uOrtaCamKaplama, uOrtaKenar, uOrtaTemper, uOrtaDelik, uOrtaOygu,
+      uCita2Kalinlik, uCita2Tipi, uGaz2Tipi, uDolgu2Tipi,
+      uIcCamTipi, uIcCamKalinlik, uIcLamK1, uIcLamK2, uIcLamPVB, uIcCamRenk, uIcCamKaplama, uIcKenar, uIcTemper, uIcDelik, uIcOygu
+    };
+    if (onKombinasyonSec) onKombinasyonSec(olusturulanIsim, durum);
   };
 
   return (
