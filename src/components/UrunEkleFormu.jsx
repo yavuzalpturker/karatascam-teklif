@@ -44,7 +44,7 @@ export default function UrunEkleFormu({
 
   const [eklenenOzelUrunler, setEklenenOzelUrunler] = useState([]);
   
-  // YENİ: SİHİRBAZIN HAFIZASINI TUTAN STATE
+  // SİHİRBAZIN HAFIZASINI TUTAN STATE
   const [sihirbazVerisi, setSihirbazVerisi] = useState(null);
 
   // --- CAM ÖLÇÜLERİNE VE ADETE GÖRE OTOMATİK KAROLAJ METRETÜL HESABI ---
@@ -87,7 +87,11 @@ export default function UrunEkleFormu({
       setArama(gelenAd);
       
       setSecilenId(ham.secilenId || "ozel_urun");
-      setOzelAciklama(satir.ozelAciklama || ham.ozelAciklama || "");
+      
+      // ÖNEMLİ DÜZELTME: Sadece saf özel açıklamayı (ham.ozelAciklama) yüklüyoruz.
+      // Ölçü metinleri artık form giriş alanına yapışıp kalmayacak!
+      setOzelAciklama(ham.ozelAciklama || ""); 
+      
       setEn(satir.en || ham.en || "");
       setBoy(satir.boy || ham.boy || "");
       setManuelM2(satir.manuelM2 || ham.manuelM2 || "");
@@ -96,7 +100,6 @@ export default function UrunEkleFormu({
       setFiyatAna(satir.birimFiyat || ham.fiyatAna || "");
       setFiyatAdet(ham.fiyatAdet || "");
       
-      // SİHİRBAZ HAFIZASINI GERİ YÜKLE
       setSihirbazVerisi(ham.sihirbazVerisi || null);
     }
   }, [islemVerisi]);
@@ -154,7 +157,6 @@ export default function UrunEkleFormu({
     setListeAcik(false);
   };
 
-  // SİHİRBAZDAN METİN VE HAFIZA OBJESİ GELDİĞİNDE
   const handleSihirbazdanGelenUrun = (olusturulanIsim, durum) => {
     setArama(olusturulanIsim);
     setSecilenId("ozel_urun");
@@ -215,8 +217,8 @@ export default function UrunEkleFormu({
     return sonKullanilacakUrun;
   };
 
-  // --- 1. ANA ÜRÜN SATIRINI OLUŞTURUCU ---
-  const anaSatirOlusturHelper = (hedefEn, hedefBoy, hedefManuelM2, hedefMiktar, hedefBirim, hedefPozNo, hedefSecili, secilenSonUrun) => {
+  // --- 1. ANA ÜRÜN SATIRINI OLUŞTURUCU (TOPLU UYGULA İÇİN ÖZEL AÇIKLAMA GİRİŞİ EKLENDİ) ---
+  const anaSatirOlusturHelper = (hedefEn, hedefBoy, hedefManuelM2, hedefMiktar, hedefBirim, hedefPozNo, hedefSecili, secilenSonUrun, hedefOzelAciklama = null) => {
     const miktarDegeri = Number(hedefMiktar) || 1;
     const enDegeri = Number(hedefEn) || 0;
     const boyDegeri = Number(hedefBoy) || 0;
@@ -267,7 +269,11 @@ export default function UrunEkleFormu({
     const satir = satirHesapla(duzeltilmisUrun, 100, 100, hesaplananMiktar, nihaiFiyat, paraBirimi, Number(kdvOrani), nihaiBirim);
     satir.pozNo = hedefPozNo || "-"; 
     satir.urunAciklamasi = arama.trim() || aciklamaBul(secilenSonUrun);
-    satir.ozelAciklama = ozelAciklama + ekstraAciklama;
+    
+    // Eğer hedef özel açıklama verilmişse onu kullan (Toplu uygula sırasında), yoksa formdakini kullan
+    const kullanilacakOzelAciklama = hedefOzelAciklama !== null ? hedefOzelAciklama : ozelAciklama;
+    satir.ozelAciklama = kullanilacakOzelAciklama + ekstraAciklama;
+    
     satir.gorsel = urunGorselBase64; 
     
     satir.orijinalMiktar = miktarDegeri;
@@ -283,11 +289,12 @@ export default function UrunEkleFormu({
     satir.en = enDegeri;
     satir.boy = boyDegeri;
     satir.manuelM2 = manuelM2Degeri;
+    
     satir.hamVeri = {
-      arama, secilenId, pozNo: hedefPozNo, ozelAciklama, en: hedefEn, boy: hedefBoy, 
+      arama, secilenId, pozNo: hedefPozNo, ozelAciklama: kullanilacakOzelAciklama, en: hedefEn, boy: hedefBoy, 
       manuelM2: manuelM2Degeri, miktar: miktarDegeri, secilenBirim: hedefBirim, 
       fiyatAna, fiyatAdet, paraBirimi, kdvOrani, karolajEnAdet, karolajBoyAdet, 
-      iscilikTuru, iscilikMetretul, iscilikBirimFiyat, sihirbazVerisi // SİHİRBAZ HAFIZASI SEPETE EKLENİYOR
+      iscilikTuru, iscilikMetretul, iscilikBirimFiyat, sihirbazVerisi 
     };
 
     return satir;
@@ -295,22 +302,38 @@ export default function UrunEkleFormu({
 
   // --- 2. KAROLAJ / İŞÇİLİK AYRI SATIR OLUŞTURUCU ---
   const karolajSatiriOlusturHelper = (hedefEn, hedefBoy, hedefMiktar, hedefPozNo, hedefSecili, secilenSonUrun) => {
-    const mtMiktari = Number(iscilikMetretul) || 0;
-    const mtBirimFiyat = Number(iscilikBirimFiyat) || 0;
-    const toplamIscilikTutari = mtMiktari * mtBirimFiyat;
+    let mtMiktari = 0;
     const miktarDegeri = Number(hedefMiktar) || 1;
 
+    // ÖNEMLİ: Karolaj uygulanıyorsa metrajı hedef ürünün kendi ölçülerinden TESPİT ET
+    if (iscilikTuru === "Karolaj Bedeli") {
+      const eMm = Number(hedefEn) || 0;       
+      const bMm = Number(hedefBoy) || 0;       
+      const eAdet = Number(karolajEnAdet) || 0; 
+      const bAdet = Number(karolajBoyAdet) || 0; 
+      
+      if (eMm > 0 && bMm > 0 && (eAdet > 0 || bAdet > 0)) {
+        const birCamKarolajMt = ((eAdet * bMm) + (bAdet * eMm)) / 1000;
+        mtMiktari = Number((birCamKarolajMt * miktarDegeri).toFixed(2));
+      }
+    } else {
+      mtMiktari = Number(iscilikMetretul) || 0;
+    }
+
+    const mtBirimFiyat = Number(iscilikBirimFiyat) || 0;
+    const toplamIscilikTutari = mtMiktari * mtBirimFiyat;
+
     const iscilikUrunu = {
-      id: "iscilik_" + Date.now(),
+      id: "iscilik_" + Date.now() + "_" + Math.random().toString(36).substring(7),
       kodu: secilenSonUrun ? koduBul(secilenSonUrun) : "ÖZEL",
-      aciklama: "KAROLAJ BEDELİ",
+      aciklama: iscilikTuru ? iscilikTuru.toLocaleUpperCase("tr-TR") : "İŞÇİLİK",
       "Ana Birim": "mt"
     };
 
     const satir = satirHesapla(iscilikUrunu, 100, 100, mtMiktari, mtBirimFiyat, paraBirimi, Number(kdvOrani), "mt");
     satir.toplamTutar = toplamIscilikTutari;
     satir.pozNo = hedefPozNo || "-";
-    satir.urunAciklamasi = "KAROLAJ BEDELİ";
+    satir.urunAciklamasi = iscilikTuru ? iscilikTuru.toLocaleUpperCase("tr-TR") : "İŞÇİLİK";
     
     let parcalar = [];
     let urunVeAdetBilgisi = hedefEn && hedefBoy ? `${hedefEn}×${hedefBoy} mm` : "Ürün Ölçüsü Yok";
@@ -338,7 +361,7 @@ export default function UrunEkleFormu({
     satir.boy = Number(hedefBoy) || 0;
     satir.secili = hedefSecili;
     satir.hamVeri = {
-      iscilikTuru, iscilikMetretul, iscilikBirimFiyat, karolajEnAdet, karolajBoyAdet, pozNo: hedefPozNo, paraBirimi, kdvOrani, en: hedefEn, boy: hedefBoy, miktar: miktarDegeri
+      iscilikTuru, iscilikMetretul: mtMiktari, iscilikBirimFiyat, karolajEnAdet, karolajBoyAdet, pozNo: hedefPozNo, paraBirimi, kdvOrani, en: hedefEn, boy: hedefBoy, miktar: miktarDegeri
     };
     return satir;
   };
@@ -351,7 +374,7 @@ export default function UrunEkleFormu({
     const anaSatir = anaSatirOlusturHelper(en, boy, manuelM2, miktar, secilenBirim, pozNo, true, sonUrun);
 
     let karolajSatiri = null;
-    if (iscilikTuru && Number(iscilikMetretul) > 0 && Number(iscilikBirimFiyat) > 0) {
+    if (iscilikTuru && (Number(iscilikMetretul) > 0 || iscilikTuru === "Karolaj Bedeli") && Number(iscilikBirimFiyat) > 0) {
       karolajSatiri = karolajSatiriOlusturHelper(en, boy, miktar, pozNo, true, sonUrun);
     }
 
@@ -410,6 +433,7 @@ export default function UrunEkleFormu({
     const guncelSepet = [];
     aktifSepet.forEach((item, idx) => {
       if (item.secili !== false || idx === islemVerisi.index) {
+        // Ölçüleri ve miktarı orijinal üründen koru
         const hEn = item.hamVeri?.en || item.en || "";
         const hBoy = item.hamVeri?.boy || item.boy || "";
         const hManuelM2 = item.hamVeri?.manuelM2 || item.manuelM2 || "";
@@ -417,10 +441,15 @@ export default function UrunEkleFormu({
         const hBirim = item.hamVeri?.secilenBirim || item.secilenBirim || "m²";
         const hPozNo = item.pozNo || "";
         
-        const yeniAnaSatir = anaSatirOlusturHelper(hEn, hBoy, hManuelM2, hMiktar, hBirim, hPozNo, item.secili !== false, sonUrun);
+        // ÖNEMLİ: Sadece formda düzenlediğin ürünün açıklamasını değiştir.
+        // Diğer ürünlerin kendilerine has olan orijinal (Örn: Dikkat Kırılabilir vb.) açıklamasını koru!
+        const hOzelAciklama = (idx === islemVerisi.index) ? ozelAciklama : (item.hamVeri?.ozelAciklama || "");
+        
+        const yeniAnaSatir = anaSatirOlusturHelper(hEn, hBoy, hManuelM2, hMiktar, hBirim, hPozNo, item.secili !== false, sonUrun, hOzelAciklama);
         guncelSepet.push(yeniAnaSatir);
 
-        if (iscilikTuru && Number(iscilikMetretul) > 0 && Number(iscilikBirimFiyat) > 0) {
+        // Her ürünün karolajını da yine kendi ölçüsüne (hEn, hBoy) göre hesaplar
+        if (iscilikTuru && (Number(iscilikMetretul) > 0 || iscilikTuru === "Karolaj Bedeli") && Number(iscilikBirimFiyat) > 0) {
           const yeniKarolajSatiri = karolajSatiriOlusturHelper(hEn, hBoy, hMiktar, hPozNo, item.secili !== false, sonUrun);
           guncelSepet.push(yeniKarolajSatiri);
         }
@@ -460,7 +489,7 @@ export default function UrunEkleFormu({
       <CamKombinasyonSihirbazi 
         onKombinasyonSec={handleSihirbazdanGelenUrun} 
         baslangicMetni={islemVerisi ? arama : ""} 
-        baslangicVerisi={sihirbazVerisi} // SİHİRBAZA HAFIZA AKTARILIYOR
+        baslangicVerisi={sihirbazVerisi} 
       />
 
       <h2 className="panel__baslik" style={{ fontSize: "16px", fontWeight: "800", color: "#0f2942", margin: "14px 0 12px 0", borderBottom: "2px solid #e2e8f0", paddingBottom: "8px" }}>

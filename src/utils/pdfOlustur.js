@@ -531,6 +531,11 @@ export async function proformaPdfIndir(teklif, sepet1, sepet2 = [], teklifNo, on
   }
 
   icerikDizisi.push(
+    ...(teklif.notlar ? teklif.notlar.split('\n').map((satir) => ({
+      text: `* ${satir}`,
+      fontSize: 8.5,
+      margin: [2, 4, 0, 1],
+    })) : []),
     {
       columns: [
         {
