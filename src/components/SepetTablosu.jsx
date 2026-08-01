@@ -32,6 +32,26 @@ export default function SepetTablosu({
     );
   }
 
+  // --- ÜRÜN İSİMLERİNE GÖRE DİNAMİK GRUP RENKLERİ ÜRETME ---
+  // Aynı isme/koda sahip ürünler sepette arka arkaya gelsin veya gelmesin, 
+  // aynı isimli ürünler otomatik olarak aynı renk tonunu alır.
+  const grupRenkleriPaleti = [
+    "#ffffff", // Beyaz
+    "#f0fdf4", // Açık Yeşil
+    "#eff6ff", // Açık Mavi
+    "#fefce8", // Açık Sarı
+    "#fdf4ff", // Açık Mor / Pembe
+    "#fdf2f8", // Açık Gül
+    "#f0fdfa"  // Açık Turkuaz
+  ];
+
+  // Sepetteki ürünlerin açıklama/isimlerine göre renk havuzu oluşturalım
+  const benzersizUrunler = [...new Set(sepet.map(item => item.urunAciklamasi || "DİĞER"))];
+  const renkMap = {};
+  benzersizUrunler.forEach((isim, idx) => {
+    renkMap[isim] = grupRenkleriPaleti[idx % grupRenkleriPaleti.length];
+  });
+
   // --- SÜRÜKLE & BIRAK (DRAG AND DROP) FONKSİYONLARI ---
   const handleDragStart = (e, index) => {
     setSuruklenenIndex(index);
@@ -111,7 +131,7 @@ export default function SepetTablosu({
   };
 
   const genelToplamlar = genelToplamHesapla(sepet);
-  const genelKdvler = genelKdvHesapla(sepet);
+  const genelKdvler = genelKdvHesapla(sepet); 
   const hepsiSeciliMi = sepet.length > 0 && sepet.every(item => item.secili !== false);
 
   return (
@@ -205,6 +225,10 @@ export default function SepetTablosu({
 
               const gercekAdet = satir.orijinalMiktar || satir.hamVeri?.miktar || satir.adet || 1;
 
+              // Ürün grubuna özel renk ataması
+              const urunGrubuAdi = satir.urunAciklamasi || "DİĞER";
+              const grupArkaPlani = renkMap[urunGrubuAdi] || "#ffffff";
+
               return (
                 <tr 
                   key={index} 
@@ -214,11 +238,12 @@ export default function SepetTablosu({
                   onDrop={(e) => handleDrop(e, index)}
                   style={{ 
                     borderBottom: "1px solid #e2e8f0", 
-                    backgroundColor: suruklenenIndex === index ? "#e0f2fe" : (index % 2 === 0 ? "white" : "#f8fafc"),
+                    backgroundColor: suruklenenIndex === index ? "#e0f2fe" : grupArkaPlani,
                     cursor: "grab",
-                    opacity: suruklenenIndex === index ? 0.5 : 1
+                    opacity: suruklenenIndex === index ? 0.5 : 1,
+                    transition: "background-color 0.2s"
                   }}
-                  title="Basılı tutup yukarı/aşağı sürükleyerek yerini değiştirebilirsiniz"
+                  title="Aynı türdeki ürünler otomatik aynı renkte gruplanır. Sürükleyip yerini değiştirebilirsiniz."
                 >
                   <td style={{ padding: "10px", textAlign: "center", color: "#94a3b8", fontWeight: "bold" }}>☰</td>
                   <td style={{ padding: "10px", textAlign: "center" }} onClick={(e) => e.stopPropagation()}>
@@ -239,10 +264,10 @@ export default function SepetTablosu({
                   <td style={{ padding: "10px", color: "#64748b", fontSize: "12px" }}>
                     {satir.ozelAciklama || "-"}
                   </td>
-                  <td style={{ padding: "10px", textAlign: "center", fontWeight: "800", color: "#0369a1", fontSize: "14px", backgroundColor: "#f0f9ff" }}>
+                  <td style={{ padding: "10px", textAlign: "center", fontWeight: "800", color: "#0369a1", fontSize: "14px", backgroundColor: "rgba(240, 249, 255, 0.7)" }}>
                     {enBoyMetni}
                   </td>
-                  <td style={{ padding: "10px", textAlign: "center", fontWeight: "800", color: "#0f2942", fontSize: "14px", backgroundColor: "#f8fafc" }}>
+                  <td style={{ padding: "10px", textAlign: "center", fontWeight: "800", color: "#0f2942", fontSize: "14px", backgroundColor: "rgba(248, 250, 252, 0.7)" }}>
                     {gercekAdet} Adet
                   </td>
                   <td style={{ padding: "10px", textAlign: "center", color: "#334155" }}>
