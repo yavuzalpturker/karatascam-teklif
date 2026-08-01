@@ -142,6 +142,9 @@ async function sepetGorselleriniHazirla(sepet) {
 function sepetIcerikOlustur(sepet, baslikMetni, teklif) {
   if (!sepet || sepet.length === 0) return [];
 
+  // Sepette 0 KDV'li herhang bir ürün varsa (ya da ihracat seçildiyse) TÜM belge ihracat kabul edilir.
+  const ihracatMi = teklif?.ihracatMi || teklif?.kdvMuaf || sepet.some(s => Number(s.kdvOrani) === 0);
+
   const urunSatirlari = sepet.map((satir) => {
     let baslik = satir.urunAciklamasi;
     if (satir.ozelAciklama && satir.ozelAciklama.trim() !== "" && satir.ozelAciklama.trim() !== satir.urunAciklamasi) {
@@ -177,12 +180,9 @@ function sepetIcerikOlustur(sepet, baslikMetni, teklif) {
   const genelKdvler = genelKdvHesapla(sepet); 
 
   const genelToplamSatirlari = Object.entries(genelToplamlar).map(([paraBirimi, tutar]) => {
-    // İhracat / KDV Muaf kontrolü
-    const ihracatMi = teklif?.ihracatMi || teklif?.kdvMuaf || (Number(sepet[0]?.kdvOrani) === 0);
+    // İhracat durumu kesinlikle tüm KDV'yi sıfırlar
     const kdvOrani = ihracatMi ? 0 : (sepet[0]?.kdvOrani !== undefined ? Number(sepet[0].kdvOrani) : 20);
-    
-    // KDV oranı 0 ise KDV tutarı doğrudan 0'dır
-    const kdvTutar = kdvOrani === 0 ? 0 : (genelKdvler[paraBirimi] || 0);
+    const kdvTutar = ihracatMi ? 0 : (genelKdvler[paraBirimi] || 0);
     const kdvDahilToplam = tutar + kdvTutar;
 
     return [
@@ -344,7 +344,8 @@ export async function teklifPdfIndir(teklif, sepet1, sepet2 = [], teklifNo, oniz
 function proformaTabloOlustur(sepet, baslikMetni, teklif) {
   if (!sepet || sepet.length === 0) return { tabloGövdesi: [], yalnizMetni: "" };
 
-  const ihracatMi = teklif?.ihracatMi || teklif?.kdvMuaf || (Number(sepet[0]?.kdvOrani) === 0);
+  // Sepette 0 KDV'li herhang bir ürün varsa (ya da ihracat seçildiyse) TÜM belge ihracat kabul edilir.
+  const ihracatMi = teklif?.ihracatMi || teklif?.kdvMuaf || sepet.some(s => Number(s.kdvOrani) === 0);
 
   const tabloGövdesi = [
     [
@@ -386,7 +387,8 @@ function proformaTabloOlustur(sepet, baslikMetni, teklif) {
       });
     }
 
-    const satirKdvOrani = ihracatMi ? 0 : (satir.kdvOrani !== undefined ? satir.kdvOrani : 20);
+    // İhracat durumu aktifse, karolaj vb. tüm satırların KDV'si zorunlu 0'dır
+    const satirKdvOrani = ihracatMi ? 0 : (satir.kdvOrani !== undefined ? Number(satir.kdvOrani) : 20);
 
     tabloGövdesi.push([
       { text: satir.urunAciklamasi, fontSize: 8.5, margin: [4, 4, 0, 4], alignment: 'left' },
@@ -400,12 +402,14 @@ function proformaTabloOlustur(sepet, baslikMetni, teklif) {
 
   const genelToplamlar = genelToplamHesapla(sepet);
   const genelKdvler = genelKdvHesapla(sepet); 
+  
   const kdvOrani = ihracatMi ? 0 : (sepet[0]?.kdvOrani !== undefined ? Number(sepet[0].kdvOrani) : 20);
   
   let yalnizMetni = "";
 
   Object.entries(genelToplamlar).forEach(([paraBirimi, tutar]) => {
-    const kdvTutar = kdvOrani === 0 ? 0 : (genelKdvler[paraBirimi] || 0);
+    // İhracat aktifse toplam KDV direkt 0'dır
+    const kdvTutar = ihracatMi ? 0 : (genelKdvler[paraBirimi] || 0);
     const genelToplam = tutar + kdvTutar;
 
     if (yalnizMetni !== "") yalnizMetni += " + ";

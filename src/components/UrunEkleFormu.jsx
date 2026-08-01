@@ -32,7 +32,6 @@ export default function UrunEkleFormu({
   const [fiyatAna, setFiyatAna] = useState(""); 
   const [fiyatAdet, setFiyatAdet] = useState(""); 
 
-  // --- İŞÇİLİK VE KAROLAJ STATE'LERİ ---
   const [iscilikTuru, setIscilikTuru] = useState(""); 
   const [iscilikMetretul, setIscilikMetretul] = useState(""); 
   const [iscilikBirimFiyat, setIscilikBirimFiyat] = useState(""); 
@@ -46,14 +45,32 @@ export default function UrunEkleFormu({
   const [eklenenOzelUrunler, setEklenenOzelUrunler] = useState([]);
   const [sihirbazVerisi, setSihirbazVerisi] = useState(null);
 
-  // İhracat seçilince KDV'yi otomatik 0 yap
-  useEffect(() => {
-    if (ihracatMi) {
-      setKdvOrani("0");
-    }
-  }, [ihracatMi]);
+  // --- İHRACAT TIKLANDIĞINDA SEPETTEKİ HER ŞEYİN KDV'SİNİ 0 YAPAN FONKSİYON ---
+  const handleIhracatToggle = (checked) => {
+    setIhracatMi(checked);
+    const yeniKdv = checked ? "0" : "20";
+    setKdvOrani(yeniKdv);
 
-  // --- DOĞRU ORANLA OTOMATİK KAROLAJ METRETÜL HESABI ((EN * En Adet) + (BOY * Boy Adet)) ---
+    if (onTopluGuncelle) {
+      if (sepet1 && sepet1.length > 0) {
+        const yeniSepet1 = sepet1.map(item => ({
+          ...item,
+          kdvOrani: Number(yeniKdv),
+          hamVeri: { ...(item.hamVeri || {}), kdvOrani: Number(yeniKdv) }
+        }));
+        onTopluGuncelle(1, yeniSepet1);
+      }
+      if (sepet2 && sepet2.length > 0) {
+        const yeniSepet2 = sepet2.map(item => ({
+          ...item,
+          kdvOrani: Number(yeniKdv),
+          hamVeri: { ...(item.hamVeri || {}), kdvOrani: Number(yeniKdv) }
+        }));
+        onTopluGuncelle(2, yeniSepet2);
+      }
+    }
+  };
+
   useEffect(() => {
     if (iscilikTuru === "Karolaj Bedeli") {
       const eMm = Number(en) || 0;       
@@ -72,7 +89,6 @@ export default function UrunEkleFormu({
     }
   }, [en, boy, karolajEnAdet, karolajBoyAdet, miktar, iscilikTuru]);
 
-  // --- DÜZENLEME MODUNDA VERİLERİ YÜKLEME ---
   useEffect(() => {
     if (islemVerisi && islemVerisi.satir) {
       const satir = islemVerisi.satir;
@@ -288,6 +304,7 @@ export default function UrunEkleFormu({
     satir.orijinalMiktar = miktarDegeri;
     satir.adet = miktarDegeri;
     satir.Adet = miktarDegeri;
+    satir.kdvOrani = Number(kdvOrani); // Garanti atama
     
     satir.miktar = Number(hesaplananMiktar.toFixed(3)); 
     satir.secilenBirim = nihaiBirim;
@@ -302,7 +319,7 @@ export default function UrunEkleFormu({
     satir.hamVeri = {
       arama, secilenId, pozNo: hedefPozNo, ozelAciklama: kullanilacakOzelAciklama, en: hedefEn, boy: hedefBoy, 
       manuelM2: manuelM2Degeri, miktar: miktarDegeri, secilenBirim: hedefBirim, 
-      fiyatAna, fiyatAdet, paraBirimi, kdvOrani, karolajEnAdet, karolajBoyAdet, 
+      fiyatAna, fiyatAdet, paraBirimi, kdvOrani: Number(kdvOrani), karolajEnAdet, karolajBoyAdet, 
       iscilikTuru, iscilikMetretul, iscilikBirimFiyat, sihirbazVerisi 
     };
 
@@ -341,6 +358,7 @@ export default function UrunEkleFormu({
     satir.toplamTutar = toplamIscilikTutari;
     satir.pozNo = hedefPozNo || "-";
     satir.urunAciklamasi = iscilikTuru ? iscilikTuru.toLocaleUpperCase("tr-TR") : "İŞÇİLİK";
+    satir.kdvOrani = Number(kdvOrani); // Garanti atama
     
     let parcalar = [];
     let urunVeAdetBilgisi = hedefEn && hedefBoy ? `${hedefEn}×${hedefBoy} mm` : "Ürün Ölçüsü Yok";
@@ -368,7 +386,7 @@ export default function UrunEkleFormu({
     satir.boy = Number(hedefBoy) || 0;
     satir.secili = hedefSecili;
     satir.hamVeri = {
-      iscilikTuru, iscilikMetretul: mtMiktari, iscilikBirimFiyat, karolajEnAdet, karolajBoyAdet, pozNo: hedefPozNo, paraBirimi, kdvOrani, en: hedefEn, boy: hedefBoy, miktar: miktarDegeri
+      iscilikTuru, iscilikMetretul: mtMiktari, iscilikBirimFiyat, karolajEnAdet, karolajBoyAdet, pozNo: hedefPozNo, paraBirimi, kdvOrani: Number(kdvOrani), en: hedefEn, boy: hedefBoy, miktar: miktarDegeri
     };
     return satir;
   };
@@ -603,7 +621,6 @@ export default function UrunEkleFormu({
         </div>
       )}
 
-      {/* BİRİM, EN, BOY VEYA DİREKT m² */}
       <div style={{ display: "grid", gridTemplateColumns: "140px 120px 1fr 1fr", gap: "10px", marginBottom: "12px", alignItems: "center" }}>
         <div>
           <label style={{ display: "block", fontSize: "12px", fontWeight: "700", color: "#334155", marginBottom: "4px" }}>Birim</label>
@@ -644,7 +661,6 @@ export default function UrunEkleFormu({
         )}
       </div>
 
-      {/* ADET, FİYATLANDIRMA VE PARA BİRİMİ */}
       <div style={{ display: "grid", gridTemplateColumns: "90px 1fr 1fr 100px", gap: "10px", marginBottom: "12px", alignItems: "flex-end" }}>
         <div>
           <label style={{ display: "block", fontSize: "12px", fontWeight: "800", color: "#0f2942", marginBottom: "4px" }}>Adet</label>
@@ -696,7 +712,6 @@ export default function UrunEkleFormu({
         </div>
       </div>
 
-      {/* --- İŞÇİLİK VE EN KAROLAJ / BOY KAROLAJ ADETİ ALANI --- */}
       <div style={{ backgroundColor: "#f1f5f9", padding: "12px", borderRadius: "8px", border: "1px solid #cbd5e1", marginBottom: "16px" }}>
         <div style={{ display: "grid", gridTemplateColumns: iscilikTuru === "Karolaj Bedeli" ? "1.2fr 1fr 1fr 1fr 100px" : "1fr 1fr 1fr 100px", gap: "10px", alignItems: "flex-end" }}>
           <div>
@@ -776,11 +791,9 @@ export default function UrunEkleFormu({
         </div>
       </div>
 
-      {/* ALT SATIR: KDV, İHRACAT SEÇENEĞİ VE BUTONLAR */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", flexWrap: "wrap", gap: "12px", borderTop: "1px solid #f1f5f9", paddingTop: "12px" }}>
         
         <div style={{ display: "flex", gap: "10px", alignItems: "flex-end" }}>
-          {/* KDV ORANI */}
           <div style={{ width: "110px" }}>
             <label style={{ display: "block", fontSize: "11px", fontWeight: "600", color: "#64748b", marginBottom: "3px" }}>KDV Oranı (%)</label>
             <select value={kdvOrani} onChange={(e) => setKdvOrani(e.target.value)} disabled={ihracatMi} style={{ width: "100%", padding: "7px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "12px", fontWeight: "600", backgroundColor: ihracatMi ? "#e2e8f0" : "#f8fafc", color: "#475569" }}>
@@ -791,13 +804,12 @@ export default function UrunEkleFormu({
             </select>
           </div>
 
-          {/* İHRACAT SEÇENEĞİ */}
           <div style={{ display: "flex", alignItems: "center", gap: "6px", backgroundColor: "#fef3c7", padding: "7px 10px", borderRadius: "6px", border: "1px solid #f59e0b", height: "35px" }}>
             <input 
               type="checkbox" 
               id="ihracatCheck"
               checked={ihracatMi}
-              onChange={(e) => setIhracatMi(e.target.checked)}
+              onChange={(e) => handleIhracatToggle(e.target.checked)}
               style={{ width: "16px", height: "16px", cursor: "pointer" }}
             />
             <label htmlFor="ihracatCheck" style={{ fontSize: "11.5px", fontWeight: "800", color: "#92400e", cursor: "pointer" }}>
@@ -806,7 +818,6 @@ export default function UrunEkleFormu({
           </div>
         </div>
 
-        {/* İŞLEM BUTONLARI */}
         <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
           {islemVerisi && (
             <button 
