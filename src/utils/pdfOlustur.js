@@ -139,7 +139,7 @@ async function sepetGorselleriniHazirla(sepet) {
   );
 }
 
-function sepetIcerikOlustur(sepet, baslikMetni) {
+function sepetIcerikOlustur(sepet, baslikMetni, teklif) {
   if (!sepet || sepet.length === 0) return [];
 
   const urunSatirlari = sepet.map((satir) => {
@@ -177,9 +177,13 @@ function sepetIcerikOlustur(sepet, baslikMetni) {
   const genelKdvler = genelKdvHesapla(sepet); 
 
   const genelToplamSatirlari = Object.entries(genelToplamlar).map(([paraBirimi, tutar]) => {
-    const kdvTutar = genelKdvler[paraBirimi] || 0;
+    // İhracat / KDV Muaf kontrolü
+    const ihracatMi = teklif?.ihracatMi || teklif?.kdvMuaf || (Number(sepet[0]?.kdvOrani) === 0);
+    const kdvOrani = ihracatMi ? 0 : (sepet[0]?.kdvOrani !== undefined ? Number(sepet[0].kdvOrani) : 20);
+    
+    // KDV oranı 0 ise KDV tutarı doğrudan 0'dır
+    const kdvTutar = kdvOrani === 0 ? 0 : (genelKdvler[paraBirimi] || 0);
     const kdvDahilToplam = tutar + kdvTutar;
-    const kdvOrani = sepet[0]?.kdvOrani || 20;
 
     return [
       {
@@ -229,8 +233,8 @@ export async function teklifPdfIndir(teklif, sepet1, sepet2 = [], teklifNo, oniz
 
   const ikiliMi = temizSepet2 && temizSepet2.length > 0;
 
-  const birinciSecenekIcerik = sepetIcerikOlustur(temizSepet1, ikiliMi ? "1. SEÇENEK" : null);
-  const ikinciSecenekIcerik = ikiliMi ? sepetIcerikOlustur(temizSepet2, "2. SEÇENEK") : [];
+  const birinciSecenekIcerik = sepetIcerikOlustur(temizSepet1, ikiliMi ? "1. SEÇENEK" : null, teklif);
+  const ikinciSecenekIcerik = ikiliMi ? sepetIcerikOlustur(temizSepet2, "2. SEÇENEK", teklif) : [];
 
   const tarihYazisi = teklif.tarih ? new Date(teklif.tarih).toLocaleDateString("tr-TR") : new Date().toLocaleDateString("tr-TR");
   const belgeNo = teklif.teklifNo || teklifNo || siradakiProformaNoGetir(); 
@@ -337,8 +341,10 @@ export async function teklifPdfIndir(teklif, sepet1, sepet2 = [], teklifNo, oniz
   }
 }
 
-function proformaTabloOlustur(sepet, baslikMetni) {
+function proformaTabloOlustur(sepet, baslikMetni, teklif) {
   if (!sepet || sepet.length === 0) return { tabloGövdesi: [], yalnizMetni: "" };
+
+  const ihracatMi = teklif?.ihracatMi || teklif?.kdvMuaf || (Number(sepet[0]?.kdvOrani) === 0);
 
   const tabloGövdesi = [
     [
@@ -380,24 +386,26 @@ function proformaTabloOlustur(sepet, baslikMetni) {
       });
     }
 
+    const satirKdvOrani = ihracatMi ? 0 : (satir.kdvOrani !== undefined ? satir.kdvOrani : 20);
+
     tabloGövdesi.push([
       { text: satir.urunAciklamasi, fontSize: 8.5, margin: [4, 4, 0, 4], alignment: 'left' },
       { stack: ozelAciklamaStack, margin: [4, 4, 0, 4] },
       { text: miktarMetni, fontSize: 8.5, alignment: 'center', margin: [0, 4, 0, 4] },
       { text: birimFiyatMetni, fontSize: 8.5, alignment: 'center', margin: [0, 4, 0, 4] },
-      { text: `% ${satir.kdvOrani}`, fontSize: 8.5, alignment: 'center', margin: [0, 4, 0, 4] },
+      { text: `% ${satirKdvOrani}`, fontSize: 8.5, alignment: 'center', margin: [0, 4, 0, 4] },
       { text: `${paraFormatla(satir.toplamTutar, satir.paraBirimi)}`, fontSize: 8.5, alignment: 'right', margin: [0, 4, 4, 4] }
     ]);
   });
 
   const genelToplamlar = genelToplamHesapla(sepet);
   const genelKdvler = genelKdvHesapla(sepet); 
-  const kdvOrani = sepet[0]?.kdvOrani || 20;
+  const kdvOrani = ihracatMi ? 0 : (sepet[0]?.kdvOrani !== undefined ? Number(sepet[0].kdvOrani) : 20);
   
   let yalnizMetni = "";
 
   Object.entries(genelToplamlar).forEach(([paraBirimi, tutar]) => {
-    const kdvTutar = genelKdvler[paraBirimi] || 0;
+    const kdvTutar = kdvOrani === 0 ? 0 : (genelKdvler[paraBirimi] || 0);
     const genelToplam = tutar + kdvTutar;
 
     if (yalnizMetni !== "") yalnizMetni += " + ";
@@ -443,8 +451,8 @@ export async function proformaPdfIndir(teklif, sepet1, sepet2 = [], teklifNo, on
 
   const ikiliMi = temizSepet2 && temizSepet2.length > 0;
 
-  const sonuc1 = proformaTabloOlustur(temizSepet1, ikiliMi ? "1. SEÇENEK" : null);
-  const sonuc2 = ikiliMi ? proformaTabloOlustur(temizSepet2, "2. Seçenek") : null;
+  const sonuc1 = proformaTabloOlustur(temizSepet1, ikiliMi ? "1. SEÇENEK" : null, teklif);
+  const sonuc2 = ikiliMi ? proformaTabloOlustur(temizSepet2, "2. Seçenek", teklif) : null;
 
   let kisi = (teklif.ilgiliKisi || "").toLocaleUpperCase("tr-TR");
   kisi = kisi.replace(/DİKKATİNE/g, "").replace(/[,;]/g, "").trim();

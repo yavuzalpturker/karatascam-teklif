@@ -41,13 +41,19 @@ export default function UrunEkleFormu({
 
   const [paraBirimi, setParaBirimi] = useState("TRY");
   const [kdvOrani, setKdvOrani] = useState("20");
+  const [ihracatMi, setIhracatMi] = useState(false);
 
   const [eklenenOzelUrunler, setEklenenOzelUrunler] = useState([]);
-  
-  // SİHİRBAZIN HAFIZASINI TUTAN STATE
   const [sihirbazVerisi, setSihirbazVerisi] = useState(null);
 
-  // --- CAM ÖLÇÜLERİNE VE ADETE GÖRE OTOMATİK KAROLAJ METRETÜL HESABI ---
+  // İhracat seçilince KDV'yi otomatik 0 yap
+  useEffect(() => {
+    if (ihracatMi) {
+      setKdvOrani("0");
+    }
+  }, [ihracatMi]);
+
+  // --- DOĞRU ORANLA OTOMATİK KAROLAJ METRETÜL HESABI ((EN * En Adet) + (BOY * Boy Adet)) ---
   useEffect(() => {
     if (iscilikTuru === "Karolaj Bedeli") {
       const eMm = Number(en) || 0;       
@@ -57,7 +63,7 @@ export default function UrunEkleFormu({
       const urunAdeti = Number(miktar) || 1;    
 
       if (eMm > 0 && bMm > 0 && (eAdet > 0 || bAdet > 0)) {
-        const birCamKarolajMt = ((eAdet * bMm) + (bAdet * eMm)) / 1000;
+        const birCamKarolajMt = ((eMm * eAdet) + (bMm * bAdet)) / 1000;
         const toplamKarolajMt = birCamKarolajMt * urunAdeti;
         setIscilikMetretul(toplamKarolajMt.toFixed(2));
       } else {
@@ -75,7 +81,14 @@ export default function UrunEkleFormu({
       setPozNo(satir.pozNo || "");
       setUrunGorselBase64(satir.gorsel || null);
       setParaBirimi(satir.paraBirimi || "TRY");
-      setKdvOrani(satir.kdvOrani ? String(satir.kdvOrani) : "20");
+      
+      const gelenKdv = satir.kdvOrani !== undefined ? String(satir.kdvOrani) : "20";
+      setKdvOrani(gelenKdv);
+      if (gelenKdv === "0") {
+        setIhracatMi(true);
+      } else {
+        setIhracatMi(false);
+      }
 
       setIscilikTuru(ham.iscilikTuru || "");
       setIscilikMetretul(ham.iscilikMetretul || "");
@@ -87,15 +100,12 @@ export default function UrunEkleFormu({
       setArama(gelenAd);
       
       setSecilenId(ham.secilenId || "ozel_urun");
-      
-      // ÖNEMLİ DÜZELTME: Sadece saf özel açıklamayı (ham.ozelAciklama) yüklüyoruz.
-      // Ölçü metinleri artık form giriş alanına yapışıp kalmayacak!
       setOzelAciklama(ham.ozelAciklama || ""); 
       
       setEn(satir.en || ham.en || "");
       setBoy(satir.boy || ham.boy || "");
       setManuelM2(satir.manuelM2 || ham.manuelM2 || "");
-      setMiktar(satir.miktar || satir.orijinalMiktar || ham.miktar || "1");
+      setMiktar(satir.orijinalMiktar || ham.miktar || satir.adet || "1");
       setSecilenBirim(satir.secilenBirim || ham.secilenBirim || "m²");
       setFiyatAna(satir.birimFiyat || ham.fiyatAna || "");
       setFiyatAdet(ham.fiyatAdet || "");
@@ -122,6 +132,8 @@ export default function UrunEkleFormu({
     setKarolajEnAdet("");
     setKarolajBoyAdet("");
     setSihirbazVerisi(null);
+    setIhracatMi(false);
+    setKdvOrani("20");
   };
 
   const tumUrunler = [...(urunler || []), ...eklenenOzelUrunler];
@@ -217,7 +229,6 @@ export default function UrunEkleFormu({
     return sonKullanilacakUrun;
   };
 
-  // --- 1. ANA ÜRÜN SATIRINI OLUŞTURUCU (TOPLU UYGULA İÇİN ÖZEL AÇIKLAMA GİRİŞİ EKLENDİ) ---
   const anaSatirOlusturHelper = (hedefEn, hedefBoy, hedefManuelM2, hedefMiktar, hedefBirim, hedefPozNo, hedefSecili, secilenSonUrun, hedefOzelAciklama = null) => {
     const miktarDegeri = Number(hedefMiktar) || 1;
     const enDegeri = Number(hedefEn) || 0;
@@ -270,10 +281,8 @@ export default function UrunEkleFormu({
     satir.pozNo = hedefPozNo || "-"; 
     satir.urunAciklamasi = arama.trim() || aciklamaBul(secilenSonUrun);
     
-    // Eğer hedef özel açıklama verilmişse onu kullan (Toplu uygula sırasında), yoksa formdakini kullan
     const kullanilacakOzelAciklama = hedefOzelAciklama !== null ? hedefOzelAciklama : ozelAciklama;
     satir.ozelAciklama = kullanilacakOzelAciklama + ekstraAciklama;
-    
     satir.gorsel = urunGorselBase64; 
     
     satir.orijinalMiktar = miktarDegeri;
@@ -300,12 +309,10 @@ export default function UrunEkleFormu({
     return satir;
   };
 
-  // --- 2. KAROLAJ / İŞÇİLİK AYRI SATIR OLUŞTURUCU ---
   const karolajSatiriOlusturHelper = (hedefEn, hedefBoy, hedefMiktar, hedefPozNo, hedefSecili, secilenSonUrun) => {
     let mtMiktari = 0;
     const miktarDegeri = Number(hedefMiktar) || 1;
 
-    // ÖNEMLİ: Karolaj uygulanıyorsa metrajı hedef ürünün kendi ölçülerinden TESPİT ET
     if (iscilikTuru === "Karolaj Bedeli") {
       const eMm = Number(hedefEn) || 0;       
       const bMm = Number(hedefBoy) || 0;       
@@ -313,7 +320,7 @@ export default function UrunEkleFormu({
       const bAdet = Number(karolajBoyAdet) || 0; 
       
       if (eMm > 0 && bMm > 0 && (eAdet > 0 || bAdet > 0)) {
-        const birCamKarolajMt = ((eAdet * bMm) + (bAdet * eMm)) / 1000;
+        const birCamKarolajMt = ((eMm * eAdet) + (bMm * bAdet)) / 1000;
         mtMiktari = Number((birCamKarolajMt * miktarDegeri).toFixed(2));
       }
     } else {
@@ -433,22 +440,18 @@ export default function UrunEkleFormu({
     const guncelSepet = [];
     aktifSepet.forEach((item, idx) => {
       if (item.secili !== false || idx === islemVerisi.index) {
-        // Ölçüleri ve miktarı orijinal üründen koru
         const hEn = item.hamVeri?.en || item.en || "";
         const hBoy = item.hamVeri?.boy || item.boy || "";
         const hManuelM2 = item.hamVeri?.manuelM2 || item.manuelM2 || "";
-        const hMiktar = item.hamVeri?.miktar || "1";
+        const hMiktar = item.hamVeri?.miktar || item.orijinalMiktar || item.adet || "1";
         const hBirim = item.hamVeri?.secilenBirim || item.secilenBirim || "m²";
         const hPozNo = item.pozNo || "";
         
-        // ÖNEMLİ: Sadece formda düzenlediğin ürünün açıklamasını değiştir.
-        // Diğer ürünlerin kendilerine has olan orijinal (Örn: Dikkat Kırılabilir vb.) açıklamasını koru!
         const hOzelAciklama = (idx === islemVerisi.index) ? ozelAciklama : (item.hamVeri?.ozelAciklama || "");
         
         const yeniAnaSatir = anaSatirOlusturHelper(hEn, hBoy, hManuelM2, hMiktar, hBirim, hPozNo, item.secili !== false, sonUrun, hOzelAciklama);
         guncelSepet.push(yeniAnaSatir);
 
-        // Her ürünün karolajını da yine kendi ölçüsüne (hEn, hBoy) göre hesaplar
         if (iscilikTuru && (Number(iscilikMetretul) > 0 || iscilikTuru === "Karolaj Bedeli") && Number(iscilikBirimFiyat) > 0) {
           const yeniKarolajSatiri = karolajSatiriOlusturHelper(hEn, hBoy, hMiktar, hPozNo, item.secili !== false, sonUrun);
           guncelSepet.push(yeniKarolajSatiri);
@@ -773,21 +776,37 @@ export default function UrunEkleFormu({
         </div>
       </div>
 
-      {/* ALT SATIR: KDV SOL ALTA VE BUTONLAR SAĞDA */}
+      {/* ALT SATIR: KDV, İHRACAT SEÇENEĞİ VE BUTONLAR */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", flexWrap: "wrap", gap: "12px", borderTop: "1px solid #f1f5f9", paddingTop: "12px" }}>
         
-        {/* KDV ORANI SOL ALTA */}
-        <div style={{ width: "110px" }}>
-          <label style={{ display: "block", fontSize: "11px", fontWeight: "600", color: "#64748b", marginBottom: "3px" }}>KDV Oranı (%)</label>
-          <select value={kdvOrani} onChange={(e) => setKdvOrani(e.target.value)} style={{ width: "100%", padding: "7px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "12px", fontWeight: "600", backgroundColor: "#f8fafc", color: "#475569" }}>
-            <option value="0">% 0</option>
-            <option value="1">% 1</option>
-            <option value="10">% 10</option>
-            <option value="20">% 20</option>
-          </select>
+        <div style={{ display: "flex", gap: "10px", alignItems: "flex-end" }}>
+          {/* KDV ORANI */}
+          <div style={{ width: "110px" }}>
+            <label style={{ display: "block", fontSize: "11px", fontWeight: "600", color: "#64748b", marginBottom: "3px" }}>KDV Oranı (%)</label>
+            <select value={kdvOrani} onChange={(e) => setKdvOrani(e.target.value)} disabled={ihracatMi} style={{ width: "100%", padding: "7px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "12px", fontWeight: "600", backgroundColor: ihracatMi ? "#e2e8f0" : "#f8fafc", color: "#475569" }}>
+              <option value="0">% 0</option>
+              <option value="1">% 1</option>
+              <option value="10">% 10</option>
+              <option value="20">% 20</option>
+            </select>
+          </div>
+
+          {/* İHRACAT SEÇENEĞİ */}
+          <div style={{ display: "flex", alignItems: "center", gap: "6px", backgroundColor: "#fef3c7", padding: "7px 10px", borderRadius: "6px", border: "1px solid #f59e0b", height: "35px" }}>
+            <input 
+              type="checkbox" 
+              id="ihracatCheck"
+              checked={ihracatMi}
+              onChange={(e) => setIhracatMi(e.target.checked)}
+              style={{ width: "16px", height: "16px", cursor: "pointer" }}
+            />
+            <label htmlFor="ihracatCheck" style={{ fontSize: "11.5px", fontWeight: "800", color: "#92400e", cursor: "pointer" }}>
+              🌍 İhracat (KDV %0)
+            </label>
+          </div>
         </div>
 
-        {/* İŞLEM BUTONLARI SAĞDA */}
+        {/* İŞLEM BUTONLARI */}
         <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
           {islemVerisi && (
             <button 
@@ -811,8 +830,7 @@ export default function UrunEkleFormu({
                 borderRadius: "6px", 
                 fontSize: "11px", 
                 fontWeight: "600", 
-                cursor: "pointer",
-                transition: "all 0.2s"
+                cursor: "pointer"
               }}
               title="Aynı özellikteki seçili diğer ürünlere de bu değişiklikleri uygula"
             >

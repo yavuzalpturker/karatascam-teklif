@@ -77,6 +77,8 @@ function imalatTabloOlustur(sepet, baslikMetni) {
     const adetMatch = tamMetin.match(/(?:-\s*)?(\d+)\s*Adet/i);
     if (adetMatch) {
       adetDegeri = parseInt(adetMatch[1], 10);
+    } else {
+      adetDegeri = satir.orijinalMiktar || satir.hamVeri?.miktar || satir.adet || 1;
     }
 
     const m2Match = tamMetin.match(/(?:Toplam:\s*)?([\d.]+)\s*m²/i);
@@ -84,6 +86,8 @@ function imalatTabloOlustur(sepet, baslikMetni) {
       miktarM2 = parseFloat(m2Match[1]);
     } else if (en > 0 && boy > 0) {
       miktarM2 = (en * boy * adetDegeri) / 1000000;
+    } else {
+      miktarM2 = satir.miktar || 0;
     }
 
     let metretul = 0;
@@ -99,6 +103,7 @@ function imalatTabloOlustur(sepet, baslikMetni) {
     };
   });
 
+  // GRUPLARIN SEPETTE ÇIKIŞ SIRASINI KORUYARAK MAP OLUŞTURMA
   const grupMap = new Map();
   islenmisSepet.forEach(satir => {
     const urunAdi = satir.urunAciklamasi;
