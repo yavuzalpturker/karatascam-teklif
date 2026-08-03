@@ -198,7 +198,7 @@ function sepetIcerikOlustur(sepet, baslikMetni, teklif) {
   const genelToplamSatirlari = Object.entries(genelToplamlar).map(([paraBirimi, tutar]) => {
     const kdvOrani = ihracatMi ? 0 : (sepet[0]?.kdvOrani !== undefined ? Number(sepet[0].kdvOrani) : 20);
     const kdvTutar = ihracatMi ? 0 : (genelKdvler[paraBirimi] || 0);
-    const kdvDahilToplam = tutar + kdvTutar;
+    const genelToplam = tutar + kdvTutar;
 
     return [
       {
@@ -207,16 +207,16 @@ function sepetIcerikOlustur(sepet, baslikMetni, teklif) {
         unbreakable: true
       },
       {
-        text: `TOPLAM (${paraBirimi}) : ${paraFormatla(tutar, paraBirimi)}`,
-        bold: true, fontSize: 11, alignment: "right", margin: [0, 0, 0, 2], unbreakable: true
+        text: `TOPLAM : ${paraFormatla(tutar, paraBirimi)}`,
+        bold: true, fontSize: 10.5, alignment: "right", margin: [0, 0, 0, 2], unbreakable: true
       },
       {
-        text: `KDV (%${kdvOrani}) : ${paraFormatla(kdvTutar, paraBirimi)}`,
-        bold: true, fontSize: 11, alignment: "right", margin: [0, 0, 0, 2], unbreakable: true
+        text: `KDV %${kdvOrani} : ${paraFormatla(kdvTutar, paraBirimi)}`,
+        bold: true, fontSize: 10.5, alignment: "right", margin: [0, 0, 0, 2], unbreakable: true
       },
       {
-        text: `KDV DAHİL GENEL TOPLAM : ${paraFormatla(kdvDahilToplam, paraBirimi)}`,
-        bold: true, fontSize: 11, alignment: "right", margin: [0, 0, 0, 10], color: '#0f2942', unbreakable: true
+        text: `GENEL TOPLAM : ${paraFormatla(genelToplam, paraBirimi)}`,
+        bold: true, fontSize: 11, alignment: "right", margin: [0, 0, 0, 8], color: '#0f2942', unbreakable: true
       }
     ];
   }).flat();
