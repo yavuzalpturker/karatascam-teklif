@@ -14,8 +14,8 @@ export default function UrunEkleFormu({
   sepet1 = [], 
   sepet2 = [], 
   onTopluGuncelle,
-  aktifSecenekNo, // App.jsx'ten gelirse kullanılır
-  seciliSepet     // App.jsx'ten gelme ihtimaline karşı yedek
+  aktifSecenekNo, 
+  seciliSepet     
 }) {
   const [arama, setArama] = useState("");
   const [secilenId, setSecilenId] = useState("");
@@ -47,9 +47,8 @@ export default function UrunEkleFormu({
   const [eklenenOzelUrunler, setEklenenOzelUrunler] = useState([]);
   const [sihirbazVerisi, setSihirbazVerisi] = useState(null);
 
-  // Güvenli sepet tespiti
   const gercekAktifSepet = aktifSecenekNo || seciliSepet || 1;
-  const hedefSepetNo = islemVerisi?.sepetNo || gercekAktifSepet;
+  const hedefSepetNo = (islemVerisi?.tip === "duzenle" && islemVerisi?.sepetNo) ? islemVerisi.sepetNo : Number(gercekAktifSepet) || 1;
 
   const handleIhracatToggle = (checked) => {
     setIhracatMi(checked);
@@ -76,62 +75,108 @@ export default function UrunEkleFormu({
     }
   };
 
+  // --- KUSURSUZ VE SÜTUN KAYDIRMAYAN AKILLI YAPIŞTIRMA SİSTEMİ ---
   const handleTopluMetinIsle = (hamMetin) => {
     if (!hamMetin.trim()) return;
 
     const satirlar = hamMetin.trim().split("\n");
     let yeniSepetEklentileri = [];
-    const aktifSepetDizisi = gercekAktifSepet === 1 ? sepet1 : sepet2;
+    const aktifSepetDizisi = hedefSepetNo === 1 ? sepet1 : sepet2;
 
-    const aktifUrunAdi = arama.trim() || "6MM TEMPERLİ FÜME REFLEKTE+ 16MM HB + 6MM TEMPERLİ 71/53 SOLAR LOW-E";
+    const isNum = (str) => {
+      if (!str) return false;
+      const cleanStr = String(str).trim().replace(/\./g, "").replace(/,/g, ".");
+      const n = Number(cleanStr);
+      return !isNaN(n) && n > 0;
+    };
+
+    const sayiTemizle = (metin) => {
+      if (!metin) return 0;
+      const duzgun = String(metin).trim().replace(/\./g, "").replace(/,/g, ".");
+      return Number(duzgun) || 0;
+    };
 
     for (const satirMetni of satirlar) {
-      const sutunlar = satirMetni.split(/\t/).map(s => s.trim()).filter(Boolean);
+      const sutunlar = satirMetni.split(/\t/).map(s => s.trim());
+      if (sutunlar.length < 3) continue;
 
-      if (sutunlar.length < 4) continue;
-      if (sutunlar[0].toUpperCase().includes("TOPLAM") || sutunlar.some(s => s.toUpperCase().includes("TOPLAM"))) continue;
+      // Başlık veya Toplam satırlarını atla
+      const str0 = (sutunlar[0] || "").toUpperCase();
+      const str1 = (sutunlar[1] || "").toUpperCase();
+      if (str0.includes("POZ") || str0.includes("TOPLAM") || str1.includes("ADET") || str1.includes("GENİŞLİK")) continue;
 
-      let pozNo = "-";
-      let adetIdx = 0;
-      const ilkSutunTemiz = sutunlar[0].replace(/\./g, "").replace(/,/g, ".");
-      if (isNaN(ilkSutunTemiz)) {
-        pozNo = sutunlar[0];
-        adetIdx = 1;
-      } else {
-        pozNo = "-";
-        adetIdx = 0;
+      let adetIdx = -1;
+      // Otomatik Sütun Bulucu: Yanyana duran (Adet, En, Boy) sayı üçlüsünü arar
+      for (let i = 0; i <= sutunlar.length - 3; i++) {
+        if (isNum(sutunlar[i]) && isNum(sutunlar[i+1]) && isNum(sutunlar[i+2])) {
+          adetIdx = i;
+          break;
+        }
       }
 
-      const sayiTemizle = (metin) => {
-        if (!metin) return 0;
-        const duzgun = metin.replace(/\./g, "").replace(/,/g, ".");
-        return Number(duzgun) || 0;
-      };
-
-      let hMiktar = sutunlar[adetIdx] !== undefined ? sayiTemizle(sutunlar[adetIdx]) : null;
-      let en = sayiTemizle(sutunlar[adetIdx + 1]);
-      let boy = sayiTemizle(sutunlar[adetIdx + 2]);
-
-      if (en <= 0 && sutunlar.length > adetIdx + 3) {
-        en = sayiTemizle(sutunlar[adetIdx + 2]);
-        boy = sayiTemizle(sutunlar[adetIdx + 3]);
+      // 3'lü sayı bulunamazsa, 2'li (En, Boy) arar ve adetIdx'i bir geriye atar
+      if (adetIdx === -1) {
+        for (let i = 0; i <= sutunlar.length - 2; i++) {
+          if (isNum(sutunlar[i]) && isNum(sutunlar[i+1])) {
+            adetIdx = i - 1; 
+            break;
+          }
+        }
       }
 
+      // Hala bulamadıysa varsayılan indeks
+      if (adetIdx === -1) adetIdx = 1;
+
+      const hMiktar = adetIdx >= 0 ? (sayiTemizle(sutunlar[adetIdx]) || 1) : 1;
+      const en = sayiTemizle(sutunlar[adetIdx + 1]);
+      const boy = sayiTemizle(sutunlar[adetIdx + 2]);
+
+      // En ve Boy yoksa boş satırdır, atla
       if (en <= 0 || boy <= 0) continue;
 
-      const dummyUrun = { id: "excel_urun_" + Math.random(), kodu: "ÖZEL", aciklama: aktifUrunAdi.toLocaleUpperCase("tr-TR"), "Ana Birim": "m²" };
+      let pozNo = "-";
+      if (adetIdx > 0) {
+        const pozMetni = sutunlar.slice(0, adetIdx).join(" ").trim();
+        if (pozMetni) pozNo = pozMetni;
+      }
+
+      let urunAdi = arama.trim() || "ÖZEL CAM ÜRÜNÜ";
+      let ekAciklama = "";
+
+      // Excel'de Alan sonrasında Kombinasyon ve Açıklama geliyor
+      const kombSutunu = sutunlar[adetIdx + 4];
+      const acikSutunu = sutunlar[adetIdx + 5];
+
+      if (kombSutunu && !isNum(kombSutunu)) {
+        urunAdi = kombSutunu;
+      } else if (sutunlar[adetIdx + 3] && !isNum(sutunlar[adetIdx + 3])) {
+        urunAdi = sutunlar[adetIdx + 3];
+      }
+
+      if (acikSutunu) {
+        ekAciklama = acikSutunu;
+      } else if (sutunlar[adetIdx + 4] && urunAdi === sutunlar[adetIdx + 3]) {
+        ekAciklama = sutunlar[adetIdx + 4];
+      }
+
+      // Benzersiz ID atayarak React'in tüm ürünleri göstermesini garantiye alıyoruz
+      const benzersizId = "excel_" + Date.now() + "_" + Math.random().toString(36).substr(2, 9);
+      const dummyUrun = { id: benzersizId, kodu: "ÖZEL", aciklama: urunAdi.toLocaleUpperCase("tr-TR"), "Ana Birim": "m²" };
       
       const tekCamM2 = (en * boy) / 1000000;
-      const toplamM2 = hMiktar !== null && hMiktar > 0 ? tekCamM2 * hMiktar : tekCamM2;
+      const toplamM2 = tekCamM2 * hMiktar;
       
-      let ekstraAciklama = hMiktar !== null && hMiktar > 0
-        ? ` (${en}×${boy} mm - ${hMiktar} Adet - Toplam: ${toplamM2.toFixed(2)} m²)` 
-        : ` (${en}×${boy} mm - Toplam: ${toplamM2.toFixed(2)} m²)`;
+      let parcaAciklama = `(${en}×${boy} mm - ${hMiktar} Adet - Toplam: ${toplamM2.toFixed(2)} m²)`;
+      if (ekAciklama) {
+        parcaAciklama += ` | ${ekAciklama}`;
+      }
 
       const satir = satirHesapla(dummyUrun, 100, 100, toplamM2, Number(fiyatAna) || 0, paraBirimi, Number(kdvOrani), "m²");
+      
+      satir.id = benzersizId;
       satir.pozNo = pozNo;
-      satir.urunAciklamasi = aktifUrunAdi.toLocaleUpperCase("tr-TR");
-      satir.ozelAciklama = ekstraAciklama;
+      satir.urunAciklamasi = urunAdi.toLocaleUpperCase("tr-TR");
+      satir.ozelAciklama = parcaAciklama;
       satir.orijinalMiktar = hMiktar;
       satir.adet = hMiktar;
       satir.Adet = hMiktar;
@@ -141,17 +186,21 @@ export default function UrunEkleFormu({
       satir.en = en;
       satir.boy = boy;
       satir.secili = true;
+      satir.hamVeri = {
+        arama: urunAdi, ozelAciklama: parcaAciklama, en, boy, miktar: hMiktar, 
+        secilenBirim: "m²", paraBirimi, kdvOrani: Number(kdvOrani)
+      };
 
       yeniSepetEklentileri.push(satir);
     }
 
     if (yeniSepetEklentileri.length > 0) {
-      if (onTopluGuncelle && (aktifSecenekNo || seciliSepet)) {
-        onTopluGuncelle(gercekAktifSepet, [...aktifSepetDizisi, ...yeniSepetEklentileri]);
+      if (onTopluGuncelle) {
+        onTopluGuncelle(hedefSepetNo, [...aktifSepetDizisi, ...yeniSepetEklentileri]);
       } else if (onEkle) {
         yeniSepetEklentileri.forEach(s => onEkle(s));
       }
-      alert(`✅ Başarıyla ${yeniSepetEklentileri.length} kalem sepete eklendi!`);
+      alert(`✅ Başarıyla ${yeniSepetEklentileri.length} satır ${hedefSepetNo}. Seçeneğe eklendi!`);
     } else {
       alert("Tablo verisi uygun formatta algılanamadı. Lütfen sütunları kontrol edin.");
     }
@@ -498,7 +547,6 @@ export default function UrunEkleFormu({
       if (onGuncelle) onGuncelle(islemVerisi.index, anaSatir, islemVerisi.sepetNo);
       if (onIptal) onIptal();
     } else {
-      // YENİ EKLEME: Sadece onEkle'yi tetikliyoruz, böylece App.jsx kendi aktif sepetine atıyor.
       const yeniEklenecekler = [anaSatir];
       if (karolajSatiri) {
         yeniEklenecekler.push(karolajSatiri);
