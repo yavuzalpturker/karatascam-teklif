@@ -13,6 +13,7 @@ const AYNA_RENKLERI = [
 // --- ŞİŞECAM GLASSTOOL TÜM KAPLAMA SERİLERİ ---
 const KAPLAMA_TURLERI = [
   "Kaplamasız (Düzcam)",
+  "Emaye Boyalı",
   "Climax T 80", "Climax T 71", "Climax T 70", "Climax T 60", "Climax T 50", "Climax T 40", "Ecotherm T",
   "Duosol T 70", "Duosol T 70 One", "Duosol T 60", "Duosol T 58", "Duosol T 58 One", "Duosol T 51", "Duosol T 51 One", "Duosol T 50", "Duosol T 43/28",
   "Ecosol T 62", "Ecosol T 62/44", "Ecosol T 50",
@@ -269,7 +270,6 @@ export default function CamKombinasyonSihirbazi({ onKombinasyonSec, baslangicMet
     setLamPvbLer(yeniPvb);
   };
 
-  // --- ARTIK PARSER İLE UĞRAŞMIYORUZ: DOĞRUDAN HAFIZADAN GERİ YÜKLEME ---
   useEffect(() => {
     if (baslangicVerisi) {
       if(baslangicVerisi.camTuru) setCamTuru(baslangicVerisi.camTuru);
@@ -368,10 +368,9 @@ export default function CamKombinasyonSihirbazi({ onKombinasyonSec, baslangicMet
       if(baslangicVerisi.uIcDelik) setUIcDelik(baslangicVerisi.uIcDelik);
       if(baslangicVerisi.uIcOygu) setUIcOygu(baslangicVerisi.uIcOygu);
       
-      return; // HAFIZA VARSA, STRING PARÇALAMA YAPMA ÇÜNKÜ ZATEN TAM 12'DEN VERİ GELDİ!
+      return; 
     }
 
-    // (Eskiden kalan, hafızası olmayan eski sepet ürünleri için geliştirilmiş parselama yedeği)
     if (!baslangicMetni) return;
     const m = baslangicMetni;
     const upperM = m.toLocaleUpperCase("tr-TR");
@@ -532,7 +531,6 @@ export default function CamKombinasyonSihirbazi({ onKombinasyonSec, baslangicMet
   ]);
 
   const aktar = () => {
-    // SİHİRBAZ KENDİ HAFIZASINI DA FORMA YEDEKLEYİP GÖNDERİYOR (GERİ YÜKLEME İÇİN)
     const durum = {
       camTuru,
       tekCamKalinlik, tekCamRenk, tekCamKaplama, tekKenar, tekTemper, tekDelik, tekOygu,
@@ -556,7 +554,6 @@ export default function CamKombinasyonSihirbazi({ onKombinasyonSec, baslangicMet
         Şişecam Katmanlı Cam & Kaplama Sihirbazı
       </h3>
 
-      {/* ÜST TÜR SEÇİM BUTONLARI */}
       <div style={{ display: "flex", gap: "6px", marginBottom: "12px" }}>
         {[
           { id: "isicam", label: "Isıcam (Çift Cam)" },
@@ -583,10 +580,8 @@ export default function CamKombinasyonSihirbazi({ onKombinasyonSec, baslangicMet
         ))}
       </div>
 
-      {/* KATMAN SEÇİMLERİ ANA ALAN */}
       <div style={{ display: "flex", flexWrap: "wrap", gap: "10px", alignItems: "stretch", backgroundColor: "white", padding: "12px", borderRadius: "8px", border: "1px solid #cbd5e1" }}>
         
-        {/* 1. TEK CAM */}
         {camTuru === "tek" && (
           <CamKatmaniSecici 
             title="Tek Cam Katmanı" bgColor="#f8fafc" borderColor="#cbd5e1"
@@ -600,7 +595,6 @@ export default function CamKombinasyonSihirbazi({ onKombinasyonSec, baslangicMet
           />
         )}
 
-        {/* 2. AYNA */}
         {camTuru === "ayna" && (
           <CamKatmaniSecici 
             title="Ayna Seçimi" bgColor="#f8fafc" borderColor="#cbd5e1"
@@ -614,7 +608,6 @@ export default function CamKombinasyonSihirbazi({ onKombinasyonSec, baslangicMet
           />
         )}
 
-        {/* 3. LAMİNE CAM */}
         {camTuru === "lamine" && (
           <div style={{ width: "100%" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "10px", backgroundColor: "#e2e8f0", padding: "6px 10px", borderRadius: "6px" }}>
@@ -667,7 +660,6 @@ export default function CamKombinasyonSihirbazi({ onKombinasyonSec, baslangicMet
           </div>
         )}
 
-        {/* 4. ISICAM (ÇİFT CAM) */}
         {camTuru === "isicam" && (
           <div style={{ display: "flex", gap: "10px", width: "100%", alignItems: "center" }}>
             <CamKatmaniSecici 
@@ -714,7 +706,6 @@ export default function CamKombinasyonSihirbazi({ onKombinasyonSec, baslangicMet
           </div>
         )}
 
-        {/* 5. ÜÇLÜ ISICAM */}
         {camTuru === "ucIliIsicam" && (
           <div style={{ display: "flex", gap: "6px", width: "100%", alignItems: "center" }}>
             <CamKatmaniSecici 
@@ -779,7 +770,6 @@ export default function CamKombinasyonSihirbazi({ onKombinasyonSec, baslangicMet
         )}
       </div>
 
-      {/* ÖNİZLEME VE FORMA AKTARMA ALANI */}
       <div style={{ marginTop: "12px", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "10px", backgroundColor: "#e2e8f0", padding: "10px 14px", borderRadius: "6px", border: "1px solid #cbd5e1" }}>
         <div style={{ fontSize: "13px", color: "#1e293b", flex: 1 }}>
           <span style={{ fontWeight: "700", color: "#475569" }}>Oluşturulan Teknik Cam Adı: </span>

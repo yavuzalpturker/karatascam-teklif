@@ -40,6 +40,12 @@ export default function UrunEkleFormu({
   const [karolajEnAdet, setKarolajEnAdet] = useState("");
   const [karolajBoyAdet, setKarolajBoyAdet] = useState("");
 
+  // --- SIVAMA İÇİN ÖZEL İÇ VE DIŞ CAM ÖLÇÜLERİ STATE'LERİ ---
+  const [sivamaIcEn, setSivamaIcEn] = useState("");
+  const [sivamaIcBoy, setSivamaIcBoy] = useState("");
+  const [sivamaDisEn, setSivamaDisEn] = useState("");
+  const [sivamaDisBoy, setSivamaDisBoy] = useState("");
+
   const [paraBirimi, setParaBirimi] = useState("TRY");
   const [kdvOrani, setKdvOrani] = useState("20");
   const [ihracatMi, setIhracatMi] = useState(false);
@@ -75,7 +81,6 @@ export default function UrunEkleFormu({
     }
   };
 
-  // --- KUSURSUZ VE SÜTUN KAYDIRMAYAN AKILLI YAPIŞTIRMA SİSTEMİ ---
   const handleTopluMetinIsle = (hamMetin) => {
     if (!hamMetin.trim()) return;
 
@@ -100,13 +105,11 @@ export default function UrunEkleFormu({
       const sutunlar = satirMetni.split(/\t/).map(s => s.trim());
       if (sutunlar.length < 3) continue;
 
-      // Başlık veya Toplam satırlarını atla
       const str0 = (sutunlar[0] || "").toUpperCase();
       const str1 = (sutunlar[1] || "").toUpperCase();
       if (str0.includes("POZ") || str0.includes("TOPLAM") || str1.includes("ADET") || str1.includes("GENİŞLİK")) continue;
 
       let adetIdx = -1;
-      // Otomatik Sütun Bulucu: Yanyana duran (Adet, En, Boy) sayı üçlüsünü arar
       for (let i = 0; i <= sutunlar.length - 3; i++) {
         if (isNum(sutunlar[i]) && isNum(sutunlar[i+1]) && isNum(sutunlar[i+2])) {
           adetIdx = i;
@@ -114,7 +117,6 @@ export default function UrunEkleFormu({
         }
       }
 
-      // 3'lü sayı bulunamazsa, 2'li (En, Boy) arar ve adetIdx'i bir geriye atar
       if (adetIdx === -1) {
         for (let i = 0; i <= sutunlar.length - 2; i++) {
           if (isNum(sutunlar[i]) && isNum(sutunlar[i+1])) {
@@ -124,14 +126,12 @@ export default function UrunEkleFormu({
         }
       }
 
-      // Hala bulamadıysa varsayılan indeks
       if (adetIdx === -1) adetIdx = 1;
 
       const hMiktar = adetIdx >= 0 ? (sayiTemizle(sutunlar[adetIdx]) || 1) : 1;
       const en = sayiTemizle(sutunlar[adetIdx + 1]);
       const boy = sayiTemizle(sutunlar[adetIdx + 2]);
 
-      // En ve Boy yoksa boş satırdır, atla
       if (en <= 0 || boy <= 0) continue;
 
       let pozNo = "-";
@@ -143,7 +143,6 @@ export default function UrunEkleFormu({
       let urunAdi = arama.trim() || "ÖZEL CAM ÜRÜNÜ";
       let ekAciklama = "";
 
-      // Excel'de Alan sonrasında Kombinasyon ve Açıklama geliyor
       const kombSutunu = sutunlar[adetIdx + 4];
       const acikSutunu = sutunlar[adetIdx + 5];
 
@@ -159,14 +158,13 @@ export default function UrunEkleFormu({
         ekAciklama = sutunlar[adetIdx + 4];
       }
 
-      // Benzersiz ID atayarak React'in tüm ürünleri göstermesini garantiye alıyoruz
       const benzersizId = "excel_" + Date.now() + "_" + Math.random().toString(36).substr(2, 9);
       const dummyUrun = { id: benzersizId, kodu: "ÖZEL", aciklama: urunAdi.toLocaleUpperCase("tr-TR"), "Ana Birim": "m²" };
       
       const tekCamM2 = (en * boy) / 1000000;
       const toplamM2 = tekCamM2 * hMiktar;
       
-      let parcaAciklama = `(${en}×${boy} mm - ${hMiktar} Adet - Toplam: ${toplamM2.toFixed(2)} m²)`;
+      let parcaAciklama = `(${en}×{boy} mm - ${hMiktar} Adet - Toplam: ${toplamM2.toFixed(2)} m²)`;
       if (ekAciklama) {
         parcaAciklama += ` | ${ekAciklama}`;
       }
@@ -207,7 +205,7 @@ export default function UrunEkleFormu({
   };
 
   useEffect(() => {
-    if (iscilikTuru === "Karolaj Bedeli" || iscilikTuru === "Sıvama Bedeli") {
+    if (iscilikTuru === "Karolaj Bedeli") {
       const eMm = Number(en) || 0;       
       const bMm = Number(boy) || 0;       
       const eAdet = Number(karolajEnAdet) || 0; 
@@ -247,6 +245,11 @@ export default function UrunEkleFormu({
       setKarolajEnAdet(ham.karolajEnAdet || "");
       setKarolajBoyAdet(ham.karolajBoyAdet || "");
       
+      setSivamaIcEn(ham.sivamaIcEn || "");
+      setSivamaIcBoy(ham.sivamaIcBoy || "");
+      setSivamaDisEn(ham.sivamaDisEn || "");
+      setSivamaDisBoy(ham.sivamaDisBoy || "");
+
       const gelenAd = satir.urunAciklamasi || ham.arama || satir.aciklama || satir.Açıklama || "";
       setArama(gelenAd);
       
@@ -282,6 +285,10 @@ export default function UrunEkleFormu({
     setIscilikBirimFiyat("");
     setKarolajEnAdet("");
     setKarolajBoyAdet("");
+    setSivamaIcEn("");
+    setSivamaIcBoy("");
+    setSivamaDisEn("");
+    setSivamaDisBoy("");
     setSihirbazVerisi(null);
     setIhracatMi(false);
     setKdvOrani("20");
@@ -391,6 +398,11 @@ export default function UrunEkleFormu({
     let nihaiBirim = hedefBirim;
     let hesaplananMiktar = miktarDegeri !== null ? miktarDegeri : 1;
 
+    // Sıvama seçildiyse birim fiyatı doğrudan birim fiyat kutusundan alır
+    if (iscilikTuru === "Sıvama Bedeli") {
+      nihaiFiyat = Number(fiyatAna) || 0;
+    }
+
     if (hedefBirim === "m²" || hedefBirim === "ad") {
       let toplamM2 = 0;
       if (manuelM2Degeri > 0) {
@@ -401,20 +413,28 @@ export default function UrunEkleFormu({
       } else if (enDegeri > 0 && boyDegeri > 0) {
         const tekCamM2 = (enDegeri * boyDegeri) / 1000000;
         toplamM2 = miktarDegeri !== null ? tekCamM2 * miktarDegeri : tekCamM2;
-        ekstraAciklama = miktarDegeri !== null 
-          ? ` (${enDegeri}×${boyDegeri} mm - ${miktarDegeri} Adet - Toplam: ${toplamM2.toFixed(2)} m²)` 
-          : ` (${enDegeri}×${boyDegeri} mm - Toplam: ${toplamM2.toFixed(2)} m²)`;
+        
+        // --- SIVAMA İÇİN İÇ VE DIŞ CAM ÖLÇÜLERİNİ AÇIKLAMAYA YANSIT ---
+        if (iscilikTuru === "Sıvama Bedeli" && (sivamaIcEn || sivamaDisEn)) {
+          ekstraAciklama = ` (Dış Cam: ${sivamaDisEn || enDegeri}×${sivamaDisBoy || boyDegeri} mm | İç Cam: ${sivamaIcEn || "-"}×${sivamaIcBoy || "-"} mm - ${miktarDegeri || 1} Adet - Toplam: ${toplamM2.toFixed(2)} m²)`;
+        } else {
+          ekstraAciklama = miktarDegeri !== null 
+            ? ` (${enDegeri}×${boyDegeri} mm - ${miktarDegeri} Adet - Toplam: ${toplamM2.toFixed(2)} m²)` 
+            : ` (${enDegeri}×${boyDegeri} mm - Toplam: ${toplamM2.toFixed(2)} m²)`;
+        }
       } else {
         ekstraAciklama = miktarDegeri !== null ? ` (${miktarDegeri} Adet)` : "";
       }
 
-      if (fiyatAdet && Number(fiyatAdet) > 0) {
+      if (fiyatAdet && Number(fiyatAdet) > 0 && iscilikTuru !== "Sıvama Bedeli") {
         nihaiFiyat = Number(fiyatAdet);
         nihaiBirim = "ad"; 
       } else {
         hesaplananMiktar = toplamM2 > 0 ? toplamM2 : (miktarDegeri !== null ? miktarDegeri : 1);
-        nihaiFiyat = Number(fiyatAna) || 0;
-        nihaiBirim = toplamM2 > 0 ? "m²" : "ad";
+        if (iscilikTuru !== "Sıvama Bedeli") {
+          nihaiFiyat = Number(fiyatAna) || 0;
+          nihaiBirim = toplamM2 > 0 ? "m²" : "ad";
+        }
       }
     } else if (hedefBirim === "mt") {
       hesaplananMiktar = miktarDegeri !== null ? (boyDegeri / 1000) * miktarDegeri : (boyDegeri / 1000);
@@ -460,6 +480,7 @@ export default function UrunEkleFormu({
       arama, secilenId, pozNo: hedefPozNo, ozelAciklama: kullanilacakOzelAciklama, en: hedefEn, boy: hedefBoy, 
       manuelM2: manuelM2Degeri, miktar: miktarDegeri, secilenBirim: hedefBirim, 
       fiyatAna, fiyatAdet, paraBirimi, kdvOrani: Number(kdvOrani), karolajEnAdet, karolajBoyAdet, 
+      sivamaIcEn, sivamaIcBoy, sivamaDisEn, sivamaDisBoy,
       iscilikTuru, iscilikMetretul, iscilikBirimFiyat, sihirbazVerisi 
     };
 
@@ -470,7 +491,7 @@ export default function UrunEkleFormu({
     let mtMiktari = 0;
     const miktarDegeri = (hedefMiktar !== "" && hedefMiktar !== null && !isNaN(hedefMiktar)) ? Number(hedefMiktar) : 1;
 
-    if (iscilikTuru === "Karolaj Bedeli" || iscilikTuru === "Sıvama Bedeli") {
+    if (iscilikTuru === "Karolaj Bedeli") {
       const eMm = Number(hedefEn) || 0;       
       const bMm = Number(hedefBoy) || 0;       
       const eAdet = Number(karolajEnAdet) || 0; 
@@ -503,7 +524,7 @@ export default function UrunEkleFormu({
     let parcalar = [];
     let urunVeAdetBilgisi = hedefEn && hedefBoy ? `${hedefEn}×${hedefBoy} mm` : "Ürün Ölçüsü Yok";
 
-    if ((iscilikTuru === "Karolaj Bedeli" || iscilikTuru === "Sıvama Bedeli") && (karolajEnAdet || karolajBoyAdet)) {
+    if (iscilikTuru === "Karolaj Bedeli" && (karolajEnAdet || karolajBoyAdet)) {
       urunVeAdetBilgisi += hedefMiktar !== null ? ` (${hedefMiktar} Adet Cam İçin → Cam Başına ${karolajEnAdet || 0} En / ${karolajBoyAdet || 0} Boy)` : ` (Cam Başına ${karolajEnAdet || 0} En / ${karolajBoyAdet || 0} Boy)`;
     } else {
       urunVeAdetBilgisi += hedefMiktar !== null ? ` (${hedefMiktar} Adet İçin)` : "";
@@ -539,7 +560,7 @@ export default function UrunEkleFormu({
     const anaSatir = anaSatirOlusturHelper(en, boy, manuelM2, miktar, secilenBirim, pozNo, true, sonUrun);
 
     let karolajSatiri = null;
-    if (iscilikTuru && (Number(iscilikMetretul) > 0 || iscilikTuru === "Karolaj Bedeli" || iscilikTuru === "Sıvama Bedeli") && Number(iscilikBirimFiyat) > 0) {
+    if (iscilikTuru && (Number(iscilikMetretul) > 0 || iscilikTuru === "Karolaj Bedeli") && Number(iscilikBirimFiyat) > 0) {
       karolajSatiri = karolajSatiriOlusturHelper(en, boy, miktar, pozNo, true, sonUrun);
     }
 
@@ -591,7 +612,7 @@ export default function UrunEkleFormu({
         const yeniAnaSatir = anaSatirOlusturHelper(hEn, hBoy, hManuelM2, hMiktar, hBirim, hPozNo, item.secili !== false, sonUrun, hOzelAciklama);
         guncelSepet.push(yeniAnaSatir);
 
-        if (iscilikTuru && (Number(iscilikMetretul) > 0 || iscilikTuru === "Karolaj Bedeli" || iscilikTuru === "Sıvama Bedeli") && Number(iscilikBirimFiyat) > 0) {
+        if (iscilikTuru && (Number(iscilikMetretul) > 0 || iscilikTuru === "Karolaj Bedeli") && Number(iscilikBirimFiyat) > 0) {
           const yeniKarolajSatiri = karolajSatiriOlusturHelper(hEn, hBoy, hMiktar, hPozNo, item.secili !== false, sonUrun);
           guncelSepet.push(yeniKarolajSatiri);
         }
@@ -851,7 +872,7 @@ export default function UrunEkleFormu({
       </div>
 
       <div style={{ backgroundColor: "#f1f5f9", padding: "12px", borderRadius: "8px", border: "1px solid #cbd5e1", marginBottom: "16px" }}>
-        <div style={{ display: "grid", gridTemplateColumns: (iscilikTuru === "Karolaj Bedeli" || iscilikTuru === "Sıvama Bedeli") ? "1.2fr 1fr 1fr 1fr 100px" : "1fr 1fr 1fr 100px", gap: "10px", alignItems: "flex-end" }}>
+        <div style={{ display: "grid", gridTemplateColumns: iscilikTuru === "Karolaj Bedeli" ? "1.2fr 1fr 1fr 1fr 100px" : iscilikTuru === "Sıvama Bedeli" ? "1.2fr 2fr 1fr 100px" : "1fr 1fr 1fr 100px", gap: "10px", alignItems: "flex-end" }}>
           <div>
             <label style={{ display: "block", fontSize: "12px", fontWeight: "800", color: "#0f2942", marginBottom: "4px" }}>İşçilik Bedeli Türü</label>
             <select value={iscilikTuru} onChange={(e) => setIscilikTuru(e.target.value)} style={{ width: "100%", padding: "9px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "13px", fontWeight: "700", backgroundColor: "white", color: "#1e293b" }}>
@@ -862,62 +883,72 @@ export default function UrunEkleFormu({
             </select>
           </div>
 
-          {(iscilikTuru === "Karolaj Bedeli" || iscilikTuru === "Sıvama Bedeli") && (
+          {iscilikTuru === "Karolaj Bedeli" && (
             <div style={{ display: "flex", gap: "4px" }}>
               <div style={{ flex: 1 }}>
                 <label style={{ display: "block", fontSize: "11px", fontWeight: "800", color: "#0f2942", marginBottom: "4px" }}>En Adet</label>
-                <input
-                  type="number"
-                  min="0"
-                  step="1"
-                  placeholder="Örn: 2"
-                  value={karolajEnAdet}
-                  onChange={(e) => setKarolajEnAdet(e.target.value)}
-                  style={{ width: "100%", padding: "9px 6px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "13px", fontWeight: "600", backgroundColor: "white" }}
-                />
+                <input type="number" min="0" step="1" placeholder="Örn: 2" value={karolajEnAdet} onChange={(e) => setKarolajEnAdet(e.target.value)} style={{ width: "100%", padding: "9px 6px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "13px", fontWeight: "600", backgroundColor: "white" }} />
               </div>
               <div style={{ flex: 1 }}>
                 <label style={{ display: "block", fontSize: "11px", fontWeight: "800", color: "#0f2942", marginBottom: "4px" }}>Boy Adet</label>
-                <input
-                  type="number"
-                  min="0"
-                  step="1"
-                  placeholder="Örn: 4"
-                  value={karolajBoyAdet}
-                  onChange={(e) => setKarolajBoyAdet(e.target.value)}
-                  style={{ width: "100%", padding: "9px 6px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "13px", fontWeight: "600", backgroundColor: "white" }}
-                />
+                <input type="number" min="0" step="1" placeholder="Örn: 4" value={karolajBoyAdet} onChange={(e) => setKarolajBoyAdet(e.target.value)} style={{ width: "100%", padding: "9px 6px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "13px", fontWeight: "600", backgroundColor: "white" }} />
               </div>
             </div>
           )}
 
-          <div>
-            <label style={{ display: "block", fontSize: "12px", fontWeight: "800", color: "#0f2942", marginBottom: "4px" }}>Metretül (mt)</label>
-            <input
-              type="number"
-              min="0"
-              step="0.01"
-              placeholder="Örn: 50"
-              value={iscilikMetretul}
-              onChange={(e) => setIscilikMetretul(e.target.value)}
-              disabled={!iscilikTuru}
-              style={{ width: "100%", padding: "9px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "13px", fontWeight: "600", backgroundColor: iscilikTuru ? "white" : "#e2e8f0" }}
-            />
-          </div>
+          {/* --- SIVAMA İÇİN ÖLÇÜLER + FİYAT KUTUSU --- */}
+          {iscilikTuru === "Sıvama Bedeli" && (
+            <>
+              <div style={{ display: "flex", gap: "6px", backgroundColor: "#e2e8f0", padding: "6px", borderRadius: "6px", border: "1px solid #cbd5e1" }}>
+                <div style={{ flex: 1 }}>
+                  <label style={{ display: "block", fontSize: "10px", fontWeight: "800", color: "#0f2942", marginBottom: "2px" }}>Dış Cam (En x Boy)</label>
+                  <div style={{ display: "flex", gap: "2px" }}>
+                    <input type="number" placeholder="En" value={sivamaDisEn} onChange={(e) => setSivamaDisEn(e.target.value)} style={{ width: "50%", padding: "6px", borderRadius: "4px", border: "1px solid #cbd5e1", fontSize: "12px", backgroundColor: "white" }} />
+                    <input type="number" placeholder="Boy" value={sivamaDisBoy} onChange={(e) => setSivamaDisBoy(e.target.value)} style={{ width: "50%", padding: "6px", borderRadius: "4px", border: "1px solid #cbd5e1", fontSize: "12px", backgroundColor: "white" }} />
+                  </div>
+                </div>
+                <div style={{ flex: 1 }}>
+                  <label style={{ display: "block", fontSize: "10px", fontWeight: "800", color: "#0f2942", marginBottom: "2px" }}>İç Cam (En x Boy)</label>
+                  <div style={{ display: "flex", gap: "2px" }}>
+                    <input type="number" placeholder="En" value={sivamaIcEn} onChange={(e) => setSivamaIcEn(e.target.value)} style={{ width: "50%", padding: "6px", borderRadius: "4px", border: "1px solid #cbd5e1", fontSize: "12px", backgroundColor: "white" }} />
+                    <input type="number" placeholder="Boy" value={sivamaIcBoy} onChange={(e) => setSivamaIcBoy(e.target.value)} style={{ width: "50%", padding: "6px", borderRadius: "4px", border: "1px solid #cbd5e1", fontSize: "12px", backgroundColor: "white" }} />
+                  </div>
+                </div>
+              </div>
 
-          <div>
-            <label style={{ display: "block", fontSize: "12px", fontWeight: "800", color: "#0f2942", marginBottom: "4px" }}>mt Başına Fiyat</label>
-            <input
-              type="number"
-              min="0"
-              step="0.01"
-              placeholder="Örn: 360"
-              value={iscilikBirimFiyat}
-              onChange={(e) => setIscilikBirimFiyat(e.target.value)}
-              disabled={!iscilikTuru}
-              style={{ width: "100%", padding: "9px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "13px", fontWeight: "600", backgroundColor: iscilikTuru ? "white" : "#e2e8f0" }}
-            />
-          </div>
+              <div>
+                <label style={{ display: "block", fontSize: "12px", fontWeight: "800", color: "#0f2942", marginBottom: "4px" }}>Sıvama Fiyatı</label>
+                <input type="number" min="0" step="0.01" placeholder="Örn: 500" value={fiyatAna} onChange={(e) => setFiyatAna(e.target.value)} style={{ width: "100%", padding: "9px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "13px", fontWeight: "600", backgroundColor: "white" }} />
+              </div>
+            </>
+          )}
+
+          {iscilikTuru !== "Sıvama Bedeli" && iscilikTuru !== "Karolaj Bedeli" && (
+            <>
+              <div>
+                <label style={{ display: "block", fontSize: "12px", fontWeight: "800", color: "#0f2942", marginBottom: "4px" }}>Metretül (mt)</label>
+                <input type="number" min="0" step="0.01" placeholder="Örn: 50" value={iscilikMetretul} onChange={(e) => setIscilikMetretul(e.target.value)} disabled={!iscilikTuru} style={{ width: "100%", padding: "9px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "13px", fontWeight: "600", backgroundColor: iscilikTuru ? "white" : "#e2e8f0" }} />
+              </div>
+
+              <div>
+                <label style={{ display: "block", fontSize: "12px", fontWeight: "800", color: "#0f2942", marginBottom: "4px" }}>mt Başına Fiyat</label>
+                <input type="number" min="0" step="0.01" placeholder="Örn: 360" value={iscilikBirimFiyat} onChange={(e) => setIscilikBirimFiyat(e.target.value)} disabled={!iscilikTuru} style={{ width: "100%", padding: "9px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "13px", fontWeight: "600", backgroundColor: iscilikTuru ? "white" : "#e2e8f0" }} />
+              </div>
+            </>
+          )}
+
+          {iscilikTuru === "Karolaj Bedeli" && (
+            <>
+              <div>
+                <label style={{ display: "block", fontSize: "12px", fontWeight: "800", color: "#0f2942", marginBottom: "4px" }}>Metretül (mt)</label>
+                <input type="number" min="0" step="0.01" placeholder="Örn: 50" value={iscilikMetretul} onChange={(e) => setIscilikMetretul(e.target.value)} style={{ width: "100%", padding: "9px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "13px", fontWeight: "600", backgroundColor: "white" }} />
+              </div>
+              <div>
+                <label style={{ display: "block", fontSize: "12px", fontWeight: "800", color: "#0f2942", marginBottom: "4px" }}>mt Başına Fiyat</label>
+                <input type="number" min="0" step="0.01" placeholder="Örn: 360" value={iscilikBirimFiyat} onChange={(e) => setIscilikBirimFiyat(e.target.value)} style={{ width: "100%", padding: "9px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "13px", fontWeight: "600", backgroundColor: "white" }} />
+              </div>
+            </>
+          )}
 
           <div>
             <select value={paraBirimi} onChange={(e) => setParaBirimi(e.target.value)} disabled={!iscilikTuru} style={{ width: "100%", padding: "9px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "14px", fontWeight: "800", backgroundColor: iscilikTuru ? "white" : "#e2e8f0" }}>
@@ -943,13 +974,7 @@ export default function UrunEkleFormu({
           </div>
 
           <div style={{ display: "flex", alignItems: "center", gap: "6px", backgroundColor: "#fef3c7", padding: "7px 10px", borderRadius: "6px", border: "1px solid #f59e0b", height: "35px" }}>
-            <input 
-              type="checkbox" 
-              id="ihracatCheck"
-              checked={ihracatMi}
-              onChange={(e) => handleIhracatToggle(e.target.checked)}
-              style={{ width: "16px", height: "16px", cursor: "pointer" }}
-            />
+            <input type="checkbox" id="ihracatCheck" checked={ihracatMi} onChange={(e) => handleIhracatToggle(e.target.checked)} style={{ width: "16px", height: "16px", cursor: "pointer" }} />
             <label htmlFor="ihracatCheck" style={{ fontSize: "11.5px", fontWeight: "800", color: "#92400e", cursor: "pointer" }}>
               🌍 İhracat (KDV %0)
             </label>
@@ -958,41 +983,18 @@ export default function UrunEkleFormu({
 
         <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
           {islemVerisi && (
-            <button 
-              type="button" 
-              onClick={() => { formuSifirla(); onIptal(); }}
-              style={{ backgroundColor: "#64748b", color: "white", border: "none", padding: "10px 16px", borderRadius: "6px", fontSize: "13px", fontWeight: "700", cursor: "pointer" }}
-            >
+            <button type="button" onClick={() => { formuSifirla(); onIptal(); }} style={{ backgroundColor: "#64748b", color: "white", border: "none", padding: "10px 16px", borderRadius: "6px", fontSize: "13px", fontWeight: "700", cursor: "pointer" }}>
               İptal
             </button>
           )}
 
           {islemVerisi?.tip === "duzenle" && (
-            <button 
-              type="button"
-              onClick={topluUygula}
-              style={{ 
-                backgroundColor: "#f1f5f9", 
-                color: "#475569", 
-                border: "1px solid #cbd5e1", 
-                padding: "8px 10px", 
-                borderRadius: "6px", 
-                fontSize: "11px", 
-                fontWeight: "600", 
-                cursor: "pointer"
-              }}
-              title="Aynı özellikteki seçili diğer ürünlere de bu değişiklikleri uygula"
-            >
+            <button type="button" onClick={topluUygula} style={{ backgroundColor: "#f1f5f9", color: "#475569", border: "1px solid #cbd5e1", padding: "8px 10px", borderRadius: "6px", fontSize: "11px", fontWeight: "600", cursor: "pointer" }} title="Aynı özellikteki seçili diğer ürünlere de bu değişiklikleri uygula">
               🔄 Seçili Ürünlere de Uygula
             </button>
           )}
 
-          <button 
-            type="button"
-            onClick={ekle} 
-            disabled={!formDoluMu}
-            style={{ backgroundColor: islemVerisi?.tip === "duzenle" ? "#10b981" : "#0f2942", color: "white", border: "none", padding: "10px 22px", borderRadius: "6px", fontSize: "13px", fontWeight: "800", cursor: formDoluMu ? "pointer" : "not-allowed", opacity: formDoluMu ? 1 : 0.6, boxShadow: "0 4px 6px rgba(0,0,0,0.15)" }}
-          >
+          <button type="button" onClick={ekle} disabled={!formDoluMu} style={{ backgroundColor: islemVerisi?.tip === "duzenle" ? "#10b981" : "#0f2942", color: "white", border: "none", padding: "10px 22px", borderRadius: "6px", fontSize: "13px", fontWeight: "800", cursor: formDoluMu ? "pointer" : "not-allowed", opacity: formDoluMu ? 1 : 0.6, boxShadow: "0 4px 6px rgba(0,0,0,0.15)" }}>
             {islemVerisi?.tip === "duzenle" ? "💾 Sadece Bu Ürünü Kaydet" : "📥 Sepete Ekle"}
           </button>
         </div>
