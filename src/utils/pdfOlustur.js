@@ -162,13 +162,26 @@ function sepetIcerikOlustur(sepet, baslikMetni, teklif) {
   const ihracatMi = teklif?.ihracatMi || teklif?.kdvMuaf || sepet.some(s => Number(s.kdvOrani) === 0);
 
   const urunSatirlari = sepet.map((satir) => {
-    let baslik = satir.urunAciklamasi;
-    if (satir.ozelAciklama && satir.ozelAciklama.trim() !== "" && satir.ozelAciklama.trim() !== satir.urunAciklamasi) {
-      baslik += ` - ${satir.ozelAciklama}`;
+    let baslik = satir.urunAciklamasi || "ÖZEL CAM ÜRÜNÜ";
+    
+    // Doğru en ve boy değerlerini yakalıyoruz ({boy} hatasını önlemek için)
+    const enVal = satir.en || satir.hamVeri?.en || 0;
+    const boyVal = satir.boy || satir.hamVeri?.boy || 0;
+    const adetVal = satir.orijinalMiktar !== undefined && satir.orijinalMiktar !== null ? satir.orijinalMiktar : (satir.adet || satir.hamVeri?.miktar || 1);
+    const m2Val = satir.miktar || 0;
+
+    let temizAciklama = satir.ozelAciklama || "";
+    if (!temizAciklama || temizAciklama.includes("{boy}")) {
+      if (enVal > 0 && boyVal > 0) {
+        temizAciklama = `(${enVal}×${boyVal} mm - ${adetVal} Adet - Toplam: ${m2Val.toFixed(2)} m²)`;
+      } else {
+        temizAciklama = `(${adetVal} Adet - Toplam: ${m2Val.toFixed(2)} m²)`;
+      }
     }
 
     const elemanlar = [
-      { text: baslik, bold: true, fontSize: 10, margin: [0, 6, 0, 2] }
+      { text: baslik, bold: true, fontSize: 10, color: '#0f2942', margin: [0, 6, 0, 2] },
+      { text: temizAciklama, fontSize: 9, color: '#333333', margin: [0, 0, 0, 4] }
     ];
 
     if (satir.gorsel) {
@@ -369,6 +382,7 @@ function proformaTabloOlustur(sepet, baslikMetni, teklif) {
     [
       { text: 'POZ NO', bold: true, fontSize: 8.5, fillColor: '#eeeeee', margin: [2, 4, 2, 4], alignment: 'center' },
       { text: baslikMetni ? `${baslikMetni} - MALIN CİNSİ` : 'MALIN CİNSİ', bold: true, fontSize: 8.5, fillColor: '#eeeeee', margin: [4, 4, 0, 4], alignment: 'left' },
+      { text: 'AÇIKLAMA & ÇİZİM', bold: true, fontSize: 8.5, fillColor: '#eeeeee', margin: [4, 4, 0, 4], alignment: 'left' },
       { text: 'EN', bold: true, fontSize: 8.5, fillColor: '#eeeeee', margin: [2, 4, 2, 4], alignment: 'center' },
       { text: 'BOY', bold: true, fontSize: 8.5, fillColor: '#eeeeee', margin: [2, 4, 2, 4], alignment: 'center' },
       { text: 'ADET', bold: true, fontSize: 8.5, fillColor: '#eeeeee', margin: [2, 4, 2, 4], alignment: 'center' },
@@ -391,40 +405,45 @@ function proformaTabloOlustur(sepet, baslikMetni, teklif) {
     }
 
     const pozNo = satir.pozNo || "-";
-    const anaBaslik = satir.urunAciklamasi || "ÖZEL CAM ÜRÜNÜ";
-    const detayAciklama = satir.ozelAciklama && satir.ozelAciklama.trim() !== "" ? satir.ozelAciklama : "";
+    const malinCinsi = satir.urunAciklamasi || "ÖZEL CAM ÜRÜNÜ";
+    
+    const enVal = satir.en || satir.hamVeri?.en || 0;
+    const boyVal = satir.boy || satir.hamVeri?.boy || 0;
+    const adetVal = satir.orijinalMiktar !== undefined && satir.orijinalMiktar !== null ? satir.orijinalMiktar : (satir.adet || satir.hamVeri?.miktar || 1);
+    const m2Val = satir.miktar || 0;
 
-    const malinCinsiStack = [
-      { text: anaBaslik, bold: true, fontSize: 8.5, margin: [0, 0, 0, 2], color: '#0f2942' }
-    ];
-
-    if (detayAciklama) {
-      malinCinsiStack.push({ text: detayAciklama, fontSize: 7.5, color: '#333333', margin: [0, 0, 0, 2] });
+    let aciklamaMetni = satir.ozelAciklama || "";
+    if (!aciklamaMetni || aciklamaMetni.includes("{boy}")) {
+      if (enVal > 0 && boyVal > 0) {
+        aciklamaMetni = `(${enVal}×${boyVal} mm - ${adetVal} Adet - Toplam: ${m2Val.toFixed(2)} m²)`;
+      } else {
+        aciklamaMetni = `(${adetVal} Adet - Toplam: ${m2Val.toFixed(2)} m²)`;
+      }
     }
 
+    const aciklamaStack = [
+      { text: aciklamaMetni, fontSize: 8, color: '#333333', margin: [0, 0, 0, 2] }
+    ];
+
     if (satir.gorsel) {
-      malinCinsiStack.push({
+      aciklamaStack.push({
         image: satir.gorsel,
-        width: 90,
+        width: 80,
         alignment: 'center',
         margin: [0, 2, 0, 2]
       });
     }
 
-    const enDegeri = (satir.en && Number(satir.en) > 0) ? `${satir.en}` : "-";
-    const boyDegeri = (satir.boy && Number(satir.boy) > 0) ? `${satir.boy}` : "-";
-    
-    const gercekAdet = satir.orijinalMiktar !== undefined && satir.orijinalMiktar !== null && !isNaN(satir.orijinalMiktar) 
-      ? satir.orijinalMiktar 
-      : (satir.hamVeri?.miktar !== undefined && satir.hamVeri?.miktar !== null ? satir.hamVeri.miktar : (satir.adet || ""));
-      
-    const adetMetni = (gercekAdet !== null && gercekAdet !== undefined && gercekAdet !== "") ? `${gercekAdet}` : "-";
+    const enDegeri = (enVal > 0) ? `${enVal}` : "-";
+    const boyDegeri = (boyVal > 0) ? `${boyVal}` : "-";
+    const adetMetni = (adetVal !== null && adetVal !== undefined && adetVal !== "") ? `${adetVal}` : "-";
 
     const satirKdvOrani = ihracatMi ? 0 : (satir.kdvOrani !== undefined ? Number(satir.kdvOrani) : 20);
 
     tabloGövdesi.push([
       { text: pozNo, fontSize: 8, alignment: 'center', margin: [2, 4, 2, 4] },
-      { stack: malinCinsiStack, margin: [4, 4, 0, 4], alignment: 'left' },
+      { text: malinCinsi, bold: true, fontSize: 8.5, margin: [4, 4, 0, 4], alignment: 'left', color: '#0f2942' },
+      { stack: aciklamaStack, margin: [4, 4, 0, 4], alignment: 'left' },
       { text: enDegeri, fontSize: 8, alignment: 'center', margin: [2, 4, 2, 4] },
       { text: boyDegeri, fontSize: 8, alignment: 'center', margin: [2, 4, 2, 4] },
       { text: adetMetni, fontSize: 8, alignment: 'center', margin: [2, 4, 2, 4] },
@@ -450,17 +469,17 @@ function proformaTabloOlustur(sepet, baslikMetni, teklif) {
 
     tabloGövdesi.push(
       [
-        { text: '', colSpan: 6, border: [false, false, false, false] }, {}, {}, {}, {}, {}, 
+        { text: '', colSpan: 7, border: [false, false, false, false] }, {}, {}, {}, {}, {}, {}, 
         { text: `TOPLAM`, alignment: 'right', bold: true, fontSize: 9.5, margin: [0, 2, 4, 2], fillColor: '#f5f5f5' }, 
         { text: paraFormatla(tutar, paraBirimi), alignment: 'right', bold: true, fontSize: 9.5, margin: [0, 2, 4, 2], fillColor: '#f5f5f5' }
       ],
       [
-        { text: '', colSpan: 6, border: [false, false, false, false] }, {}, {}, {}, {}, {}, 
+        { text: '', colSpan: 7, border: [false, false, false, false] }, {}, {}, {}, {}, {}, {}, 
         { text: `KDV %${kdvOrani}`, alignment: 'right', bold: true, fontSize: 9.5, margin: [0, 2, 4, 2], fillColor: '#f5f5f5' }, 
         { text: paraFormatla(kdvTutar, paraBirimi), alignment: 'right', bold: true, fontSize: 9.5, margin: [0, 2, 4, 2], fillColor: '#f5f5f5' }
       ],
       [
-        { text: '', colSpan: 6, border: [false, false, false, false] }, {}, {}, {}, {}, {}, 
+        { text: '', colSpan: 7, border: [false, false, false, false] }, {}, {}, {}, {}, {}, {}, 
         { text: `GENEL TOPLAM`, alignment: 'right', bold: true, fontSize: 10, margin: [0, 2, 4, 2], fillColor: '#e0e0e0' }, 
         { text: paraFormatla(genelToplam, paraBirimi), alignment: 'right', bold: true, fontSize: 10, margin: [0, 2, 4, 2], fillColor: '#e0e0e0' }
       ]
@@ -545,7 +564,7 @@ export async function proformaPdfIndir(teklif, sepet1, sepet2 = [], teklifNo, on
       table: {
         headerRows: 1,
         dontBreakRows: true,
-        widths: [45, '*', 40, 40, 35, 55, 35, 60],
+        widths: [35, '*', 110, 35, 35, 30, 50, 30, 55],
         body: sonuc1.tabloGövdesi
       },
       layout: {
@@ -565,7 +584,7 @@ export async function proformaPdfIndir(teklif, sepet1, sepet2 = [], teklifNo, on
         table: {
           headerRows: 1,
           dontBreakRows: true,
-          widths: [45, '*', 40, 40, 35, 55, 35, 60], 
+          widths: [35, '*', 110, 35, 35, 30, 50, 30, 55], 
           body: sonuc2.tabloGövdesi
         },
         layout: {

@@ -13,7 +13,9 @@ export default function UrunEkleFormu({
   onIptal,
   sepet1 = [], 
   sepet2 = [], 
-  onTopluGuncelle 
+  onTopluGuncelle,
+  aktifSecenekNo, // App.jsx'ten gelirse kullanılır
+  seciliSepet     // App.jsx'ten gelme ihtimaline karşı yedek
 }) {
   const [arama, setArama] = useState("");
   const [secilenId, setSecilenId] = useState("");
@@ -45,6 +47,10 @@ export default function UrunEkleFormu({
   const [eklenenOzelUrunler, setEklenenOzelUrunler] = useState([]);
   const [sihirbazVerisi, setSihirbazVerisi] = useState(null);
 
+  // Güvenli sepet tespiti
+  const gercekAktifSepet = aktifSecenekNo || seciliSepet || 1;
+  const hedefSepetNo = islemVerisi?.sepetNo || gercekAktifSepet;
+
   const handleIhracatToggle = (checked) => {
     setIhracatMi(checked);
     const yeniKdv = checked ? "0" : "20";
@@ -70,16 +76,14 @@ export default function UrunEkleFormu({
     }
   };
 
-  // --- EXCEL / TABLO METNİNİ TOPLU YAPIŞTIRMA (ADET KONTROLLÜ) ---
   const handleTopluMetinIsle = (hamMetin) => {
     if (!hamMetin.trim()) return;
 
     const satirlar = hamMetin.trim().split("\n");
     let yeniSepetEklentileri = [];
-    const hedefSepetNo = islemVerisi?.sepetNo || 1;
-    const aktifSepet = hedefSepetNo === 1 ? sepet1 : sepet2;
+    const aktifSepetDizisi = gercekAktifSepet === 1 ? sepet1 : sepet2;
 
-    const aktifUrunAdi = arama.trim() || "6mm Temperli Füme Reflekte+ 16mm HB + 6mm Temperli 71/53 Solar Low-e";
+    const aktifUrunAdi = arama.trim() || "6MM TEMPERLİ FÜME REFLEKTE+ 16MM HB + 6MM TEMPERLİ 71/53 SOLAR LOW-E";
 
     for (const satirMetni of satirlar) {
       const sutunlar = satirMetni.split(/\t/).map(s => s.trim()).filter(Boolean);
@@ -87,19 +91,40 @@ export default function UrunEkleFormu({
       if (sutunlar.length < 4) continue;
       if (sutunlar[0].toUpperCase().includes("TOPLAM") || sutunlar.some(s => s.toUpperCase().includes("TOPLAM"))) continue;
 
-      let pozNo = sutunlar[0];
-      let hMiktar = (sutunlar[1] !== "" && !isNaN(sutunlar[1])) ? Number(sutunlar[1]) : null;
-      let en = Number(sutunlar[2]) || 0;
-      let boy = Number(sutunlar[3]) || 0;
+      let pozNo = "-";
+      let adetIdx = 0;
+      const ilkSutunTemiz = sutunlar[0].replace(/\./g, "").replace(/,/g, ".");
+      if (isNaN(ilkSutunTemiz)) {
+        pozNo = sutunlar[0];
+        adetIdx = 1;
+      } else {
+        pozNo = "-";
+        adetIdx = 0;
+      }
+
+      const sayiTemizle = (metin) => {
+        if (!metin) return 0;
+        const duzgun = metin.replace(/\./g, "").replace(/,/g, ".");
+        return Number(duzgun) || 0;
+      };
+
+      let hMiktar = sutunlar[adetIdx] !== undefined ? sayiTemizle(sutunlar[adetIdx]) : null;
+      let en = sayiTemizle(sutunlar[adetIdx + 1]);
+      let boy = sayiTemizle(sutunlar[adetIdx + 2]);
+
+      if (en <= 0 && sutunlar.length > adetIdx + 3) {
+        en = sayiTemizle(sutunlar[adetIdx + 2]);
+        boy = sayiTemizle(sutunlar[adetIdx + 3]);
+      }
 
       if (en <= 0 || boy <= 0) continue;
 
       const dummyUrun = { id: "excel_urun_" + Math.random(), kodu: "ÖZEL", aciklama: aktifUrunAdi.toLocaleUpperCase("tr-TR"), "Ana Birim": "m²" };
       
       const tekCamM2 = (en * boy) / 1000000;
-      const toplamM2 = hMiktar !== null ? tekCamM2 * hMiktar : tekCamM2;
+      const toplamM2 = hMiktar !== null && hMiktar > 0 ? tekCamM2 * hMiktar : tekCamM2;
       
-      let ekstraAciklama = hMiktar !== null 
+      let ekstraAciklama = hMiktar !== null && hMiktar > 0
         ? ` (${en}×${boy} mm - ${hMiktar} Adet - Toplam: ${toplamM2.toFixed(2)} m²)` 
         : ` (${en}×${boy} mm - Toplam: ${toplamM2.toFixed(2)} m²)`;
 
@@ -121,14 +146,14 @@ export default function UrunEkleFormu({
     }
 
     if (yeniSepetEklentileri.length > 0) {
-      if (onTopluGuncelle) {
-        onTopluGuncelle(hedefSepetNo, [...aktifSepet, ...yeniSepetEklentileri]);
+      if (onTopluGuncelle && (aktifSecenekNo || seciliSepet)) {
+        onTopluGuncelle(gercekAktifSepet, [...aktifSepetDizisi, ...yeniSepetEklentileri]);
       } else if (onEkle) {
         yeniSepetEklentileri.forEach(s => onEkle(s));
       }
       alert(`✅ Başarıyla ${yeniSepetEklentileri.length} kalem sepete eklendi!`);
     } else {
-      alert("Tablo verisi uygun formatta algılanamadı.");
+      alert("Tablo verisi uygun formatta algılanamadı. Lütfen sütunları kontrol edin.");
     }
   };
 
@@ -328,8 +353,8 @@ export default function UrunEkleFormu({
         const tekCamM2 = (enDegeri * boyDegeri) / 1000000;
         toplamM2 = miktarDegeri !== null ? tekCamM2 * miktarDegeri : tekCamM2;
         ekstraAciklama = miktarDegeri !== null 
-          ? ` (${enDegeri}×{boy} mm - ${miktarDegeri} Adet - Toplam: ${toplamM2.toFixed(2)} m²)` 
-          : ` (${enDegeri}×{boy} mm - Toplam: ${toplamM2.toFixed(2)} m²)`;
+          ? ` (${enDegeri}×${boyDegeri} mm - ${miktarDegeri} Adet - Toplam: ${toplamM2.toFixed(2)} m²)` 
+          : ` (${enDegeri}×${boyDegeri} mm - Toplam: ${toplamM2.toFixed(2)} m²)`;
       } else {
         ekstraAciklama = miktarDegeri !== null ? ` (${miktarDegeri} Adet)` : "";
       }
@@ -470,33 +495,16 @@ export default function UrunEkleFormu({
     }
 
     if (islemVerisi && islemVerisi.tip === "duzenle") {
-      const hedefSepetNo = islemVerisi?.sepetNo || 1;
-      const aktifSepet = hedefSepetNo === 1 ? sepet1 : sepet2;
-
-      if (onTopluGuncelle && aktifSepet) {
-        const yeniSepet = [...aktifSepet];
-        yeniSepet[islemVerisi.index] = anaSatir;
-        if (karolajSatiri) {
-          yeniSepet.splice(islemVerisi.index + 1, 0, karolajSatiri);
-        }
-        onTopluGuncelle(hedefSepetNo, yeniSepet);
-        if (onIptal) onIptal();
-      } else {
-        if (onGuncelle) onGuncelle(islemVerisi.index, anaSatir);
-        if (onIptal) onIptal();
-      }
+      if (onGuncelle) onGuncelle(islemVerisi.index, anaSatir, islemVerisi.sepetNo);
+      if (onIptal) onIptal();
     } else {
-      const hedefSepetNo = islemVerisi?.sepetNo || 1;
-      const aktifSepet = hedefSepetNo === 1 ? sepet1 : sepet2;
-      
+      // YENİ EKLEME: Sadece onEkle'yi tetikliyoruz, böylece App.jsx kendi aktif sepetine atıyor.
       const yeniEklenecekler = [anaSatir];
       if (karolajSatiri) {
         yeniEklenecekler.push(karolajSatiri);
       }
 
-      if (onTopluGuncelle) {
-        onTopluGuncelle(hedefSepetNo, [...aktifSepet, ...yeniEklenecekler]);
-      } else if (onEkle) {
+      if (onEkle) {
         yeniEklenecekler.forEach(item => onEkle(item));
       }
 
@@ -516,13 +524,12 @@ export default function UrunEkleFormu({
     }
 
     const sonUrun = await getSonUrun();
-    const hedefSepetNo = islemVerisi?.sepetNo || 1;
-    const aktifSepet = hedefSepetNo === 1 ? sepet1 : sepet2;
+    const aktifSepetDizisi = hedefSepetNo === 1 ? sepet1 : sepet2;
 
-    if (!aktifSepet) return;
+    if (!aktifSepetDizisi) return;
 
     const guncelSepet = [];
-    aktifSepet.forEach((item, idx) => {
+    aktifSepetDizisi.forEach((item, idx) => {
       if (item.secili !== false || idx === islemVerisi.index) {
         const hEn = item.hamVeri?.en || item.en || "";
         const hBoy = item.hamVeri?.boy || item.boy || "";
@@ -575,8 +582,8 @@ export default function UrunEkleFormu({
       
       {/* --- EXCEL / TABLO VERİSİNİ TOPLU YAPIŞTIRMA ALANI --- */}
       <div style={{ backgroundColor: "#f8fafc", border: "2px solid #cbd5e1", padding: "12px", borderRadius: "8px", marginBottom: "16px" }}>
-        <h4 style={{ margin: "0 0 4px 0", color: "#0f2942", fontSize: "14px", fontWeight: "800" }}>📋 Excel / Tablo Verisini Toplu Yapıştır (Saniyeler Sürer)</h4>
-        <p style={{ margin: "0 0 8px 0", color: "#64748b", fontSize: "11px" }}>Excel'deki tabloyu kopyalayıp aşağıdaki kutuya yapıştırın, tüm satırlar anında sepete eklensin.</p>
+        <h4 style={{ margin: "0 0 4px 0", color: "#0f2942", fontSize: "14px", fontWeight: "800" }}>📋 Excel / Tablo Verisini Yapıştır</h4>
+        <p style={{ margin: "0 0 8px 0", color: "#64748b", fontSize: "11px" }}>Excel'deki tabloyu kopyalayıp aşağıdaki kutuya yapıştırın, tüm satırlar anında seçili sepete eklensin.</p>
         
         <textarea 
           rows="2" 
