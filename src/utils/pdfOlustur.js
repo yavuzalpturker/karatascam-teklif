@@ -4,10 +4,6 @@ import { paraFormatla, genelToplamHesapla, genelKdvHesapla, sayiyiYaziyaCevir } 
 
 pdfMake.vfs = pdfFonts?.pdfMake?.vfs || pdfFonts?.vfs || pdfFonts?.default?.pdfMake?.vfs || pdfFonts?.default?.vfs;
 
-/**
- * Bir görsel kaynağını (dosya yolu VEYA data:image/... base64 metni fark etmez)
- * <canvas> üzerinden yeniden çizip TEMİZ bir JPEG'e dönüştürür.
- */
 function gorseliHazirla(kaynak, maxGenislik = null) {
   return new Promise((resolve) => {
     if (!kaynak) {
@@ -68,6 +64,27 @@ const SOZLESME_SARTLARI = [
   "İş bu teklif yedi gün içinde onaylanmadığı taktir de reddedilmiş sayılacak ve firmamız teklifle bağlı olmayacaktır.",
   "Temperli camlar TS EN 1863, Lamine camlar TS EN12543, Isıcamlar TS EN 1279-1 standartlarına göre yapılacak olup standart içerisindeki töleranslar dışında herhangi bir kontrol şartı tarafımızdan kabul edilmemektedir."
 ];
+
+const ISICAM_GARANTI_SARTLARI = [
+  "Isıcam Yetkili Üretici firma, ürettiği Isıcam ünitelerini, başlangıçta veya kullanım süresince Isıcam ünitesinin iç yüzeyinde (ara boşlukta) tespit edilecek; çizik, kirlilik, leke ve buğulanma gibi Isıcam üretiminden kaynaklanan hatalara karşı 10 yıl süre ile garanti eder.",
+  "Yukarıda belirtilen Üretim kaynaklı hataların olduğu Isıcam üniteleri herhangi bir bedel talep etmeksizin Isıcam Yetkili Üretici firma tarafından yenisi ile değiştirilerek montajı yapılır.",
+  "Isıcam ünitelerinin montajı, isicam.com.tr'de yer alan ve Isıcam Yetkili Üreticileri'nden temin edilebilen \"Isıcam Montaj Kılavuzu\"ndaki detaylar dikkate alınarak yapılmalıdır. Isıcam üniteleri, Isıcam Yetkili Üreticisi firma tarafından monte edildiyse, montaj kaynaklı hatalardan dolayı bozulan Isıcam üniteleri de garanti kapsamı içindedir. Montajın Isıcam Yetkili Üreticisi dışında bir firma tarafından yapıldığı ve Isıcam ünitesindeki bozulmanın montaj kaynaklı olduğunun tespit edildiği durumlar garanti kapsamı dışındadır.",
+  "Isıcam ünitelerinin montajı sırasında kullanılan ve ünite ile temas eden montaj malzemelerinin, Isıcam üretiminde kullanılan birincil (butil) ve ikincil yalıtım macunları (polisülfid, poliüretan, Isıcam dolgu silikonu) ile uyum testlerinin yaptırılması, montajı yapan firmanın sorumluluğundadır. Isıcam montajı öncesinde bu testlerin yaptırılmadığı durumlarda, Isıcam ünitelerinin kenarları ile herhangi bir montaj kimyasalının (yapıştırıcı, silikon vb) teması halinde söz konusu ürünler garanti kapsamı dışında kalacak olup, bu durumda yaşanan şikayetlerin giderilmesi montajı yapan firma sorumluluğunda olacaktır.",
+  "Isıcam ünitelerinin kırılması durumunda, kırılmalar garanti kapsamı dışındadır.",
+  "Karolajlı, jaluzili, boyalı alüminyum ara boşluk çıtalı, bombeli, delikli, bondingli, yarı bondingli, özel ve parça u cıtalı üniteler ve Isıcam ünitesinin dış yüzeyine sonradan yapılacak uygulamalarda (cam filmi, folyo, boya, yüzeyi aşındırma vb) üniteler Isıcam garanti kapsamının dışındadır.",
+  "-30 dereceden düşük, +80 dereceden yüksek cam yüzeyi sıcaklıklarındaki kullanımlara ilişkin ürünler Isıcam garanti kapsamı dışındadır.",
+  "Isıcam Yetkili Üreticisi'nin Isıcam ünitelerinin basınç, yükseklik ve diğer coğrafi şartlara uygunluğunu sağlaması ve gerekli gördüğü ambalaj ve paketleme önlemlerini alabilmesi için cam talebinde bulunan müşterinin montajın yapılacağı yeri Isıcam Yetkili Üreticisi'ne yazılı olarak bildirmesi gerekmektedir. Montajın yapılacağı yerin yazılı bildirilmemesi durumunda yukarıdaki nedenlerden kaynaklanan hatalar garanti kapsamı dışındadır.",
+  "Isıcam üniteleri \"TS EN 1279 Cam - Binalarda Kullanılan - Cam Yalıtım Birimleri Standardı\"na göre üretilir ve kalite kontrolü bu standarda göre yapılır. Isıcam ünitesindeki hatalar bu standartlar kapsamında değerlendirilir. Söz konusu standartta belirtildiği gibi, Isıcam ünitelerinin dış yüzeyinde oluşan buğulanmalar hata olarak değerlendirilmez.",
+  "Standart ve garanti şartları ile ilgili detaylı bilgiler www.isicam.com.tr web sitesinde yer almaktadır."
+];
+
+function isicamVarmiKontrolEt(sepet1, sepet2) {
+  const tumUrunler = [...(sepet1 || []), ...(sepet2 || [])];
+  return tumUrunler.some(satir => {
+    const metin = `${satir.urunAciklamasi || ""} ${satir.ozelAciklama || ""}`.toLocaleUpperCase("TR-TR");
+    return metin.includes("ISICAM") || metin.includes("ÜÇLÜ ISICAM");
+  });
+}
 
 function siradakiProformaNoGetir() {
   let sayac = localStorage.getItem("proforma_sayac");
@@ -142,7 +159,6 @@ async function sepetGorselleriniHazirla(sepet) {
 function sepetIcerikOlustur(sepet, baslikMetni, teklif) {
   if (!sepet || sepet.length === 0) return [];
 
-  // Sepette 0 KDV'li herhang bir ürün varsa (ya da ihracat seçildiyse) TÜM belge ihracat kabul edilir.
   const ihracatMi = teklif?.ihracatMi || teklif?.kdvMuaf || sepet.some(s => Number(s.kdvOrani) === 0);
 
   const urunSatirlari = sepet.map((satir) => {
@@ -164,7 +180,7 @@ function sepetIcerikOlustur(sepet, baslikMetni, teklif) {
     }
 
     elemanlar.push({
-      text: `${satir.miktarDetay}  =  ${paraFormatla(satir.toplamTutar, satir.paraBirimi)} + KDV`,
+      text: `${satir.miktarDetay}  =  ${paraFormatla(satir.toplamTutar, satir.paraBirimi)}${ihracatMi ? "" : " + KDV"}`,
       alignment: "right",
       fontSize: 10,
       margin: [0, 0, 0, 8],
@@ -180,7 +196,6 @@ function sepetIcerikOlustur(sepet, baslikMetni, teklif) {
   const genelKdvler = genelKdvHesapla(sepet); 
 
   const genelToplamSatirlari = Object.entries(genelToplamlar).map(([paraBirimi, tutar]) => {
-    // İhracat durumu kesinlikle tüm KDV'yi sıfırlar
     const kdvOrani = ihracatMi ? 0 : (sepet[0]?.kdvOrani !== undefined ? Number(sepet[0].kdvOrani) : 20);
     const kdvTutar = ihracatMi ? 0 : (genelKdvler[paraBirimi] || 0);
     const kdvDahilToplam = tutar + kdvTutar;
@@ -229,7 +244,11 @@ export async function teklifPdfIndir(teklif, sepet1, sepet2 = [], teklifNo, oniz
 
   const imzalayanKisi = teklif.imzalayan || "Sercan Temel";
   const bankaIban = "TR26 0006 4000 0014 2210 2141 37";
-  const dinamikSartlar = SOZLESME_SARTLARI;
+  
+  const isicamVar = isicamVarmiKontrolEt(sepet1, sepet2);
+  const dinamikSartlar = isicamVar 
+    ? [...SOZLESME_SARTLARI, ...ISICAM_GARANTI_SARTLARI] 
+    : SOZLESME_SARTLARI;
 
   const ikiliMi = temizSepet2 && temizSepet2.length > 0;
 
@@ -320,7 +339,7 @@ export async function teklifPdfIndir(teklif, sepet1, sepet2 = [], teklifNo, oniz
       {
         stack: dinamikSartlar.map(sart => ({
           text: sart,
-          fontSize: 7.5,
+          fontSize: isicamVar ? 7 : 7.5,
           margin: [0, 0, 0, 1.5]
         })),
         margin: [0, 0, 0, 0]
@@ -344,59 +363,74 @@ export async function teklifPdfIndir(teklif, sepet1, sepet2 = [], teklifNo, oniz
 function proformaTabloOlustur(sepet, baslikMetni, teklif) {
   if (!sepet || sepet.length === 0) return { tabloGövdesi: [], yalnizMetni: "" };
 
-  // Sepette 0 KDV'li herhang bir ürün varsa (ya da ihracat seçildiyse) TÜM belge ihracat kabul edilir.
   const ihracatMi = teklif?.ihracatMi || teklif?.kdvMuaf || sepet.some(s => Number(s.kdvOrani) === 0);
 
   const tabloGövdesi = [
     [
-      { text: baslikMetni ? `${baslikMetni} - MALIN CİNSİ` : 'MALIN CİNSİ', bold: true, fontSize: 9, fillColor: '#eeeeee', margin: [4, 4, 0, 4], alignment: 'left', colSpan: 2 },
-      {},
-      { text: 'ADET / METRAJ', bold: true, fontSize: 9, fillColor: '#eeeeee', margin: [0, 4, 0, 4], alignment: 'center' },
-      { text: 'BİRİM FİYAT', bold: true, fontSize: 9, fillColor: '#eeeeee', margin: [0, 4, 0, 4], alignment: 'center' },
-      { text: 'KDV ORANI', bold: true, fontSize: 9, fillColor: '#eeeeee', margin: [0, 4, 0, 4], alignment: 'center' },
-      { text: 'TUTAR', bold: true, fontSize: 9, fillColor: '#eeeeee', margin: [0, 4, 0, 4], alignment: 'center' }
+      { text: 'POZ NO', bold: true, fontSize: 8.5, fillColor: '#eeeeee', margin: [2, 4, 2, 4], alignment: 'center' },
+      { text: baslikMetni ? `${baslikMetni} - MALIN CİNSİ` : 'MALIN CİNSİ', bold: true, fontSize: 8.5, fillColor: '#eeeeee', margin: [4, 4, 0, 4], alignment: 'left' },
+      { text: 'EN', bold: true, fontSize: 8.5, fillColor: '#eeeeee', margin: [2, 4, 2, 4], alignment: 'center' },
+      { text: 'BOY', bold: true, fontSize: 8.5, fillColor: '#eeeeee', margin: [2, 4, 2, 4], alignment: 'center' },
+      { text: 'ADET', bold: true, fontSize: 8.5, fillColor: '#eeeeee', margin: [2, 4, 2, 4], alignment: 'center' },
+      { text: 'BİRİM FİYAT', bold: true, fontSize: 8.5, fillColor: '#eeeeee', margin: [2, 4, 2, 4], alignment: 'center' },
+      { text: 'KDV', bold: true, fontSize: 8.5, fillColor: '#eeeeee', margin: [2, 4, 2, 4], alignment: 'center' },
+      { text: 'TUTAR', bold: true, fontSize: 8.5, fillColor: '#eeeeee', margin: [2, 4, 2, 4], alignment: 'center' }
     ]
   ];
 
   sepet.forEach(satir => {
-    let miktarMetni = satir.miktarDetay;
     let birimFiyatMetni = "-";
     
     if (satir.miktarDetay && satir.miktarDetay.includes(" x ")) {
       const parcalar = satir.miktarDetay.split(" x ");
-      birimFiyatMetni = parcalar[1].trim();
-      
-      const birimMi = satir.secilenBirim === "mt" || satir.Birim === "mt" || satir.kodu === "İŞÇİLİK";
-      if (!birimMi) {
-        const gercekAdet = satir.orijinalMiktar || satir.hamVeri?.miktar || satir.adet || 1;
-        miktarMetni = `${gercekAdet} Adet`;
-      } else {
-        miktarMetni = parcalar[0].trim();
+      if (parcalar[1]) {
+        birimFiyatMetni = parcalar[1].trim();
       }
+    } else if (satir.birimFiyat) {
+      birimFiyatMetni = paraFormatla(satir.birimFiyat, satir.paraBirimi);
     }
 
-    const ozelAciklamaStack = [
-      { text: satir.ozelAciklama || "-", fontSize: 8.5, margin: [0, 0, 0, 4], alignment: 'left' }
+    const pozNo = satir.pozNo || "-";
+    const anaBaslik = satir.urunAciklamasi || "ÖZEL CAM ÜRÜNÜ";
+    const detayAciklama = satir.ozelAciklama && satir.ozelAciklama.trim() !== "" ? satir.ozelAciklama : "";
+
+    const malinCinsiStack = [
+      { text: anaBaslik, bold: true, fontSize: 8.5, margin: [0, 0, 0, 2], color: '#0f2942' }
     ];
 
+    if (detayAciklama) {
+      malinCinsiStack.push({ text: detayAciklama, fontSize: 7.5, color: '#333333', margin: [0, 0, 0, 2] });
+    }
+
     if (satir.gorsel) {
-      ozelAciklamaStack.push({
+      malinCinsiStack.push({
         image: satir.gorsel,
-        width: 100,
-        alignment: 'center'
+        width: 90,
+        alignment: 'center',
+        margin: [0, 2, 0, 2]
       });
     }
 
-    // İhracat durumu aktifse, karolaj vb. tüm satırların KDV'si zorunlu 0'dır
+    const enDegeri = (satir.en && Number(satir.en) > 0) ? `${satir.en}` : "-";
+    const boyDegeri = (satir.boy && Number(satir.boy) > 0) ? `${satir.boy}` : "-";
+    
+    const gercekAdet = satir.orijinalMiktar !== undefined && satir.orijinalMiktar !== null && !isNaN(satir.orijinalMiktar) 
+      ? satir.orijinalMiktar 
+      : (satir.hamVeri?.miktar !== undefined && satir.hamVeri?.miktar !== null ? satir.hamVeri.miktar : (satir.adet || ""));
+      
+    const adetMetni = (gercekAdet !== null && gercekAdet !== undefined && gercekAdet !== "") ? `${gercekAdet}` : "-";
+
     const satirKdvOrani = ihracatMi ? 0 : (satir.kdvOrani !== undefined ? Number(satir.kdvOrani) : 20);
 
     tabloGövdesi.push([
-      { text: satir.urunAciklamasi, fontSize: 8.5, margin: [4, 4, 0, 4], alignment: 'left' },
-      { stack: ozelAciklamaStack, margin: [4, 4, 0, 4] },
-      { text: miktarMetni, fontSize: 8.5, alignment: 'center', margin: [0, 4, 0, 4] },
-      { text: birimFiyatMetni, fontSize: 8.5, alignment: 'center', margin: [0, 4, 0, 4] },
-      { text: `% ${satirKdvOrani}`, fontSize: 8.5, alignment: 'center', margin: [0, 4, 0, 4] },
-      { text: `${paraFormatla(satir.toplamTutar, satir.paraBirimi)}`, fontSize: 8.5, alignment: 'right', margin: [0, 4, 4, 4] }
+      { text: pozNo, fontSize: 8, alignment: 'center', margin: [2, 4, 2, 4] },
+      { stack: malinCinsiStack, margin: [4, 4, 0, 4], alignment: 'left' },
+      { text: enDegeri, fontSize: 8, alignment: 'center', margin: [2, 4, 2, 4] },
+      { text: boyDegeri, fontSize: 8, alignment: 'center', margin: [2, 4, 2, 4] },
+      { text: adetMetni, fontSize: 8, alignment: 'center', margin: [2, 4, 2, 4] },
+      { text: birimFiyatMetni, fontSize: 8, alignment: 'center', margin: [2, 4, 2, 4] },
+      { text: `%${satirKdvOrani}`, fontSize: 8, alignment: 'center', margin: [2, 4, 2, 4] },
+      { text: `${paraFormatla(satir.toplamTutar, satir.paraBirimi)}`, fontSize: 8, alignment: 'right', margin: [2, 4, 4, 4] }
     ]);
   });
 
@@ -408,7 +442,6 @@ function proformaTabloOlustur(sepet, baslikMetni, teklif) {
   let yalnizMetni = "";
 
   Object.entries(genelToplamlar).forEach(([paraBirimi, tutar]) => {
-    // İhracat aktifse toplam KDV direkt 0'dır
     const kdvTutar = ihracatMi ? 0 : (genelKdvler[paraBirimi] || 0);
     const genelToplam = tutar + kdvTutar;
 
@@ -417,19 +450,19 @@ function proformaTabloOlustur(sepet, baslikMetni, teklif) {
 
     tabloGövdesi.push(
       [
-        { text: '', colSpan: 4, border: [false, false, false, false] }, {}, {}, {}, 
-        { text: `TOPLAM`, alignment: 'right', bold: true, fontSize: 11, margin: [0, 2, 4, 2], fillColor: '#f5f5f5' }, 
-        { text: paraFormatla(tutar, paraBirimi), alignment: 'right', bold: true, fontSize: 11, margin: [0, 2, 4, 2], fillColor: '#f5f5f5' }
+        { text: '', colSpan: 6, border: [false, false, false, false] }, {}, {}, {}, {}, {}, 
+        { text: `TOPLAM`, alignment: 'right', bold: true, fontSize: 9.5, margin: [0, 2, 4, 2], fillColor: '#f5f5f5' }, 
+        { text: paraFormatla(tutar, paraBirimi), alignment: 'right', bold: true, fontSize: 9.5, margin: [0, 2, 4, 2], fillColor: '#f5f5f5' }
       ],
       [
-        { text: '', colSpan: 4, border: [false, false, false, false] }, {}, {}, {}, 
-        { text: `KDV %${kdvOrani}`, alignment: 'right', bold: true, fontSize: 11, margin: [0, 2, 4, 2], fillColor: '#f5f5f5' }, 
-        { text: paraFormatla(kdvTutar, paraBirimi), alignment: 'right', bold: true, fontSize: 11, margin: [0, 2, 4, 2], fillColor: '#f5f5f5' }
+        { text: '', colSpan: 6, border: [false, false, false, false] }, {}, {}, {}, {}, {}, 
+        { text: `KDV %${kdvOrani}`, alignment: 'right', bold: true, fontSize: 9.5, margin: [0, 2, 4, 2], fillColor: '#f5f5f5' }, 
+        { text: paraFormatla(kdvTutar, paraBirimi), alignment: 'right', bold: true, fontSize: 9.5, margin: [0, 2, 4, 2], fillColor: '#f5f5f5' }
       ],
       [
-        { text: '', colSpan: 4, border: [false, false, false, false] }, {}, {}, {}, 
-        { text: `GENEL TOPLAM`, alignment: 'right', bold: true, fontSize: 11, margin: [0, 2, 4, 2], fillColor: '#e0e0e0' }, 
-        { text: paraFormatla(genelToplam, paraBirimi), alignment: 'right', bold: true, fontSize: 11, margin: [0, 2, 4, 2], fillColor: '#e0e0e0' }
+        { text: '', colSpan: 6, border: [false, false, false, false] }, {}, {}, {}, {}, {}, 
+        { text: `GENEL TOPLAM`, alignment: 'right', bold: true, fontSize: 10, margin: [0, 2, 4, 2], fillColor: '#e0e0e0' }, 
+        { text: paraFormatla(genelToplam, paraBirimi), alignment: 'right', bold: true, fontSize: 10, margin: [0, 2, 4, 2], fillColor: '#e0e0e0' }
       ]
     );
   });
@@ -448,7 +481,11 @@ export async function proformaPdfIndir(teklif, sepet1, sepet2 = [], teklifNo, on
   
   const imzalayanKisi = teklif.imzalayan || "Sercan Temel";
   const bankaIban = "TR26 0006 4000 0014 2210 2141 37";
-  const dinamikSartlar = SOZLESME_SARTLARI;
+  
+  const isicamVar = isicamVarmiKontrolEt(sepet1, sepet2);
+  const dinamikSartlar = isicamVar 
+    ? [...SOZLESME_SARTLARI, ...ISICAM_GARANTI_SARTLARI] 
+    : SOZLESME_SARTLARI;
 
   const tarihYazisi = teklif.tarih ? new Date(teklif.tarih).toLocaleDateString("tr-TR") : new Date().toLocaleDateString("tr-TR");
   const belgeNo = teklif.teklifNo || teklifNo || siradakiProformaNoGetir(); 
@@ -508,7 +545,7 @@ export async function proformaPdfIndir(teklif, sepet1, sepet2 = [], teklifNo, on
       table: {
         headerRows: 1,
         dontBreakRows: true,
-        widths: ['*', 120, 'auto', 'auto', 'auto', 'auto'],
+        widths: [45, '*', 40, 40, 35, 55, 35, 60],
         body: sonuc1.tabloGövdesi
       },
       layout: {
@@ -528,7 +565,7 @@ export async function proformaPdfIndir(teklif, sepet1, sepet2 = [], teklifNo, on
         table: {
           headerRows: 1,
           dontBreakRows: true,
-          widths: ['*', 120, 'auto', 'auto', 'auto', 'auto'], 
+          widths: [45, '*', 40, 40, 35, 55, 35, 60], 
           body: sonuc2.tabloGövdesi
         },
         layout: {
@@ -570,7 +607,7 @@ export async function proformaPdfIndir(teklif, sepet1, sepet2 = [], teklifNo, on
     {
       stack: dinamikSartlar.map(sart => ({
         text: sart,
-        fontSize: 7.5,
+        fontSize: isicamVar ? 7 : 7.5,
         margin: [0, 0, 0, 1.5]
       })),
       margin: [0, 0, 0, 0]
