@@ -40,7 +40,6 @@ export default function UrunEkleFormu({
   const [karolajEnAdet, setKarolajEnAdet] = useState("");
   const [karolajBoyAdet, setKarolajBoyAdet] = useState("");
 
-  // --- SIVAMA İÇİN ÖZEL İÇ VE DIŞ CAM ÖLÇÜLERİ STATE'LERİ ---
   const [sivamaIcEn, setSivamaIcEn] = useState("");
   const [sivamaIcBoy, setSivamaIcBoy] = useState("");
   const [sivamaDisEn, setSivamaDisEn] = useState("");
@@ -81,12 +80,19 @@ export default function UrunEkleFormu({
     }
   };
 
+  // --- ADET HESABINI (M²) İLE KARIŞTIRMAYAN ZEKİ YAPIŞTIRMA SİSTEMİ ---
   const handleTopluMetinIsle = (hamMetin) => {
     if (!hamMetin.trim()) return;
 
     const satirlar = hamMetin.trim().split("\n");
     let yeniSepetEklentileri = [];
     const aktifSepetDizisi = hedefSepetNo === 1 ? sepet1 : sepet2;
+
+    const sayiTemizle = (metin) => {
+      if (!metin) return 0;
+      const duzgun = String(metin).trim().replace(/\./g, "").replace(/,/g, ".");
+      return Number(duzgun) || 0;
+    };
 
     const isNum = (str) => {
       if (!str) return false;
@@ -95,76 +101,89 @@ export default function UrunEkleFormu({
       return !isNaN(n) && n > 0;
     };
 
-    const sayiTemizle = (metin) => {
-      if (!metin) return 0;
-      const duzgun = String(metin).trim().replace(/\./g, "").replace(/,/g, ".");
-      return Number(duzgun) || 0;
-    };
-
     for (const satirMetni of satirlar) {
       const sutunlar = satirMetni.split(/\t/).map(s => s.trim());
-      if (sutunlar.length < 3) continue;
+      if (sutunlar.length < 5) continue;
 
       const str0 = (sutunlar[0] || "").toUpperCase();
       const str1 = (sutunlar[1] || "").toUpperCase();
-      if (str0.includes("POZ") || str0.includes("TOPLAM") || str1.includes("ADET") || str1.includes("GENİŞLİK")) continue;
+      if (str0.includes("S.N") || str0.includes("TOPLAM") || str1.includes("POZ") || str1.includes("GENİŞLİK")) continue;
 
-      let adetIdx = -1;
-      for (let i = 0; i <= sutunlar.length - 3; i++) {
-        if (isNum(sutunlar[i]) && isNum(sutunlar[i+1]) && isNum(sutunlar[i+2])) {
-          adetIdx = i;
+      // Poz Numarasını Bul (Sayı olmayan ilk başlardaki metin)
+      let pozNo = "-";
+      if (sutunlar[1] && isNaN(Number(sutunlar[1].replace(/,/g, ".")))) {
+          pozNo = sutunlar[1];
+      } else if (sutunlar[0] && isNaN(Number(sutunlar[0].replace(/,/g, ".")))) {
+          pozNo = sutunlar[0];
+      }
+
+      // Sadece sayı olan hücreleri ayıkla
+      const sayiHücreler = sutunlar.filter(s => isNum(s));
+      
+      let genislik = 0;
+      let yukseklik = 0;
+      let adet = 1;
+      let idxG = -1;
+
+      // En ve Boy bul: Peş peşe gelen ve 50'den büyük iki sayıyı ara
+      for (let i = 0; i < sayiHücreler.length - 1; i++) {
+        if (sayiTemizle(sayiHücreler[i]) >= 50 && sayiTemizle(sayiHücreler[i + 1]) >= 50) {
+          idxG = i;
           break;
         }
       }
 
-      if (adetIdx === -1) {
-        for (let i = 0; i <= sutunlar.length - 2; i++) {
-          if (isNum(sutunlar[i]) && isNum(sutunlar[i+1])) {
-            adetIdx = i - 1; 
-            break;
+      if (idxG !== -1) {
+        genislik = sayiTemizle(sayiHücreler[idxG]);
+        yukseklik = sayiTemizle(sayiHücreler[idxG + 1]);
+
+        // En ve Boydan sonra kalan sayılar (Birim m2, Adet, Toplam m2 vs.)
+        const kalanSayilar = sayiHücreler.slice(idxG + 2);
+        
+        if (kalanSayilar.length > 0) {
+          let bulunanAdet = null;
+          
+          // Adet bulucu: Kalan sayılar içinde VİRGÜL veya NOKTA İÇERMEYEN ilk sayıyı adet kabul et (m² hep virgüllü olur)
+          for (let j = 0; j < kalanSayilar.length; j++) {
+            const str = kalanSayilar[j];
+            if (!str.includes(",") && !str.includes(".")) {
+              bulunanAdet = sayiTemizle(str);
+              break;
+            }
+          }
+
+          if (bulunanAdet !== null) {
+            adet = bulunanAdet;
+          } else {
+            // Eğer hepsi virgüllüyse (Nadir durum), tablo sırasına göre 2. sıradakini adet kabul et
+            if (kalanSayilar.length === 3) {
+              adet = Math.round(sayiTemizle(kalanSayilar[1]));
+            } else {
+              adet = Math.round(sayiTemizle(kalanSayilar[0]));
+            }
           }
         }
+      } else {
+          continue; // Ölçü yoksa atla
       }
 
-      if (adetIdx === -1) adetIdx = 1;
-
-      const hMiktar = adetIdx >= 0 ? (sayiTemizle(sutunlar[adetIdx]) || 1) : 1;
-      const en = sayiTemizle(sutunlar[adetIdx + 1]);
-      const boy = sayiTemizle(sutunlar[adetIdx + 2]);
-
-      if (en <= 0 || boy <= 0) continue;
-
-      let pozNo = "-";
-      if (adetIdx > 0) {
-        const pozMetni = sutunlar.slice(0, adetIdx).join(" ").trim();
-        if (pozMetni) pozNo = pozMetni;
-      }
+      if (adet <= 0) adet = 1;
 
       let urunAdi = arama.trim() || "ÖZEL CAM ÜRÜNÜ";
       let ekAciklama = "";
 
-      const kombSutunu = sutunlar[adetIdx + 4];
-      const acikSutunu = sutunlar[adetIdx + 5];
-
-      if (kombSutunu && !isNum(kombSutunu)) {
-        urunAdi = kombSutunu;
-      } else if (sutunlar[adetIdx + 3] && !isNum(sutunlar[adetIdx + 3])) {
-        urunAdi = sutunlar[adetIdx + 3];
-      }
-
-      if (acikSutunu) {
-        ekAciklama = acikSutunu;
-      } else if (sutunlar[adetIdx + 4] && urunAdi === sutunlar[adetIdx + 3]) {
-        ekAciklama = sutunlar[adetIdx + 4];
+      // Excel'de "ŞEKİLLİ" notu varsa ekle
+      if (sutunlar.some(s => s.toUpperCase().includes("ŞEKİLLİ"))) {
+          ekAciklama = "ŞEKİLLİ";
       }
 
       const benzersizId = "excel_" + Date.now() + "_" + Math.random().toString(36).substr(2, 9);
       const dummyUrun = { id: benzersizId, kodu: "ÖZEL", aciklama: urunAdi.toLocaleUpperCase("tr-TR"), "Ana Birim": "m²" };
       
-      const tekCamM2 = (en * boy) / 1000000;
-      const toplamM2 = tekCamM2 * hMiktar;
+      const tekCamM2 = (genislik * yukseklik) / 1000000;
+      const toplamM2 = tekCamM2 * adet;
       
-      let parcaAciklama = `(${en}×{boy} mm - ${hMiktar} Adet - Toplam: ${toplamM2.toFixed(2)} m²)`;
+      let parcaAciklama = `(${genislik}×${yukseklik} mm - ${adet} Adet - Toplam: ${toplamM2.toFixed(2)} m²)`;
       if (ekAciklama) {
         parcaAciklama += ` | ${ekAciklama}`;
       }
@@ -175,17 +194,17 @@ export default function UrunEkleFormu({
       satir.pozNo = pozNo;
       satir.urunAciklamasi = urunAdi.toLocaleUpperCase("tr-TR");
       satir.ozelAciklama = parcaAciklama;
-      satir.orijinalMiktar = hMiktar;
-      satir.adet = hMiktar;
-      satir.Adet = hMiktar;
+      satir.orijinalMiktar = adet;
+      satir.adet = adet;
+      satir.Adet = adet;
       satir.kdvOrani = Number(kdvOrani);
       satir.miktar = Number(toplamM2.toFixed(3));
       satir.secilenBirim = "m²";
-      satir.en = en;
-      satir.boy = boy;
+      satir.en = genislik;
+      satir.boy = yukseklik;
       satir.secili = true;
       satir.hamVeri = {
-        arama: urunAdi, ozelAciklama: parcaAciklama, en, boy, miktar: hMiktar, 
+        arama: urunAdi, ozelAciklama: parcaAciklama, en: genislik, boy: yukseklik, miktar: adet, 
         secilenBirim: "m²", paraBirimi, kdvOrani: Number(kdvOrani)
       };
 
@@ -398,7 +417,6 @@ export default function UrunEkleFormu({
     let nihaiBirim = hedefBirim;
     let hesaplananMiktar = miktarDegeri !== null ? miktarDegeri : 1;
 
-    // Sıvama seçildiyse birim fiyatı doğrudan birim fiyat kutusundan alır
     if (iscilikTuru === "Sıvama Bedeli") {
       nihaiFiyat = Number(fiyatAna) || 0;
     }
@@ -414,7 +432,6 @@ export default function UrunEkleFormu({
         const tekCamM2 = (enDegeri * boyDegeri) / 1000000;
         toplamM2 = miktarDegeri !== null ? tekCamM2 * miktarDegeri : tekCamM2;
         
-        // --- SIVAMA İÇİN İÇ VE DIŞ CAM ÖLÇÜLERİNİ AÇIKLAMAYA YANSIT ---
         if (iscilikTuru === "Sıvama Bedeli" && (sivamaIcEn || sivamaDisEn)) {
           ekstraAciklama = ` (Dış Cam: ${sivamaDisEn || enDegeri}×${sivamaDisBoy || boyDegeri} mm | İç Cam: ${sivamaIcEn || "-"}×${sivamaIcBoy || "-"} mm - ${miktarDegeri || 1} Adet - Toplam: ${toplamM2.toFixed(2)} m²)`;
         } else {
@@ -896,7 +913,6 @@ export default function UrunEkleFormu({
             </div>
           )}
 
-          {/* --- SIVAMA İÇİN ÖLÇÜLER + FİYAT KUTUSU --- */}
           {iscilikTuru === "Sıvama Bedeli" && (
             <>
               <div style={{ display: "flex", gap: "6px", backgroundColor: "#e2e8f0", padding: "6px", borderRadius: "6px", border: "1px solid #cbd5e1" }}>
@@ -936,20 +952,7 @@ export default function UrunEkleFormu({
               </div>
             </>
           )}
-
-          {iscilikTuru === "Karolaj Bedeli" && (
-            <>
-              <div>
-                <label style={{ display: "block", fontSize: "12px", fontWeight: "800", color: "#0f2942", marginBottom: "4px" }}>Metretül (mt)</label>
-                <input type="number" min="0" step="0.01" placeholder="Örn: 50" value={iscilikMetretul} onChange={(e) => setIscilikMetretul(e.target.value)} style={{ width: "100%", padding: "9px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "13px", fontWeight: "600", backgroundColor: "white" }} />
-              </div>
-              <div>
-                <label style={{ display: "block", fontSize: "12px", fontWeight: "800", color: "#0f2942", marginBottom: "4px" }}>mt Başına Fiyat</label>
-                <input type="number" min="0" step="0.01" placeholder="Örn: 360" value={iscilikBirimFiyat} onChange={(e) => setIscilikBirimFiyat(e.target.value)} style={{ width: "100%", padding: "9px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "13px", fontWeight: "600", backgroundColor: "white" }} />
-              </div>
-            </>
-          )}
-
+          
           <div>
             <select value={paraBirimi} onChange={(e) => setParaBirimi(e.target.value)} disabled={!iscilikTuru} style={{ width: "100%", padding: "9px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "14px", fontWeight: "800", backgroundColor: iscilikTuru ? "white" : "#e2e8f0" }}>
               <option value="TRY">TL (₺)</option>

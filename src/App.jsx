@@ -8,7 +8,6 @@ import GecmisTeklifler from './components/GecmisTeklifler';
 import Login from './components/Login';
 import M2FiyatHesaplayici from './components/M2FiyatHesaplayici';
 import Ayarlar from './components/Ayarlar';
-import OnayYonetimi from './components/OnayYonetimi';
 
 function teklifNoRevizeEt(mevcutTeklifNo) {
   if (!mevcutTeklifNo) return "";
@@ -48,7 +47,6 @@ export default function App() {
   };
 
   const cikisYap = () => {
-    // ÇIKIŞ YAPILDIĞINDA ESKİ SEPETLERİ VE FORM BİLGİLERİNİ TEMİZLİYORUZ
     sessionStorage.removeItem('karatas_oturum');
     sessionStorage.removeItem('karatas_rol');
     sessionStorage.removeItem('karatas_personel_adi');
@@ -209,20 +207,12 @@ export default function App() {
               </button>
 
               {kullaniciRolu === 'admin' && (
-                <>
-                  <button 
-                    onClick={() => setAktifSayfa(aktifSayfa === "onaylar" ? "teklif" : "onaylar")} 
-                    style={{ backgroundColor: '#0f2942', color: 'white', padding: '9px 16px', border: '1px solid rgba(255,255,255,0.35)', borderRadius: '6px', cursor: 'pointer', fontWeight: '700', fontSize: '13px', transition: 'all 0.2s ease' }}
-                  >
-                    {aktifSayfa === "onaylar" ? "Teklif Ekranına Dön" : "Onay Bekleyenler"}
-                  </button>
-                  <button 
-                    onClick={() => setAktifSayfa(aktifSayfa === "ayarlar" ? "teklif" : "ayarlar")} 
-                    style={{ backgroundColor: '#ffffff', color: '#0f2942', padding: '9px 16px', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: '700', fontSize: '13px', transition: 'all 0.2s ease' }}
-                  >
-                    {aktifSayfa === "ayarlar" ? "Teklif Ekranına Dön" : "Ayarlar"}
-                  </button>
-                </>
+                <button 
+                  onClick={() => setAktifSayfa(aktifSayfa === "ayarlar" ? "teklif" : "ayarlar")} 
+                  style={{ backgroundColor: '#ffffff', color: '#0f2942', padding: '9px 16px', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: '700', fontSize: '13px', transition: 'all 0.2s ease' }}
+                >
+                  {aktifSayfa === "ayarlar" ? "Teklif Ekranına Dön" : "Ayarlar"}
+                </button>
               )}
             </div>
 
@@ -239,8 +229,6 @@ export default function App() {
       <div className="govde">
         {aktifSayfa === "ayarlar" ? (
           <Ayarlar />
-        ) : aktifSayfa === "onaylar" ? (
-          <OnayYonetimi />
         ) : aktifSayfa === "m2hesapla" ? (
           <M2FiyatHesaplayici />
         ) : (

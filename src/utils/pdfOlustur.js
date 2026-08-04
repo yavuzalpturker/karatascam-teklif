@@ -164,7 +164,6 @@ function sepetIcerikOlustur(sepet, baslikMetni, teklif) {
   const urunSatirlari = sepet.map((satir) => {
     let baslik = satir.urunAciklamasi || "ÖZEL CAM ÜRÜNÜ";
     
-    // Doğru en ve boy değerlerini yakalıyoruz ({boy} hatasını önlemek için)
     const enVal = satir.en || satir.hamVeri?.en || 0;
     const boyVal = satir.boy || satir.hamVeri?.boy || 0;
     const adetVal = satir.orijinalMiktar !== undefined && satir.orijinalMiktar !== null ? satir.orijinalMiktar : (satir.adet || satir.hamVeri?.miktar || 1);
@@ -374,27 +373,53 @@ export async function teklifPdfIndir(teklif, sepet1, sepet2 = [], teklifNo, oniz
 }
 
 function proformaTabloOlustur(sepet, baslikMetni, teklif) {
-  if (!sepet || sepet.length === 0) return { tabloGövdesi: [], yalnizMetni: "" };
+  if (!sepet || sepet.length === 0) return { tabloGövdesi: [], yalnizMetni: "", aciklamaSutunuGerekli: false };
 
   const ihracatMi = teklif?.ihracatMi || teklif?.kdvMuaf || sepet.some(s => Number(s.kdvOrani) === 0);
 
-  const tabloGövdesi = [
-    [
-      { text: 'POZ NO', bold: true, fontSize: 8.5, fillColor: '#eeeeee', margin: [2, 4, 2, 4], alignment: 'center' },
-      { text: baslikMetni ? `${baslikMetni} - MALIN CİNSİ` : 'MALIN CİNSİ', bold: true, fontSize: 8.5, fillColor: '#eeeeee', margin: [4, 4, 0, 4], alignment: 'left' },
-      { text: 'AÇIKLAMA & ÇİZİM', bold: true, fontSize: 8.5, fillColor: '#eeeeee', margin: [4, 4, 0, 4], alignment: 'left' },
-      { text: 'EN', bold: true, fontSize: 8.5, fillColor: '#eeeeee', margin: [2, 4, 2, 4], alignment: 'center' },
-      { text: 'BOY', bold: true, fontSize: 8.5, fillColor: '#eeeeee', margin: [2, 4, 2, 4], alignment: 'center' },
-      { text: 'ADET', bold: true, fontSize: 8.5, fillColor: '#eeeeee', margin: [2, 4, 2, 4], alignment: 'center' },
-      { text: 'BİRİM FİYAT', bold: true, fontSize: 8.5, fillColor: '#eeeeee', margin: [2, 4, 2, 4], alignment: 'center' },
-      { text: 'KDV', bold: true, fontSize: 8.5, fillColor: '#eeeeee', margin: [2, 4, 2, 4], alignment: 'center' },
-      { text: 'TUTAR', bold: true, fontSize: 8.5, fillColor: '#eeeeee', margin: [2, 4, 2, 4], alignment: 'center' }
-    ]
+  // --- DİNAMİK AÇIKLAMA SÜTUNU KONTROLÜ ---
+  let aciklamaSutunuGerekli = false;
+  
+  sepet.forEach(satir => {
+    let safAciklama = (satir.hamVeri && satir.hamVeri.ozelAciklama) ? satir.hamVeri.ozelAciklama : (satir.ozelAciklama || "");
+    
+    // Otomatik üretilen boyut ve m² yazılarını uçuruyoruz ki sadece bizim yazdığımız saf açıklama kalsın
+    safAciklama = safAciklama.replace(/\(.*?Toplam:.*?m²\)/gi, "");
+    safAciklama = safAciklama.replace(/\(.*?Adet.*?m²\)/gi, "");
+    safAciklama = safAciklama.replace(/\(.*?×.*?mm.*?\)/gi, "");
+    safAciklama = safAciklama.replace(/\(\d+\s*Adet\)/gi, "");
+    safAciklama = safAciklama.replace(/^\|\s*/g, "").replace(/\s*\|\s*$/g, ""); 
+    safAciklama = safAciklama.trim();
+    
+    if (safAciklama.length > 0 || satir.gorsel) {
+      aciklamaSutunuGerekli = true;
+    }
+    // Temizlenmiş halini sonradan kullanmak üzere satıra kaydediyoruz
+    satir._safAciklama = safAciklama;
+  });
+
+  const headerRow = [
+    { text: 'POZ NO', bold: true, fontSize: 8.5, fillColor: '#eeeeee', margin: [2, 4, 2, 4], alignment: 'center' },
+    { text: baslikMetni ? `${baslikMetni} - MALIN CİNSİ` : 'MALIN CİNSİ', bold: true, fontSize: 8.5, fillColor: '#eeeeee', margin: [4, 4, 0, 4], alignment: 'left' }
   ];
+
+  if (aciklamaSutunuGerekli) {
+    headerRow.push({ text: 'AÇIKLAMA & ÇİZİM', bold: true, fontSize: 8.5, fillColor: '#eeeeee', margin: [4, 4, 0, 4], alignment: 'left' });
+  }
+
+  headerRow.push(
+    { text: 'EN', bold: true, fontSize: 8.5, fillColor: '#eeeeee', margin: [2, 4, 2, 4], alignment: 'center' },
+    { text: 'BOY', bold: true, fontSize: 8.5, fillColor: '#eeeeee', margin: [2, 4, 2, 4], alignment: 'center' },
+    { text: 'ADET / m²', bold: true, fontSize: 8.5, fillColor: '#eeeeee', margin: [2, 4, 2, 4], alignment: 'center' },
+    { text: 'BİRİM FİYAT', bold: true, fontSize: 8.5, fillColor: '#eeeeee', margin: [2, 4, 2, 4], alignment: 'center' },
+    { text: 'KDV', bold: true, fontSize: 8.5, fillColor: '#eeeeee', margin: [2, 4, 2, 4], alignment: 'center' },
+    { text: 'TUTAR', bold: true, fontSize: 8.5, fillColor: '#eeeeee', margin: [2, 4, 2, 4], alignment: 'center' }
+  );
+
+  const tabloGövdesi = [headerRow];
 
   sepet.forEach(satir => {
     let birimFiyatMetni = "-";
-    
     if (satir.miktarDetay && satir.miktarDetay.includes(" x ")) {
       const parcalar = satir.miktarDetay.split(" x ");
       if (parcalar[1]) {
@@ -405,60 +430,69 @@ function proformaTabloOlustur(sepet, baslikMetni, teklif) {
     }
 
     const pozNo = satir.pozNo || "-";
-    const malinCinsi = satir.urunAciklamasi || "ÖZEL CAM ÜRÜNÜ";
+    let malinCinsi = satir.urunAciklamasi || "ÖZEL CAM ÜRÜNÜ";
     
     const enVal = satir.en || satir.hamVeri?.en || 0;
     const boyVal = satir.boy || satir.hamVeri?.boy || 0;
     const adetVal = satir.orijinalMiktar !== undefined && satir.orijinalMiktar !== null ? satir.orijinalMiktar : (satir.adet || satir.hamVeri?.miktar || 1);
     const m2Val = satir.miktar || 0;
 
-    let aciklamaMetni = satir.ozelAciklama || "";
-    if (!aciklamaMetni || aciklamaMetni.includes("{boy}")) {
-      if (enVal > 0 && boyVal > 0) {
-        aciklamaMetni = `(${enVal}×${boyVal} mm - ${adetVal} Adet - Toplam: ${m2Val.toFixed(2)} m²)`;
-      } else {
-        aciklamaMetni = `(${adetVal} Adet - Toplam: ${m2Val.toFixed(2)} m²)`;
-      }
-    }
+    const kullaniciAciklamasi = satir._safAciklama || "";
 
-    const aciklamaStack = [
-      { text: aciklamaMetni, fontSize: 8, color: '#333333', margin: [0, 0, 0, 2] }
+    const malinCinsiStack = [
+      { text: malinCinsi, bold: true, fontSize: 10, color: '#0f2942', margin: [0, 0, 0, 2] }
     ];
 
-    if (satir.gorsel) {
-      aciklamaStack.push({
-        image: satir.gorsel,
-        width: 80,
-        alignment: 'center',
-        margin: [0, 2, 0, 2]
-      });
+    const aciklamaStack = [];
+
+    // Eğer Açıklama Sütunu varsa, kullanıcının girdiği detayı o sütuna yerleştir
+    if (aciklamaSutunuGerekli) {
+      if (kullaniciAciklamasi) {
+         aciklamaStack.push({ text: kullaniciAciklamasi, fontSize: 8.5, color: '#333333', margin: [0, 0, 0, 2] });
+      }
+      if (satir.gorsel) {
+         aciklamaStack.push({ image: satir.gorsel, width: 80, alignment: 'center', margin: [0, 2, 0, 2] });
+      }
     }
 
     const enDegeri = (enVal > 0) ? `${enVal}` : "-";
     const boyDegeri = (boyVal > 0) ? `${boyVal}` : "-";
-    const adetMetni = (adetVal !== null && adetVal !== undefined && adetVal !== "") ? `${adetVal}` : "-";
+    
+    const adetMetni = (adetVal !== null && adetVal !== undefined && adetVal !== "") 
+      ? `${adetVal} Adet\n(${m2Val.toFixed(2)} m²)` 
+      : "-";
 
     const satirKdvOrani = ihracatMi ? 0 : (satir.kdvOrani !== undefined ? Number(satir.kdvOrani) : 20);
 
-    tabloGövdesi.push([
+    const dataRow = [
       { text: pozNo, fontSize: 8, alignment: 'center', margin: [2, 4, 2, 4] },
-      { text: malinCinsi, bold: true, fontSize: 8.5, margin: [4, 4, 0, 4], alignment: 'left', color: '#0f2942' },
-      { stack: aciklamaStack, margin: [4, 4, 0, 4], alignment: 'left' },
+      { stack: malinCinsiStack, margin: [4, 4, 0, 4], alignment: 'left' }
+    ];
+
+    if (aciklamaSutunuGerekli) {
+      dataRow.push({ stack: aciklamaStack, margin: [4, 4, 0, 4], alignment: 'left' });
+    }
+
+    dataRow.push(
       { text: enDegeri, fontSize: 8, alignment: 'center', margin: [2, 4, 2, 4] },
       { text: boyDegeri, fontSize: 8, alignment: 'center', margin: [2, 4, 2, 4] },
-      { text: adetMetni, fontSize: 8, alignment: 'center', margin: [2, 4, 2, 4] },
+      { text: adetMetni, fontSize: 7.5, alignment: 'center', margin: [2, 4, 2, 4] },
       { text: birimFiyatMetni, fontSize: 8, alignment: 'center', margin: [2, 4, 2, 4] },
       { text: `%${satirKdvOrani}`, fontSize: 8, alignment: 'center', margin: [2, 4, 2, 4] },
       { text: `${paraFormatla(satir.toplamTutar, satir.paraBirimi)}`, fontSize: 8, alignment: 'right', margin: [2, 4, 4, 4] }
-    ]);
+    );
+
+    tabloGövdesi.push(dataRow);
   });
 
   const genelToplamlar = genelToplamHesapla(sepet);
   const genelKdvler = genelKdvHesapla(sepet); 
-  
   const kdvOrani = ihracatMi ? 0 : (sepet[0]?.kdvOrani !== undefined ? Number(sepet[0].kdvOrani) : 20);
   
   let yalnizMetni = "";
+  
+  // Tablo genişliği değişeceği için, colspan ayarını dinamik yapıyoruz (son 2 sütun haricini boş hücre olarak eziyoruz)
+  const colSpanSize = aciklamaSutunuGerekli ? 7 : 6; 
 
   Object.entries(genelToplamlar).forEach(([paraBirimi, tutar]) => {
     const kdvTutar = ihracatMi ? 0 : (genelKdvler[paraBirimi] || 0);
@@ -467,26 +501,31 @@ function proformaTabloOlustur(sepet, baslikMetni, teklif) {
     if (yalnizMetni !== "") yalnizMetni += " + ";
     yalnizMetni += sayiyiYaziyaCevir(genelToplam, paraBirimi);
 
+    const emptyCells = [];
+    for (let i = 1; i < colSpanSize; i++) {
+      emptyCells.push({});
+    }
+
     tabloGövdesi.push(
       [
-        { text: '', colSpan: 7, border: [false, false, false, false] }, {}, {}, {}, {}, {}, {}, 
+        { text: '', colSpan: colSpanSize, border: [false, false, false, false] }, ...emptyCells,
         { text: `TOPLAM`, alignment: 'right', bold: true, fontSize: 9.5, margin: [0, 2, 4, 2], fillColor: '#f5f5f5' }, 
         { text: paraFormatla(tutar, paraBirimi), alignment: 'right', bold: true, fontSize: 9.5, margin: [0, 2, 4, 2], fillColor: '#f5f5f5' }
       ],
       [
-        { text: '', colSpan: 7, border: [false, false, false, false] }, {}, {}, {}, {}, {}, {}, 
+        { text: '', colSpan: colSpanSize, border: [false, false, false, false] }, ...emptyCells,
         { text: `KDV %${kdvOrani}`, alignment: 'right', bold: true, fontSize: 9.5, margin: [0, 2, 4, 2], fillColor: '#f5f5f5' }, 
         { text: paraFormatla(kdvTutar, paraBirimi), alignment: 'right', bold: true, fontSize: 9.5, margin: [0, 2, 4, 2], fillColor: '#f5f5f5' }
       ],
       [
-        { text: '', colSpan: 7, border: [false, false, false, false] }, {}, {}, {}, {}, {}, {}, 
+        { text: '', colSpan: colSpanSize, border: [false, false, false, false] }, ...emptyCells,
         { text: `GENEL TOPLAM`, alignment: 'right', bold: true, fontSize: 10, margin: [0, 2, 4, 2], fillColor: '#e0e0e0' }, 
         { text: paraFormatla(genelToplam, paraBirimi), alignment: 'right', bold: true, fontSize: 10, margin: [0, 2, 4, 2], fillColor: '#e0e0e0' }
       ]
     );
   });
 
-  return { tabloGövdesi, yalnizMetni };
+  return { tabloGövdesi, yalnizMetni, aciklamaSutunuGerekli };
 }
 
 export async function proformaPdfIndir(teklif, sepet1, sepet2 = [], teklifNo, onizlemeMi = false) {
@@ -536,6 +575,11 @@ export async function proformaPdfIndir(teklif, sepet1, sepet2 = [], teklifNo, on
     });
   }
 
+  // --- DİNAMİK SÜTUN GENİŞLİKLERİ ---
+  const widths1 = sonuc1.aciklamaSutunuGerekli 
+    ? [35, '*', 65, 30, 30, 42, 50, 28, 55] 
+    : [35, '*', 35, 35, 45, 55, 30, 55];
+
   const icerikDizisi = [
     {
       columns: [
@@ -564,7 +608,7 @@ export async function proformaPdfIndir(teklif, sepet1, sepet2 = [], teklifNo, on
       table: {
         headerRows: 1,
         dontBreakRows: true,
-        widths: [35, '*', 110, 35, 35, 30, 50, 30, 55],
+        widths: widths1,
         body: sonuc1.tabloGövdesi
       },
       layout: {
@@ -578,13 +622,17 @@ export async function proformaPdfIndir(teklif, sepet1, sepet2 = [], teklifNo, on
   ];
 
   if (sonuc2 && temizSepet2.length > 0) {
+    const widths2 = sonuc2.aciklamaSutunuGerekli 
+      ? [35, '*', 65, 30, 30, 42, 50, 28, 55] 
+      : [35, '*', 35, 35, 45, 55, 30, 55];
+
     icerikDizisi.push(
       { text: "", margin: [0, 6, 0, 6] },
       {
         table: {
           headerRows: 1,
           dontBreakRows: true,
-          widths: [35, '*', 110, 35, 35, 30, 50, 30, 55], 
+          widths: widths2, 
           body: sonuc2.tabloGövdesi
         },
         layout: {
