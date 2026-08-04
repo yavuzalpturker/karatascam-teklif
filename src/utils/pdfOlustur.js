@@ -383,7 +383,6 @@ function proformaTabloOlustur(sepet, baslikMetni, teklif) {
   sepet.forEach(satir => {
     let safAciklama = (satir.hamVeri && satir.hamVeri.ozelAciklama) ? satir.hamVeri.ozelAciklama : (satir.ozelAciklama || "");
     
-    // Otomatik üretilen boyut ve m² yazılarını uçuruyoruz ki sadece bizim yazdığımız saf açıklama kalsın
     safAciklama = safAciklama.replace(/\(.*?Toplam:.*?m²\)/gi, "");
     safAciklama = safAciklama.replace(/\(.*?Adet.*?m²\)/gi, "");
     safAciklama = safAciklama.replace(/\(.*?×.*?mm.*?\)/gi, "");
@@ -394,7 +393,6 @@ function proformaTabloOlustur(sepet, baslikMetni, teklif) {
     if (safAciklama.length > 0 || satir.gorsel) {
       aciklamaSutunuGerekli = true;
     }
-    // Temizlenmiş halini sonradan kullanmak üzere satıra kaydediyoruz
     satir._safAciklama = safAciklama;
   });
 
@@ -445,7 +443,6 @@ function proformaTabloOlustur(sepet, baslikMetni, teklif) {
 
     const aciklamaStack = [];
 
-    // Eğer Açıklama Sütunu varsa, kullanıcının girdiği detayı o sütuna yerleştir
     if (aciklamaSutunuGerekli) {
       if (kullaniciAciklamasi) {
          aciklamaStack.push({ text: kullaniciAciklamasi, fontSize: 8.5, color: '#333333', margin: [0, 0, 0, 2] });
@@ -491,8 +488,8 @@ function proformaTabloOlustur(sepet, baslikMetni, teklif) {
   
   let yalnizMetni = "";
   
-  // Tablo genişliği değişeceği için, colspan ayarını dinamik yapıyoruz (son 2 sütun haricini boş hücre olarak eziyoruz)
-  const colSpanSize = aciklamaSutunuGerekli ? 7 : 6; 
+  // --- TOPLAM ALANI TEK PARÇA KOCA BLOK HÂLİNDE AYARLANDI ---
+  const colSpanCount = aciklamaSutunuGerekli ? 7 : 6; 
 
   Object.entries(genelToplamlar).forEach(([paraBirimi, tutar]) => {
     const kdvTutar = ihracatMi ? 0 : (genelKdvler[paraBirimi] || 0);
@@ -501,26 +498,24 @@ function proformaTabloOlustur(sepet, baslikMetni, teklif) {
     if (yalnizMetni !== "") yalnizMetni += " + ";
     yalnizMetni += sayiyiYaziyaCevir(genelToplam, paraBirimi);
 
-    const emptyCells = [];
-    for (let i = 1; i < colSpanSize; i++) {
-      emptyCells.push({});
-    }
-
     tabloGövdesi.push(
       [
-        { text: '', colSpan: colSpanSize, border: [false, false, false, false] }, ...emptyCells,
-        { text: `TOPLAM`, alignment: 'right', bold: true, fontSize: 9.5, margin: [0, 2, 4, 2], fillColor: '#f5f5f5' }, 
-        { text: paraFormatla(tutar, paraBirimi), alignment: 'right', bold: true, fontSize: 9.5, margin: [0, 2, 4, 2], fillColor: '#f5f5f5' }
+        { text: `TOPLAM`, colSpan: colSpanCount, alignment: 'right', bold: true, fontSize: 10, margin: [0, 4, 8, 4], fillColor: '#f5f5f5' },
+        ...Array(colSpanCount - 1).fill({}),
+        { text: paraFormatla(tutar, paraBirimi), colSpan: 2, alignment: 'right', bold: true, fontSize: 10, margin: [0, 4, 4, 4], fillColor: '#f5f5f5' },
+        {}
       ],
       [
-        { text: '', colSpan: colSpanSize, border: [false, false, false, false] }, ...emptyCells,
-        { text: `KDV %${kdvOrani}`, alignment: 'right', bold: true, fontSize: 9.5, margin: [0, 2, 4, 2], fillColor: '#f5f5f5' }, 
-        { text: paraFormatla(kdvTutar, paraBirimi), alignment: 'right', bold: true, fontSize: 9.5, margin: [0, 2, 4, 2], fillColor: '#f5f5f5' }
+        { text: `KDV %${kdvOrani}`, colSpan: colSpanCount, alignment: 'right', bold: true, fontSize: 10, margin: [0, 4, 8, 4], fillColor: '#f5f5f5' },
+        ...Array(colSpanCount - 1).fill({}),
+        { text: paraFormatla(kdvTutar, paraBirimi), colSpan: 2, alignment: 'right', bold: true, fontSize: 10, margin: [0, 4, 4, 4], fillColor: '#f5f5f5' },
+        {}
       ],
       [
-        { text: '', colSpan: colSpanSize, border: [false, false, false, false] }, ...emptyCells,
-        { text: `GENEL TOPLAM`, alignment: 'right', bold: true, fontSize: 10, margin: [0, 2, 4, 2], fillColor: '#e0e0e0' }, 
-        { text: paraFormatla(genelToplam, paraBirimi), alignment: 'right', bold: true, fontSize: 10, margin: [0, 2, 4, 2], fillColor: '#e0e0e0' }
+        { text: `GENEL TOPLAM`, colSpan: colSpanCount, alignment: 'right', bold: true, fontSize: 11, margin: [0, 4, 8, 4], fillColor: '#e0e0e0' },
+        ...Array(colSpanCount - 1).fill({}),
+        { text: paraFormatla(genelToplam, paraBirimi), colSpan: 2, alignment: 'right', bold: true, fontSize: 11, margin: [0, 4, 4, 4], fillColor: '#e0e0e0' },
+        {}
       ]
     );
   });
@@ -575,10 +570,10 @@ export async function proformaPdfIndir(teklif, sepet1, sepet2 = [], teklifNo, on
     });
   }
 
-  // --- DİNAMİK SÜTUN GENİŞLİKLERİ ---
+  // --- SÜTUN GENİŞLİKLERİ ---
   const widths1 = sonuc1.aciklamaSutunuGerekli 
-    ? [35, '*', 65, 30, 30, 42, 50, 28, 55] 
-    : [35, '*', 35, 35, 45, 55, 30, 55];
+    ? [35, '*', 65, 30, 30, 42, 50, 28, 78] 
+    : [35, '*', 35, 35, 45, 55, 30, 78];
 
   const icerikDizisi = [
     {
@@ -623,8 +618,8 @@ export async function proformaPdfIndir(teklif, sepet1, sepet2 = [], teklifNo, on
 
   if (sonuc2 && temizSepet2.length > 0) {
     const widths2 = sonuc2.aciklamaSutunuGerekli 
-      ? [35, '*', 65, 30, 30, 42, 50, 28, 55] 
-      : [35, '*', 35, 35, 45, 55, 30, 55];
+      ? [35, '*', 65, 30, 30, 42, 50, 28, 78] 
+      : [35, '*', 35, 35, 45, 55, 30, 78];
 
     icerikDizisi.push(
       { text: "", margin: [0, 6, 0, 6] },
