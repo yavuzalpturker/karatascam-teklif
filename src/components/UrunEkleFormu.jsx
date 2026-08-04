@@ -55,6 +55,15 @@ export default function UrunEkleFormu({
   const gercekAktifSepet = aktifSecenekNo || seciliSepet || 1;
   const hedefSepetNo = (islemVerisi?.tip === "duzenle" && islemVerisi?.sepetNo) ? islemVerisi.sepetNo : Number(gercekAktifSepet) || 1;
 
+  // --- İŞÇİLİK/KAROLAJ AVCISI (ESKİ KALINTILARI BULUP YOK ETMEK İÇİN) ---
+  const isIscilikFunc = (oge) => {
+    if (!oge) return false;
+    if (oge.id && String(oge.id).startsWith("iscilik_")) return true;
+    const ad = String(oge.urunAciklamasi || oge.Açıklama || oge.aciklama || "").toUpperCase();
+    if (ad.includes("BEDELİ") || ad.includes("İŞÇİLİK") || ad.includes("BONDİNG") || ad.includes("KAROLAJ") || ad.includes("SIVAMA")) return true;
+    return false;
+  };
+
   const handleIhracatToggle = (checked) => {
     setIhracatMi(checked);
     const yeniKdv = checked ? "0" : "20";
@@ -163,8 +172,12 @@ export default function UrunEkleFormu({
       if (adet <= 0) adet = 1;
 
       let urunAdi = arama.trim() || "ÖZEL CAM ÜRÜNÜ";
-      let ekAciklama = "";
+      
+      if (sutunlar[2] && !isNum(sutunlar[2]) && sutunlar[2].length > 4) {
+         urunAdi = sutunlar[2];
+      }
 
+      let ekAciklama = "";
       if (sutunlar.some(s => s.toUpperCase().includes("ŞEKİLLİ"))) {
           ekAciklama = "ŞEKİLLİ";
       }
@@ -264,13 +277,20 @@ export default function UrunEkleFormu({
       const gelenAd = satir.urunAciklamasi || ham.arama || satir.aciklama || satir.Açıklama || "";
       setArama(gelenAd);
       
+      let temizAciklama = ham.ozelAciklama || satir.ozelAciklama || "";
+      temizAciklama = temizAciklama.replace(/\(\s*\d+\s*[xX×]\s*\d+\s*mm[^)]*\)/gi, "")
+                                   .replace(/\(\d+\s*Adet\)/gi, "")
+                                   .replace(/\|\s*$/g, "").trim();
+      setOzelAciklama(temizAciklama); 
+      
       setSecilenId(ham.secilenId || "ozel_urun");
-      setOzelAciklama(ham.ozelAciklama || ""); 
       
       setEn(satir.en || ham.en || "");
       setBoy(satir.boy || ham.boy || "");
       setManuelM2(satir.manuelM2 || ham.manuelM2 || "");
       setMiktar(satir.orijinalMiktar !== undefined && satir.orijinalMiktar !== null ? String(satir.orijinalMiktar) : (ham.hamVeri?.miktar || satir.adet || ""));
+      
+      // Kullanıcının birimini asla bozma
       setSecilenBirim(satir.secilenBirim || ham.secilenBirim || "m²");
       setFiyatAna(satir.birimFiyat || ham.fiyatAna || "");
       setFiyatAdet(ham.fiyatAdet || "");
@@ -406,35 +426,39 @@ export default function UrunEkleFormu({
     
     let ekstraAciklama = "";
     let nihaiFiyat = Number(fiyatAna) || Number(fiyatAdet) || 0;
-    let nihaiBirim = hedefBirim;
+    let nihaiBirim = hedefBirim; // Kullanıcının seçtiği formdaki birim
     let hesaplananMiktar = miktarDegeri !== null ? miktarDegeri : 1;
+    let toplamM2 = 0;
 
     if (iscilikTuru === "Sıvama Bedeli") {
       nihaiFiyat = Number(fiyatAna) || 0;
     }
 
-    if (hedefBirim === "m²" || hedefBirim === "ad") {
-      let toplamM2 = 0;
-      if (manuelM2Degeri > 0) {
-        toplamM2 = miktarDegeri !== null ? manuelM2Degeri * miktarDegeri : manuelM2Degeri;
-        ekstraAciklama = miktarDegeri !== null 
-          ? ` (${manuelM2Degeri} m² - ${miktarDegeri} Adet - Toplam: ${toplamM2.toFixed(2)} m²)` 
-          : ` (${manuelM2Degeri} m²)`;
-      } else if (enDegeri > 0 && boyDegeri > 0) {
-        const tekCamM2 = (enDegeri * boyDegeri) / 1000000;
-        toplamM2 = miktarDegeri !== null ? tekCamM2 * miktarDegeri : tekCamM2;
-        
-        if (iscilikTuru === "Sıvama Bedeli" && (sivamaIcEn || sivamaDisEn)) {
-          ekstraAciklama = ` (Dış Cam: ${sivamaDisEn || enDegeri}×${sivamaDisBoy || boyDegeri} mm | İç Cam: ${sivamaIcEn || "-"}×${sivamaIcBoy || "-"} mm - ${miktarDegeri || 1} Adet - Toplam: ${toplamM2.toFixed(2)} m²)`;
-        } else {
-          ekstraAciklama = miktarDegeri !== null 
-            ? ` (${enDegeri}×${boyDegeri} mm - ${miktarDegeri} Adet - Toplam: ${toplamM2.toFixed(2)} m²)` 
-            : ` (${enDegeri}×${boyDegeri} mm - Toplam: ${toplamM2.toFixed(2)} m²)`;
-        }
+    // --- ÖLÇÜ GİRİLDİYSE HER ZAMAN AÇIKLAMAYA EKLENİR ---
+    if (manuelM2Degeri > 0) {
+      toplamM2 = miktarDegeri !== null ? manuelM2Degeri * miktarDegeri : manuelM2Degeri;
+      ekstraAciklama = miktarDegeri !== null 
+        ? ` (${manuelM2Degeri} m² - ${miktarDegeri} Adet - Toplam: ${toplamM2.toFixed(2)} m²)` 
+        : ` (${manuelM2Degeri} m²)`;
+    } else if (enDegeri > 0 && boyDegeri > 0) {
+      const tekCamM2 = (enDegeri * boyDegeri) / 1000000;
+      toplamM2 = miktarDegeri !== null ? tekCamM2 * miktarDegeri : tekCamM2;
+      
+      if (iscilikTuru === "Sıvama Bedeli" && (sivamaIcEn || sivamaDisEn)) {
+        ekstraAciklama = ` (Dış Cam: ${sivamaDisEn || enDegeri}×${sivamaDisBoy || boyDegeri} mm | İç Cam: ${sivamaIcEn || "-"}×${sivamaIcBoy || "-"} mm - ${miktarDegeri || 1} Adet - Toplam: ${toplamM2.toFixed(2)} m²)`;
       } else {
-        ekstraAciklama = miktarDegeri !== null ? ` (${miktarDegeri} Adet)` : "";
+        ekstraAciklama = miktarDegeri !== null 
+          ? ` (${enDegeri}×${boyDegeri} mm - ${miktarDegeri} Adet - Toplam: ${toplamM2.toFixed(2)} m²)` 
+          : ` (${enDegeri}×${boyDegeri} mm - Toplam: ${toplamM2.toFixed(2)} m²)`;
       }
+    } else if (boyDegeri > 0) {
+      ekstraAciklama = miktarDegeri !== null ? ` (${boyDegeri} mm - ${miktarDegeri} Adet)` : ` (${boyDegeri} mm)`;
+    } else {
+      ekstraAciklama = miktarDegeri !== null ? ` (${miktarDegeri} Adet)` : "";
+    }
 
+    // Birim/Fiyat Seçimleri - Kullanıcı ne seçtiyse O KALIYOR
+    if (hedefBirim === "m²" || hedefBirim === "ad") {
       if (fiyatAdet && Number(fiyatAdet) > 0 && iscilikTuru !== "Sıvama Bedeli") {
         nihaiFiyat = Number(fiyatAdet);
         nihaiBirim = "ad"; 
@@ -447,7 +471,6 @@ export default function UrunEkleFormu({
       }
     } else if (hedefBirim === "mt") {
       hesaplananMiktar = miktarDegeri !== null ? (boyDegeri / 1000) * miktarDegeri : (boyDegeri / 1000);
-      ekstraAciklama = miktarDegeri !== null ? ` (${boyDegeri} mm - ${miktarDegeri} Adet)` : ` (${boyDegeri} mm)`;
       nihaiFiyat = Number(fiyatAna) || 0;
       nihaiBirim = "mt";
     } else {
@@ -466,8 +489,15 @@ export default function UrunEkleFormu({
     satir.pozNo = hedefPozNo || "-"; 
     satir.urunAciklamasi = arama.trim() || aciklamaBul(secilenSonUrun);
     
-    const kullanilacakOzelAciklama = hedefOzelAciklama !== null ? hedefOzelAciklama : ozelAciklama;
-    satir.ozelAciklama = kullanilacakOzelAciklama + ekstraAciklama;
+    let kullanilacakOzelAciklama = hedefOzelAciklama !== null ? hedefOzelAciklama : ozelAciklama;
+    kullanilacakOzelAciklama = kullanilacakOzelAciklama
+      .replace(/\(\s*\d+\s*[xX×]\s*\d+\s*mm[^)]*\)/gi, "")
+      .replace(/\d+\s*[xX×]\s*\d+\s*mm/gi, "")
+      .replace(/\(\d+\s*Adet\)/gi, "")
+      .replace(/\|\s*$/g, "")
+      .trim();
+
+    satir.ozelAciklama = kullanilacakOzelAciklama ? `${kullanilacakOzelAciklama} | ${ekstraAciklama}` : ekstraAciklama;
     satir.gorsel = urunGorselBase64; 
     
     satir.orijinalMiktar = miktarDegeri;
@@ -481,8 +511,8 @@ export default function UrunEkleFormu({
     satir.birim = nihaiBirim; 
     satir.Birim = nihaiBirim;
     satir.secili = hedefSecili;
-    satir.en = enDegeri;
-    satir.boy = boyDegeri;
+    satir.en = Number(enDegeri);
+    satir.boy = Number(boyDegeri);
     satir.manuelM2 = manuelM2Degeri;
     
     satir.hamVeri = {
@@ -574,7 +604,31 @@ export default function UrunEkleFormu({
     }
 
     if (islemVerisi && islemVerisi.tip === "duzenle") {
-      if (onGuncelle) onGuncelle(islemVerisi.index, anaSatir, islemVerisi.sepetNo);
+      const aktifSepetDizisi = hedefSepetNo === 1 ? sepet1 : sepet2;
+      const yeniSepet = [];
+
+      for (let i = 0; i < aktifSepetDizisi.length; i++) {
+        if (i === islemVerisi.index) {
+          // Güncellenen ürünü yerine koy
+          yeniSepet.push(anaSatir);
+          // Varsa yeni hesaplanmış taze karolajı ekle
+          if (karolajSatiri) {
+            yeniSepet.push(karolajSatiri);
+          }
+          // Altındaki eski hatalı işçilikleri tamamen yok et! Asla eskiyi barındırma!
+          while (i + 1 < aktifSepetDizisi.length && isIscilikFunc(aktifSepetDizisi[i + 1])) {
+            i++; 
+          }
+        } else {
+          yeniSepet.push(aktifSepetDizisi[i]);
+        }
+      }
+
+      if (onTopluGuncelle) {
+        onTopluGuncelle(hedefSepetNo, yeniSepet);
+      } else if (onGuncelle) {
+        onGuncelle(islemVerisi.index, anaSatir, hedefSepetNo);
+      }
       if (onIptal) onIptal();
     } else {
       const yeniEklenecekler = [anaSatir];
@@ -582,7 +636,6 @@ export default function UrunEkleFormu({
         yeniEklenecekler.push(karolajSatiri);
       }
 
-      // --- DÜZELTİLEN KISIM BURASI: İkisi aynı anda tek bir paket halinde sepete itilir ---
       if (onTopluGuncelle) {
         const aktifSepetDizisi = hedefSepetNo === 1 ? sepet1 : sepet2;
         onTopluGuncelle(hedefSepetNo, [...aktifSepetDizisi, ...yeniEklenecekler]);
@@ -611,15 +664,23 @@ export default function UrunEkleFormu({
     if (!aktifSepetDizisi) return;
 
     const guncelSepet = [];
-    aktifSepetDizisi.forEach((item, idx) => {
+    
+    for (let idx = 0; idx < aktifSepetDizisi.length; idx++) {
+      const item = aktifSepetDizisi[idx];
+
+      // Eski hatalı işçilikleri tamamen atlıyoruz
+      if (isIscilikFunc(item)) {
+        continue; 
+      }
+
       if (item.secili !== false || idx === islemVerisi.index) {
-        const hEn = item.hamVeri?.en || item.en || "";
-        const hBoy = item.hamVeri?.boy || item.boy || "";
-        const hManuelM2 = item.hamVeri?.manuelM2 || item.manuelM2 || "";
-        const hMiktar = item.hamVeri?.miktar !== undefined ? item.hamVeri.miktar : (item.orijinalMiktar !== undefined ? item.orijinalMiktar : "1");
-        const hBirim = item.hamVeri?.secilenBirim || item.secilenBirim || "m²";
-        const hPozNo = item.pozNo || "";
-        
+        // --- SADECE DÜZENLENEN SATIR İÇİN FORMDAKİ BİLGİLERİ (m²) KULLAN ---
+        const hEn = (idx === islemVerisi.index) ? en : (item.hamVeri?.en || item.en || "");
+        const hBoy = (idx === islemVerisi.index) ? boy : (item.hamVeri?.boy || item.boy || "");
+        const hManuelM2 = (idx === islemVerisi.index) ? manuelM2 : (item.hamVeri?.manuelM2 || item.manuelM2 || "");
+        const hMiktar = (idx === islemVerisi.index) ? miktar : (item.hamVeri?.miktar !== undefined ? item.hamVeri.miktar : (item.orijinalMiktar !== undefined ? item.orijinalMiktar : "1"));
+        const hBirim = (idx === islemVerisi.index) ? secilenBirim : (item.hamVeri?.secilenBirim || item.secilenBirim || "m²");
+        const hPozNo = (idx === islemVerisi.index) ? pozNo : (item.pozNo || "");
         const hOzelAciklama = (idx === islemVerisi.index) ? ozelAciklama : (item.hamVeri?.ozelAciklama || "");
         
         const yeniAnaSatir = anaSatirOlusturHelper(hEn, hBoy, hManuelM2, hMiktar, hBirim, hPozNo, item.secili !== false, sonUrun, hOzelAciklama);
@@ -630,9 +691,16 @@ export default function UrunEkleFormu({
           guncelSepet.push(yeniKarolajSatiri);
         }
       } else {
+        // Seçili olmayanları olduğu gibi koru
         guncelSepet.push(item);
+        let nextIdx = idx + 1;
+        while(nextIdx < aktifSepetDizisi.length && isIscilikFunc(aktifSepetDizisi[nextIdx])) {
+          guncelSepet.push(aktifSepetDizisi[nextIdx]);
+          idx++; 
+          nextIdx++;
+        }
       }
-    });
+    }
 
     onTopluGuncelle(hedefSepetNo, guncelSepet);
     if (onIptal) onIptal();
