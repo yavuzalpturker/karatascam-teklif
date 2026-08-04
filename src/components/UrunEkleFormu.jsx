@@ -80,7 +80,6 @@ export default function UrunEkleFormu({
     }
   };
 
-  // --- ADET HESABINI (M²) İLE KARIŞTIRMAYAN ZEKİ YAPIŞTIRMA SİSTEMİ ---
   const handleTopluMetinIsle = (hamMetin) => {
     if (!hamMetin.trim()) return;
 
@@ -109,7 +108,6 @@ export default function UrunEkleFormu({
       const str1 = (sutunlar[1] || "").toUpperCase();
       if (str0.includes("S.N") || str0.includes("TOPLAM") || str1.includes("POZ") || str1.includes("GENİŞLİK")) continue;
 
-      // Poz Numarasını Bul (Sayı olmayan ilk başlardaki metin)
       let pozNo = "-";
       if (sutunlar[1] && isNaN(Number(sutunlar[1].replace(/,/g, ".")))) {
           pozNo = sutunlar[1];
@@ -117,7 +115,6 @@ export default function UrunEkleFormu({
           pozNo = sutunlar[0];
       }
 
-      // Sadece sayı olan hücreleri ayıkla
       const sayiHücreler = sutunlar.filter(s => isNum(s));
       
       let genislik = 0;
@@ -125,7 +122,6 @@ export default function UrunEkleFormu({
       let adet = 1;
       let idxG = -1;
 
-      // En ve Boy bul: Peş peşe gelen ve 50'den büyük iki sayıyı ara
       for (let i = 0; i < sayiHücreler.length - 1; i++) {
         if (sayiTemizle(sayiHücreler[i]) >= 50 && sayiTemizle(sayiHücreler[i + 1]) >= 50) {
           idxG = i;
@@ -137,13 +133,11 @@ export default function UrunEkleFormu({
         genislik = sayiTemizle(sayiHücreler[idxG]);
         yukseklik = sayiTemizle(sayiHücreler[idxG + 1]);
 
-        // En ve Boydan sonra kalan sayılar (Birim m2, Adet, Toplam m2 vs.)
         const kalanSayilar = sayiHücreler.slice(idxG + 2);
         
         if (kalanSayilar.length > 0) {
           let bulunanAdet = null;
           
-          // Adet bulucu: Kalan sayılar içinde VİRGÜL veya NOKTA İÇERMEYEN ilk sayıyı adet kabul et (m² hep virgüllü olur)
           for (let j = 0; j < kalanSayilar.length; j++) {
             const str = kalanSayilar[j];
             if (!str.includes(",") && !str.includes(".")) {
@@ -155,7 +149,6 @@ export default function UrunEkleFormu({
           if (bulunanAdet !== null) {
             adet = bulunanAdet;
           } else {
-            // Eğer hepsi virgüllüyse (Nadir durum), tablo sırasına göre 2. sıradakini adet kabul et
             if (kalanSayilar.length === 3) {
               adet = Math.round(sayiTemizle(kalanSayilar[1]));
             } else {
@@ -164,7 +157,7 @@ export default function UrunEkleFormu({
           }
         }
       } else {
-          continue; // Ölçü yoksa atla
+          continue; 
       }
 
       if (adet <= 0) adet = 1;
@@ -172,7 +165,6 @@ export default function UrunEkleFormu({
       let urunAdi = arama.trim() || "ÖZEL CAM ÜRÜNÜ";
       let ekAciklama = "";
 
-      // Excel'de "ŞEKİLLİ" notu varsa ekle
       if (sutunlar.some(s => s.toUpperCase().includes("ŞEKİLLİ"))) {
           ekAciklama = "ŞEKİLLİ";
       }
@@ -590,7 +582,11 @@ export default function UrunEkleFormu({
         yeniEklenecekler.push(karolajSatiri);
       }
 
-      if (onEkle) {
+      // --- DÜZELTİLEN KISIM BURASI: İkisi aynı anda tek bir paket halinde sepete itilir ---
+      if (onTopluGuncelle) {
+        const aktifSepetDizisi = hedefSepetNo === 1 ? sepet1 : sepet2;
+        onTopluGuncelle(hedefSepetNo, [...aktifSepetDizisi, ...yeniEklenecekler]);
+      } else if (onEkle) {
         yeniEklenecekler.forEach(item => onEkle(item));
       }
 
@@ -901,16 +897,26 @@ export default function UrunEkleFormu({
           </div>
 
           {iscilikTuru === "Karolaj Bedeli" && (
-            <div style={{ display: "flex", gap: "4px" }}>
-              <div style={{ flex: 1 }}>
-                <label style={{ display: "block", fontSize: "11px", fontWeight: "800", color: "#0f2942", marginBottom: "4px" }}>En Adet</label>
-                <input type="number" min="0" step="1" placeholder="Örn: 2" value={karolajEnAdet} onChange={(e) => setKarolajEnAdet(e.target.value)} style={{ width: "100%", padding: "9px 6px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "13px", fontWeight: "600", backgroundColor: "white" }} />
+            <>
+              <div style={{ display: "flex", gap: "4px" }}>
+                <div style={{ flex: 1 }}>
+                  <label style={{ display: "block", fontSize: "11px", fontWeight: "800", color: "#0f2942", marginBottom: "4px" }}>En Adet</label>
+                  <input type="number" min="0" step="1" placeholder="Örn: 2" value={karolajEnAdet} onChange={(e) => setKarolajEnAdet(e.target.value)} style={{ width: "100%", padding: "9px 6px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "13px", fontWeight: "600", backgroundColor: "white" }} />
+                </div>
+                <div style={{ flex: 1 }}>
+                  <label style={{ display: "block", fontSize: "11px", fontWeight: "800", color: "#0f2942", marginBottom: "4px" }}>Boy Adet</label>
+                  <input type="number" min="0" step="1" placeholder="Örn: 4" value={karolajBoyAdet} onChange={(e) => setKarolajBoyAdet(e.target.value)} style={{ width: "100%", padding: "9px 6px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "13px", fontWeight: "600", backgroundColor: "white" }} />
+                </div>
               </div>
-              <div style={{ flex: 1 }}>
-                <label style={{ display: "block", fontSize: "11px", fontWeight: "800", color: "#0f2942", marginBottom: "4px" }}>Boy Adet</label>
-                <input type="number" min="0" step="1" placeholder="Örn: 4" value={karolajBoyAdet} onChange={(e) => setKarolajBoyAdet(e.target.value)} style={{ width: "100%", padding: "9px 6px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "13px", fontWeight: "600", backgroundColor: "white" }} />
+              <div>
+                <label style={{ display: "block", fontSize: "12px", fontWeight: "800", color: "#0f2942", marginBottom: "4px" }}>Metretül (mt)</label>
+                <input type="number" min="0" step="0.01" placeholder="Örn: 50" value={iscilikMetretul} onChange={(e) => setIscilikMetretul(e.target.value)} style={{ width: "100%", padding: "9px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "13px", fontWeight: "600", backgroundColor: "white" }} />
               </div>
-            </div>
+              <div>
+                <label style={{ display: "block", fontSize: "12px", fontWeight: "800", color: "#0f2942", marginBottom: "4px" }}>mt Başına Fiyat</label>
+                <input type="number" min="0" step="0.01" placeholder="Örn: 360" value={iscilikBirimFiyat} onChange={(e) => setIscilikBirimFiyat(e.target.value)} style={{ width: "100%", padding: "9px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "13px", fontWeight: "600", backgroundColor: "white" }} />
+              </div>
+            </>
           )}
 
           {iscilikTuru === "Sıvama Bedeli" && (

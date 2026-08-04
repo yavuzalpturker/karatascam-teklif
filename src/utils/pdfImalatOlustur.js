@@ -26,10 +26,16 @@ async function gorseliBase64eCevir(yol) {
 }
 
 function imalatTabloOlustur(sepet, baslikMetni) {
-  if (!sepet || sepet.length === 0) return { tabloGövdesi: [], toplamAdet: 0, toplamM2: 0, toplamMtul: 0, aciklamaGoster: false };
+  // İmalatta İşçilik ve Bedeller Çıkmasın Filtresi
+  const imalatSepeti = (sepet || []).filter(s => {
+    const ad = (s.urunAciklamasi || "").toUpperCase();
+    return !ad.includes("BEDELİ") && !ad.includes("İŞÇİLİK") && !ad.includes("BONDİNG");
+  });
+
+  if (imalatSepeti.length === 0) return { tabloGövdesi: [], toplamAdet: 0, toplamM2: 0, aciklamaGoster: false };
 
   let aciklamaGoster = false;
-  for (const satir of sepet) {
+  for (const satir of imalatSepeti) {
     let temizAciklama = satir.ozelAciklama || "";
     temizAciklama = temizAciklama
       .replace(/\(\s*\d+\s*[xX×]\s*\d+\s*mm[^)]*\)/gi, "")
@@ -58,20 +64,23 @@ function imalatTabloOlustur(sepet, baslikMetni) {
     { text: 'EN', bold: true, fillColor: '#eeeeee', margin: [0, 5, 0, 5], alignment: 'center' },
     { text: 'BOY', bold: true, fillColor: '#eeeeee', margin: [0, 5, 0, 5], alignment: 'center' },
     { text: 'ADET', bold: true, fillColor: '#eeeeee', margin: [0, 5, 0, 5], alignment: 'center' },
-    { text: 'MİKTAR\n(m²)', bold: true, fillColor: '#eeeeee', margin: [0, 5, 0, 5], alignment: 'center' },
-    { text: 'METRETÜL\n(mtül)', bold: true, fillColor: '#eeeeee', margin: [0, 5, 0, 5], alignment: 'center' }
+    { text: 'BİRİM\n(m²)', bold: true, fillColor: '#eeeeee', margin: [0, 5, 0, 5], alignment: 'center' },
+    { text: 'TOPLAM\n(m²)', bold: true, fillColor: '#eeeeee', margin: [0, 5, 0, 5], alignment: 'center' }
   );
 
   const tabloGövdesi = [headers];
 
-  const islenmisSepet = sepet.map((satir) => {
+  const islenmisSepet = imalatSepeti.map((satir) => {
     const tamMetin = `${satir.ozelAciklama || ""} ${satir.miktarDetay || ""} ${satir.urunAciklamasi || ""}`;
-    let en = 0, boy = 0, adetDegeri = 1, miktarM2 = 0;
+    let en = 0, boy = 0, adetDegeri = 1, birimM2 = 0, toplamM2 = 0;
 
     const olcuMatch = tamMetin.match(/(\d+)\s*[xX×]\s*(\d+)/);
     if (olcuMatch) {
       en = parseFloat(olcuMatch[1]);
       boy = parseFloat(olcuMatch[2]);
+    } else {
+      en = satir.en || 0;
+      boy = satir.boy || 0;
     }
 
     const adetMatch = tamMetin.match(/(?:-\s*)?(\d+)\s*Adet/i);
@@ -81,25 +90,19 @@ function imalatTabloOlustur(sepet, baslikMetni) {
       adetDegeri = satir.orijinalMiktar || satir.hamVeri?.miktar || satir.adet || 1;
     }
 
-    const m2Match = tamMetin.match(/(?:Toplam:\s*)?([\d.]+)\s*m²/i);
-    if (m2Match) {
-      miktarM2 = parseFloat(m2Match[1]);
-    } else if (en > 0 && boy > 0) {
-      miktarM2 = (en * boy * adetDegeri) / 1000000;
+    if (en > 0 && boy > 0) {
+      birimM2 = (en * boy) / 1000000;
+      toplamM2 = birimM2 * adetDegeri;
     } else {
-      miktarM2 = satir.miktar || 0;
-    }
-
-    let metretul = 0;
-    if (en > 0 && boy > 0 && adetDegeri > 0) {
-      metretul = (2 * (en + boy) / 1000) * adetDegeri;
+      toplamM2 = satir.miktar || 0;
+      birimM2 = adetDegeri > 0 ? toplamM2 / adetDegeri : 0;
     }
 
     return {
       ...satir,
       urunAciklamasi: (satir.urunAciklamasi || "").trim(),
       ozelAciklama: (satir.ozelAciklama || "").trim(),
-      en, boy, adetDegeri, miktarM2, metretul
+      en, boy, adetDegeri, birimM2, toplamM2
     };
   });
 
@@ -115,20 +118,17 @@ function imalatTabloOlustur(sepet, baslikMetni) {
 
   let genelToplamAdet = 0;
   let genelToplamM2 = 0;
-  let genelToplamMtul = 0;
 
   const anaUrunAdi = grupMap.keys().next().value; 
 
   grupMap.forEach((grupIciSepet, urunAdi) => {
     let grupToplamAdet = 0;
     let grupToplamM2 = 0;
-    let grupToplamMtul = 0;
     const farkliMi = urunAdi !== anaUrunAdi;
 
     grupIciSepet.forEach(satir => {
       grupToplamAdet += satir.adetDegeri;
-      grupToplamM2 += satir.miktarM2;
-      grupToplamMtul += satir.metretul;
+      grupToplamM2 += satir.toplamM2;
 
       const satirDizisi = [
         { text: satir.pozNo || "-", fontSize: 10, bold: true, alignment: 'center', margin: [0, 5, 0, 5] },
@@ -171,8 +171,8 @@ function imalatTabloOlustur(sepet, baslikMetni) {
         { text: satir.en > 0 ? `${satir.en}` : "-", fontSize: 12, bold: true, alignment: 'center', margin: [0, 5, 0, 5] },
         { text: satir.boy > 0 ? `${satir.boy}` : "-", fontSize: 12, bold: true, alignment: 'center', margin: [0, 5, 0, 5] },
         { text: `${satir.adetDegeri}`, fontSize: 11, bold: true, alignment: 'center', margin: [0, 5, 0, 5] },
-        { text: satir.miktarM2 > 0 ? `${satir.miktarM2.toFixed(2)}` : "-", fontSize: 12, bold: true, alignment: 'center', margin: [0, 5, 0, 5], color: '#000000' },
-        { text: satir.metretul > 0 ? `${satir.metretul.toFixed(2)}` : "-", fontSize: 9, bold: true, alignment: 'center', margin: [0, 5, 0, 5] }
+        { text: satir.birimM2 > 0 ? `${satir.birimM2.toFixed(2)}` : "-", fontSize: 11, bold: true, alignment: 'center', margin: [0, 5, 0, 5], color: '#444444' },
+        { text: satir.toplamM2 > 0 ? `${satir.toplamM2.toFixed(2)}` : "-", fontSize: 11, bold: true, alignment: 'center', margin: [0, 5, 0, 5], color: '#000000' }
       );
 
       tabloGövdesi.push(satirDizisi);
@@ -187,15 +187,14 @@ function imalatTabloOlustur(sepet, baslikMetni) {
       }
       araToplamRow.push(
         { text: `${grupToplamAdet}\nAdet`, alignment: 'center', bold: true, fillColor: '#e6f2ff', margin: [0, 5, 0, 5], color: '#003366' },
-        { text: `${grupToplamM2.toFixed(2)}\nm²`, alignment: 'center', bold: true, fillColor: '#e6f2ff', margin: [0, 5, 0, 5], color: '#003366' },
-        { text: `${grupToplamMtul.toFixed(2)}\nmtül`, alignment: 'center', bold: true, fillColor: '#e6f2ff', margin: [0, 5, 0, 5], color: '#003366' }
+        { text: `-`, alignment: 'center', bold: true, fillColor: '#e6f2ff', margin: [0, 5, 0, 5], color: '#003366' },
+        { text: `${grupToplamM2.toFixed(2)}\nm²`, alignment: 'center', bold: true, fillColor: '#e6f2ff', margin: [0, 5, 0, 5], color: '#003366' }
       );
       tabloGövdesi.push(araToplamRow);
     }
 
     genelToplamAdet += grupToplamAdet;
     genelToplamM2 += grupToplamM2;
-    genelToplamMtul += grupToplamMtul;
   });
 
   const genelToplamRow = [
@@ -206,13 +205,13 @@ function imalatTabloOlustur(sepet, baslikMetni) {
   }
   genelToplamRow.push(
     { text: `${genelToplamAdet}\nAdet`, alignment: 'center', bold: true, fillColor: '#f5f5f5', margin: [0, 5, 0, 5] },
-    { text: `${genelToplamM2.toFixed(2)}\nm²`, alignment: 'center', bold: true, fillColor: '#f5f5f5', margin: [0, 5, 0, 5] },
-    { text: `${genelToplamMtul.toFixed(2)}\nmtül`, alignment: 'center', bold: true, fillColor: '#f5f5f5', margin: [0, 5, 0, 5] }
+    { text: `-`, alignment: 'center', bold: true, fillColor: '#f5f5f5', margin: [0, 5, 0, 5] },
+    { text: `${genelToplamM2.toFixed(2)}\nm²`, alignment: 'center', bold: true, fillColor: '#f5f5f5', margin: [0, 5, 0, 5] }
   );
 
   tabloGövdesi.push(genelToplamRow);
 
-  return { tabloGövdesi, toplamAdet: genelToplamAdet, toplamM2: genelToplamM2, toplamMtul: genelToplamMtul, aciklamaGoster };
+  return { tabloGövdesi, toplamAdet: genelToplamAdet, toplamM2: genelToplamM2, aciklamaGoster };
 }
 
 export async function imalatPdfIndir(teklif, sepet1, sepet2 = [], teklifNo, onizlemeMi = false) {
@@ -304,7 +303,7 @@ export async function imalatPdfIndir(teklif, sepet1, sepet2 = [], teklifNo, oniz
       table: {
         headerRows: 1,
         dontBreakRows: true, 
-        widths: sonuc1.aciklamaGoster ? [48, '*', 70, 40, 40, 30, 45, 45] : [48, '*', 40, 40, 30, 45, 45],
+        widths: sonuc1.aciklamaGoster ? [48, '*', 70, 35, 35, 30, 45, 45] : [48, '*', 35, 35, 30, 45, 45],
         body: sonuc1.tabloGövdesi
       },
       layout: {
@@ -316,14 +315,14 @@ export async function imalatPdfIndir(teklif, sepet1, sepet2 = [], teklifNo, oniz
     }
   ];
 
-  if (sonuc2 && sepet2.length > 0) {
+  if (sonuc2 && sepet2.length > 0 && sonuc2.tabloGövdesi.length > 1) {
     icerikDizisi.push(
       { text: "", margin: [0, 15, 0, 15] },
       {
         table: {
           headerRows: 1,
           dontBreakRows: true, 
-          widths: sonuc2.aciklamaGoster ? [48, '*', 70, 40, 40, 30, 45, 45] : [48, '*', 40, 40, 30, 45, 45],
+          widths: sonuc2.aciklamaGoster ? [48, '*', 70, 35, 35, 30, 45, 45] : [48, '*', 35, 35, 30, 45, 45],
           body: sonuc2.tabloGövdesi
         },
         layout: {
