@@ -33,8 +33,6 @@ export default function SepetTablosu({
   }
 
   // --- ÜRÜN İSİMLERİNE GÖRE DİNAMİK GRUP RENKLERİ ÜRETME ---
-  // Aynı isme/koda sahip ürünler sepette arka arkaya gelsin veya gelmesin, 
-  // aynı isimli ürünler otomatik olarak aynı renk tonunu alır.
   const grupRenkleriPaleti = [
     "#ffffff", // Beyaz
     "#f0fdf4", // Açık Yeşil
@@ -45,7 +43,6 @@ export default function SepetTablosu({
     "#f0fdfa"  // Açık Turkuaz
   ];
 
-  // Sepetteki ürünlerin açıklama/isimlerine göre renk havuzu oluşturalım
   const benzersizUrunler = [...new Set(sepet.map(item => item.urunAciklamasi || "DİĞER"))];
   const renkMap = {};
   benzersizUrunler.forEach((isim, idx) => {
@@ -129,6 +126,23 @@ export default function SepetTablosu({
     setModalAcik(false);
     setHedefToplam("");
   };
+
+  // --- SADECE SEÇİLİ OLAN ÜRÜNLERİN CANLI METRAJ HESAPLAMASI ---
+  const seciliUrunler = (sepet || []).filter(item => item.secili !== false);
+  const seciliMetraj = seciliUrunler.reduce((acc, item) => {
+    const birim = (item.secilenBirim || item.birim || "m²").toLowerCase();
+    const miktarVal = Number(item.miktar || item.toplamM2 || 0);
+    const adetVal = Number(item.orijinalMiktar !== undefined ? item.orijinalMiktar : (item.adet || 1));
+
+    acc.toplamAdet += adetVal;
+
+    if (birim.includes("m²") || birim.includes("m2")) {
+      acc.toplamM2 += miktarVal;
+    } else if (birim.includes("mt")) {
+      acc.toplamMt += miktarVal;
+    }
+    return acc;
+  }, { toplamM2: 0, toplamMt: 0, toplamAdet: 0 });
 
   const genelToplamlar = genelToplamHesapla(sepet);
   const genelKdvler = genelKdvHesapla(sepet); 
@@ -225,7 +239,6 @@ export default function SepetTablosu({
 
               const gercekAdet = satir.orijinalMiktar || satir.hamVeri?.miktar || satir.adet || 1;
 
-              // Ürün grubuna özel renk ataması
               const urunGrubuAdi = satir.urunAciklamasi || "DİĞER";
               const grupArkaPlani = renkMap[urunGrubuAdi] || "#ffffff";
 
@@ -315,6 +328,31 @@ export default function SepetTablosu({
             })}
           </tbody>
         </table>
+      </div>
+
+      {/* --- SEPET TABLOSUNUN ALTINDA CANLI HESAPLAYAN METRAJ ÖZET BANNER'I --- */}
+      <div style={{ 
+        display: "flex", 
+        justifyContent: "space-between", 
+        alignItems: "center", 
+        backgroundColor: "#f0fdf4", 
+        border: "1px solid #16a34a", 
+        padding: "10px 16px", 
+        borderRadius: "6px", 
+        marginTop: "14px", 
+        color: "#166534",
+        fontSize: "13px"
+      }}>
+        <div style={{ fontWeight: "800" }}>
+          📊 SEÇİLİ ÜRÜN METRAJ ÖZETİ
+        </div>
+        <div style={{ display: "flex", gap: "20px", fontWeight: "700" }}>
+          <span>🔹 Toplam Adet: <strong style={{ color: "#0f2942", fontSize: "14px" }}>{seciliMetraj.toplamAdet} Parça</strong></span>
+          <span>📐 Seçili Alan: <strong style={{ color: "#15803d", fontSize: "14px" }}>{seciliMetraj.toplamM2.toFixed(2)} m²</strong></span>
+          {seciliMetraj.toplamMt > 0 && (
+            <span>📏 Seçili Metretül: <strong style={{ color: "#b45309", fontSize: "14px" }}>{seciliMetraj.toplamMt.toFixed(2)} mt</strong></span>
+          )}
+        </div>
       </div>
 
       <div style={{ marginTop: "15px", paddingTop: "10px", borderTop: "2px solid #0f2942", display: "flex", justifyContent: "flex-end", gap: "20px", flexWrap: "wrap", fontSize: "13px" }}>
