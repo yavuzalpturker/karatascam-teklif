@@ -56,6 +56,7 @@ const CamIslemleriPaneli = ({ kenar, setKenar, temper, setTemper, delik, setDeli
       <select value={kenar} onChange={e => setKenar(e.target.value)} style={{ width: "100%", padding: "6px", borderRadius: "5px", border: "1px solid #cbd5e1", fontSize: "11px", fontWeight: "600", color: "#1e293b", backgroundColor: "white" }}>
         <option>Düz Kesim (İşlemsiz)</option>
         <option>Rodajlı</option>
+        <option>CNC Rodaj</option>
         <option>Bizoteli</option>
         <option>Pahlı</option>
       </select>
@@ -81,6 +82,7 @@ const CamIslemleriPaneli = ({ kenar, setKenar, temper, setTemper, delik, setDeli
       <select value={oygu} onChange={e => setOygu(e.target.value)} style={{ width: "100%", padding: "6px", borderRadius: "5px", border: "1px solid #cbd5e1", fontSize: "11px", fontWeight: "600", color: "#1e293b", backgroundColor: "white" }}>
         <option>Oygu Yok</option>
         <option>Oygu Var</option>
+        <option>CNC Oygu</option>
       </select>
     </div>
   </div>
@@ -410,6 +412,7 @@ export default function CamKombinasyonSihirbazi({ onKombinasyonSec, baslangicMet
       setKap(kapBulundu);
 
       if (str.includes("Rodajlı")) setKenar("Rodajlı");
+      else if (str.includes("CNC Rodaj")) setKenar("CNC Rodaj");
       else if (str.includes("Bizoteli")) setKenar("Bizoteli");
       else if (str.includes("Pahlı")) setKenar("Pahlı");
       else setKenar("Düz Kesim (İşlemsiz)");
@@ -420,7 +423,9 @@ export default function CamKombinasyonSihirbazi({ onKombinasyonSec, baslangicMet
       else setTemper("Tempersiz");
 
       setDelik(str.includes("Delikli") ? "Delik Var" : "Delik Yok");
-      setOygu(str.includes("Oygulu") ? "Oygu Var" : "Oygu Yok");
+      if (str.includes("CNC Oygu")) setOygu("CNC Oygu");
+      else if (str.includes("Oygulu") || str.includes("Oygu Var")) setOygu("Oygu Var");
+      else setOygu("Oygu Yok");
     };
 
     const parseBoslukStr = (str, setKal, setTip, setGaz, setDolgu) => {
@@ -467,7 +472,7 @@ export default function CamKombinasyonSihirbazi({ onKombinasyonSec, baslangicMet
     if (kenar && kenar !== "Düz Kesim (İşlemsiz)") islemList.push(kenar);
     if (temper && temper !== "Tempersiz") islemList.push(temper);
     if (delik === "Delik Var") islemList.push("Delikli");
-    if (oygu === "Oygu Var") islemList.push("Oygulu");
+    if (oygu === "Oygu Var" || oygu === "CNC Oygu") islemList.push(oygu);
 
     if (islemList.length > 0) {
       base += ` [ ${islemList.join(" - ")} ]`;
