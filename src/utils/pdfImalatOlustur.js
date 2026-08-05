@@ -26,10 +26,11 @@ async function gorseliBase64eCevir(yol) {
 }
 
 function imalatTabloOlustur(sepet, baslikMetni) {
-  // İmalatta İşçilik ve Bedeller Çıkmasın Filtresi
+  // KAROLAJ VE İŞÇİLİK ÜRÜNLERİNİ İMALAT LİSTESİNDEN TEMİZLEME FİLTRESİ
   const imalatSepeti = (sepet || []).filter(s => {
-    const ad = (s.urunAciklamasi || "").toUpperCase();
-    return !ad.includes("BEDELİ") && !ad.includes("İŞÇİLİK") && !ad.includes("BONDİNG");
+    const ad = (s.urunAciklamasi || s.aciklama || "").toUpperCase();
+    const ozel = (s.ozelAciklama || "").toUpperCase();
+    return !ad.includes("KAROLAJ") && !ad.includes("İŞÇİLİK") && !ad.includes("BEDELİ") && !ad.includes("BONDİNG") && !ozel.includes("KAROLAJ");
   });
 
   if (imalatSepeti.length === 0) return { tabloGövdesi: [], toplamAdet: 0, toplamM2: 0, aciklamaGoster: false };
@@ -106,7 +107,6 @@ function imalatTabloOlustur(sepet, baslikMetni) {
     };
   });
 
-  // GRUPLARIN SEPETTE ÇIKIŞ SIRASINI KORUYARAK MAP OLUŞTURMA
   const grupMap = new Map();
   islenmisSepet.forEach(satir => {
     const urunAdi = satir.urunAciklamasi;
@@ -119,12 +119,9 @@ function imalatTabloOlustur(sepet, baslikMetni) {
   let genelToplamAdet = 0;
   let genelToplamM2 = 0;
 
-  const anaUrunAdi = grupMap.keys().next().value; 
-
   grupMap.forEach((grupIciSepet, urunAdi) => {
     let grupToplamAdet = 0;
     let grupToplamM2 = 0;
-    const farkliMi = urunAdi !== anaUrunAdi;
 
     grupIciSepet.forEach(satir => {
       grupToplamAdet += satir.adetDegeri;
@@ -132,7 +129,7 @@ function imalatTabloOlustur(sepet, baslikMetni) {
 
       const satirDizisi = [
         { text: satir.pozNo || "-", fontSize: 10, bold: true, alignment: 'center', margin: [0, 5, 0, 5] },
-        { text: satir.urunAciklamasi, fontSize: 9, bold: farkliMi || true, color: farkliMi ? '#000000' : '#222222', margin: [5, 5, 0, 5], alignment: 'left' }
+        { text: satir.urunAciklamasi, fontSize: 9, bold: true, color: '#222222', margin: [5, 5, 0, 5], alignment: 'left' }
       ];
 
       if (aciklamaGoster) {

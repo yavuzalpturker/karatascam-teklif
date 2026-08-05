@@ -54,6 +54,7 @@ export default function UrunEkleFormu({
 
   const gercekAktifSepet = aktifSecenekNo || seciliSepet || 1;
   const hedefSepetNo = (islemVerisi?.tip === "duzenle" && islemVerisi?.sepetNo) ? islemVerisi.sepetNo : Number(gercekAktifSepet) || 1;
+  const aktifSepetDizisi = hedefSepetNo === 1 ? sepet1 : sepet2;
 
   const isIscilikFunc = (oge) => {
     if (!oge) return false;
@@ -93,7 +94,6 @@ export default function UrunEkleFormu({
 
     const satirlar = hamMetin.trim().split("\n");
     let yeniSepetEklentileri = [];
-    const aktifSepetDizisi = hedefSepetNo === 1 ? sepet1 : sepet2;
 
     const sayiTemizle = (metin) => {
       if (!metin) return 0;
@@ -200,7 +200,6 @@ export default function UrunEkleFormu({
     }
   }, [en, boy, karolajEnAdet, karolajBoyAdet, miktar, iscilikTuru]);
 
-  // --- DÜZENLEME HOOK'U (YAZIM HATASI DÜZELTİLDİ) ---
   useEffect(() => {
     if (islemVerisi && islemVerisi.tip === "duzenle" && islemVerisi.satir) {
       const satir = islemVerisi.satir;
@@ -568,7 +567,6 @@ export default function UrunEkleFormu({
     }
 
     if (islemVerisi && islemVerisi.tip === "duzenle") {
-      const aktifSepetDizisi = hedefSepetNo === 1 ? sepet1 : sepet2;
       const yeniSepet = [];
 
       for (let i = 0; i < aktifSepetDizisi.length; i++) {
@@ -598,7 +596,6 @@ export default function UrunEkleFormu({
       }
 
       if (onTopluGuncelle) {
-        const aktifSepetDizisi = hedefSepetNo === 1 ? sepet1 : sepet2;
         onTopluGuncelle(hedefSepetNo, [...aktifSepetDizisi, ...yeniEklenecekler]);
       } else if (onEkle) {
         yeniEklenecekler.forEach(item => onEkle(item));
@@ -620,7 +617,6 @@ export default function UrunEkleFormu({
     }
 
     const sonUrun = await getSonUrun();
-    const aktifSepetDizisi = hedefSepetNo === 1 ? sepet1 : sepet2;
 
     if (!aktifSepetDizisi) return;
 
