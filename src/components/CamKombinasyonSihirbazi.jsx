@@ -57,6 +57,7 @@ const CamIslemleriPaneli = ({ kenar, setKenar, temper, setTemper, delik, setDeli
         <option>Düz Kesim (İşlemsiz)</option>
         <option>Rodajlı</option>
         <option>CNC Rodaj</option>
+        <option>Açı Rodaj</option>
         <option>Bizoteli</option>
         <option>Pahlı</option>
       </select>
@@ -413,6 +414,7 @@ export default function CamKombinasyonSihirbazi({ onKombinasyonSec, baslangicMet
 
       if (str.includes("Rodajlı")) setKenar("Rodajlı");
       else if (str.includes("CNC Rodaj")) setKenar("CNC Rodaj");
+      else if (str.includes("Açı Rodaj")) setKenar("Açı Rodaj");
       else if (str.includes("Bizoteli")) setKenar("Bizoteli");
       else if (str.includes("Pahlı")) setKenar("Pahlı");
       else setKenar("Düz Kesim (İşlemsiz)");
