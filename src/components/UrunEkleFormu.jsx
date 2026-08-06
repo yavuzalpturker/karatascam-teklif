@@ -101,7 +101,6 @@ export default function UrunEkleFormu({
       if (!satirMetni) continue;
 
       const ustSatir = satirMetni.toUpperCase();
-      // Excel/PDF başlıklarını yoksay
       if (ustSatir.includes("GENİŞLİK") || ustSatir.includes("YÜKSEKLİK")) continue;
       if (ustSatir === "POZ NO" || ustSatir === "NUMARA") continue;
 
@@ -110,13 +109,11 @@ export default function UrunEkleFormu({
       let yukseklik = 0;
       let pozNoVal = "-";
 
-      // 1. Önce "1200x800" veya "1200 * 800" gibi net formatı arayalım
       const dimMatch = satirMetni.match(/(\d{2,})\s*[xX*×]\s*(\d{2,})/);
       if (dimMatch) {
         genislik = Number(dimMatch[1]);
         yukseklik = Number(dimMatch[2]);
         
-        // Adeti bul (örn: 5 adet, 3 ad)
         const adetMatch = satirMetni.match(/(\d+)\s*(?:adet|ad\.|ad\b|tane|pcs|pc)/i);
         if (adetMatch) adet = Number(adetMatch[1]);
         else {
@@ -132,18 +129,15 @@ export default function UrunEkleFormu({
             }
         }
         
-        // Poz no'yu bul
         const pozMatch = satirMetni.match(/(?:P|Poz|P-)\s*[:.-]?\s*([A-Za-z0-9/,-]+)/i);
         if (pozMatch) pozNoVal = "P" + pozMatch[1];
         else if (satirMetni.includes("\t")) pozNoVal = satirMetni.split("\t")[0].trim() || "-";
       } 
       else {
-        // 2. Tablo veya Düz metin formatı (Örn: 1803 2348 1 veya PDF kopyası)
         const isTabbed = satirMetni.includes("\t");
         let tokens = isTabbed ? satirMetni.split("\t") : satirMetni.split(/\s+/);
         tokens = tokens.map(t => t.trim()).filter(t => t !== "");
 
-        // Poz No'yu tespit et
         if (isTabbed && tokens.length > 0) {
             const str0 = tokens[0].toUpperCase();
             if (/[A-Z/,-]/.test(str0) || str0.startsWith("P")) {
@@ -160,28 +154,23 @@ export default function UrunEkleFormu({
         let adetAdayi = null;
 
         for (let token of tokens) {
-          // Sadece saf rakamları yakala (4,23 veya 8,30 gibi ondalıkları yoksayar)
           const pureDigitsMatch = token.match(/^(\d+)$/);
           if (pureDigitsMatch) {
             const val = Number(pureDigitsMatch[1]);
-            // 50'den büyükleri ölçü kabul et
             if (val >= 50) {
               olcuAdaylari.push(val);
-            } 
-            // 50'den küçük ilk sayıyı adet kabul et
-            else if (val > 0 && adetAdayi === null) {
+            } else if (val > 0 && adetAdayi === null) {
               adetAdayi = val;
             }
           }
         }
 
-        // Eğer en az iki ölçü bulunduysa
         if (olcuAdaylari.length >= 2) {
           genislik = olcuAdaylari[0];
           yukseklik = olcuAdaylari[1];
           if (adetAdayi !== null) adet = adetAdayi;
         } else {
-          continue; // Bu satırda hiçbir geçerli ölçü bulunamadıysa atla
+          continue; 
         }
       }
 
@@ -249,22 +238,19 @@ export default function UrunEkleFormu({
     }
   }, [en, boy, karolajEnAdet, karolajBoyAdet, miktar, iscilikTuru]);
 
+  // --- DÜZENLEME VEYA TEKRAR ETME MODUNDA FORMA BİLGİLERİ YÜKLEME ---
   useEffect(() => {
-    if (islemVerisi && islemVerisi.tip === "duzenle" && islemVerisi.satir) {
-      const satir = islemVerisi.satir;
-      const ham = satir.hamVeri || {};
+    if (islemVerisi && (islemVerisi.tip === "duzenle" || islemVerisi.tip === "tekrar") && (islemVerisi.satir || islemVerisi.hamVeri)) {
+      const satir = islemVerisi.satir || islemVerisi;
+      const ham = satir.hamVeri || islemVerisi.hamVeri || {};
 
-      setPozNo(satir.pozNo || "");
-      setUrunGorselBase64(satir.gorsel || null);
+      setPozNo(satir.pozNo || ham.pozNo || "");
+      setUrunGorselBase64(satir.gorsel || ham.gorsel || null);
       setParaBirimi(satir.paraBirimi || ham.paraBirimi || "TRY");
       
-      const gelenKdv = satir.kdvOrani !== undefined ? String(satir.kdvOrani) : "20";
+      const gelenKdv = satir.kdvOrani !== undefined ? String(satir.kdvOrani) : (ham.kdvOrani !== undefined ? String(ham.kdvOrani) : "20");
       setKdvOrani(gelenKdv);
-      if (gelenKdv === "0") {
-        setIhracatMi(true);
-      } else {
-        setIhracatMi(false);
-      }
+      setIhracatMi(gelenKdv === "0");
 
       setIscilikTuru(ham.iscilikTuru || "");
       setIscilikMetretul(ham.iscilikMetretul || "");
@@ -290,10 +276,17 @@ export default function UrunEkleFormu({
       
       setSecilenId(ham.secilenId || "ozel_urun");
       
-      setEn(satir.en || ham.en || "");
-      setBoy(satir.boy || ham.boy || "");
+      // En, boy, miktar bilgilerini tam çekelim
+      const gelenEn = satir.en || ham.en || "";
+      const gelenBoy = satir.boy || ham.boy || "";
+      setEn(gelenEn);
+      setBoy(gelenBoy);
       setManuelM2(satir.manuelM2 || ham.manuelM2 || "");
-      setMiktar(satir.orijinalMiktar !== undefined && satir.orijinalMiktar !== null ? String(satir.orijinalMiktar) : (ham.hamVeri?.miktar || satir.adet || "1"));
+      
+      const gelenMiktar = satir.orijinalMiktar !== undefined && satir.orijinalMiktar !== null 
+        ? String(satir.orijinalMiktar) 
+        : (ham.miktar !== undefined ? String(ham.miktar) : String(satir.adet || "1"));
+      setMiktar(gelenMiktar);
       
       const kaydedilenBirim = satir.secilenBirim || ham.secilenBirim || "m²";
       setSecilenBirim(kaydedilenBirim);
@@ -757,7 +750,7 @@ export default function UrunEkleFormu({
       />
 
       <h2 className="panel__baslik" style={{ fontSize: "16px", fontWeight: "800", color: "#0f2942", margin: "14px 0 12px 0", borderBottom: "2px solid #e2e8f0", paddingBottom: "8px" }}>
-        {islemVerisi?.tip === "duzenle" ? "✏️ Ürünü Düzenle" : "➕ Ürün Ekleme Ekranı"}
+        {islemVerisi?.tip === "duzenle" ? "✏️ Ürünü Düzenle" : (islemVerisi?.tip === "tekrar" ? "🔄 Ürünü Tekrar Et" : "➕ Ürün Ekleme Ekranı")}
       </h2>
 
       <div style={{ marginBottom: "12px" }}>
