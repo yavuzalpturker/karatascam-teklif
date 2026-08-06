@@ -89,57 +89,106 @@ export default function UrunEkleFormu({
     }
   };
 
+  // --- AKILLI METİN VE EXCEL YAPIŞTIRMA (ÖLÇÜ ALKILAYICI) ---
   const handleTopluMetinIsle = (hamMetin) => {
     if (!hamMetin.trim()) return;
 
     const satirlar = hamMetin.trim().split("\n");
     let yeniSepetEklentileri = [];
 
-    const sayiTemizle = (metin) => {
-      if (!metin) return 0;
-      const duzgun = String(metin).trim().replace(/\./g, "").replace(/,/g, ".");
-      return Number(duzgun) || 0;
-    };
+    for (let satirMetni of satirlar) {
+      satirMetni = satirMetni.trim();
+      if (!satirMetni) continue;
 
-    for (const satirMetni of satirlar) {
-      const sutunlar = satirMetni.split(/\t/).map(s => s.trim());
-      if (sutunlar.length < 3) continue;
-
-      const str0 = (sutunlar[0] || "").toUpperCase();
-      const str1 = (sutunlar[1] || "").toUpperCase();
-      if (str0.includes("POZ") || str0.includes("NUMARA") || str0.includes("TOPLAM") || str1.includes("GENİŞLİK")) continue;
+      const ustSatir = satirMetni.toUpperCase();
+      // Excel/PDF başlıklarını yoksay
+      if (ustSatir.includes("GENİŞLİK") || ustSatir.includes("YÜKSEKLİK")) continue;
+      if (ustSatir === "POZ NO" || ustSatir === "NUMARA") continue;
 
       let adet = 1;
       let genislik = 0;
       let yukseklik = 0;
-      let olcuAdaylari = [];
-      let adetBulundu = false;
+      let pozNoVal = "-";
 
-      for (let i = 1; i < sutunlar.length; i++) {
-        const val = sayiTemizle(sutunlar[i]);
-        if (val > 0) {
-          if (!adetBulundu && val < 50) {
-            adet = val;
-            adetBulundu = true;
-          } else if (val >= 50) {
-            olcuAdaylari.push(val);
+      // 1. Önce "1200x800" veya "1200 * 800" gibi net formatı arayalım
+      const dimMatch = satirMetni.match(/(\d{2,})\s*[xX*×]\s*(\d{2,})/);
+      if (dimMatch) {
+        genislik = Number(dimMatch[1]);
+        yukseklik = Number(dimMatch[2]);
+        
+        // Adeti bul (örn: 5 adet, 3 ad)
+        const adetMatch = satirMetni.match(/(\d+)\s*(?:adet|ad\.|ad\b|tane|pcs|pc)/i);
+        if (adetMatch) adet = Number(adetMatch[1]);
+        else {
+            const parts = satirMetni.split(/\s+/);
+            for (let p of parts) {
+                if (/^\d+$/.test(p)) {
+                    let num = Number(p);
+                    if (num < 50 && num > 0) {
+                        adet = num;
+                        break;
+                    }
+                }
+            }
+        }
+        
+        // Poz no'yu bul
+        const pozMatch = satirMetni.match(/(?:P|Poz|P-)\s*[:.-]?\s*([A-Za-z0-9/,-]+)/i);
+        if (pozMatch) pozNoVal = "P" + pozMatch[1];
+        else if (satirMetni.includes("\t")) pozNoVal = satirMetni.split("\t")[0].trim() || "-";
+      } 
+      else {
+        // 2. Tablo veya Düz metin formatı (Örn: 1803 2348 1 veya PDF kopyası)
+        const isTabbed = satirMetni.includes("\t");
+        let tokens = isTabbed ? satirMetni.split("\t") : satirMetni.split(/\s+/);
+        tokens = tokens.map(t => t.trim()).filter(t => t !== "");
+
+        // Poz No'yu tespit et
+        if (isTabbed && tokens.length > 0) {
+            const str0 = tokens[0].toUpperCase();
+            if (/[A-Z/,-]/.test(str0) || str0.startsWith("P")) {
+                pozNoVal = tokens[0];
+            }
+        } else if (!isTabbed && tokens.length > 0) {
+            const str0 = tokens[0].toUpperCase();
+            if (/[A-Z]/.test(str0) && !/^X$/i.test(str0)) {
+                pozNoVal = tokens[0];
+            }
+        }
+
+        let olcuAdaylari = [];
+        let adetAdayi = null;
+
+        for (let token of tokens) {
+          // Sadece saf rakamları yakala (4,23 veya 8,30 gibi ondalıkları yoksayar)
+          const pureDigitsMatch = token.match(/^(\d+)$/);
+          if (pureDigitsMatch) {
+            const val = Number(pureDigitsMatch[1]);
+            // 50'den büyükleri ölçü kabul et
+            if (val >= 50) {
+              olcuAdaylari.push(val);
+            } 
+            // 50'den küçük ilk sayıyı adet kabul et
+            else if (val > 0 && adetAdayi === null) {
+              adetAdayi = val;
+            }
           }
         }
-      }
 
-      if (!adetBulundu) adet = 1;
-
-      if (olcuAdaylari.length >= 2) {
-        genislik = olcuAdaylari[0];
-        yukseklik = olcuAdaylari[1];
-      } else {
-        continue; 
+        // Eğer en az iki ölçü bulunduysa
+        if (olcuAdaylari.length >= 2) {
+          genislik = olcuAdaylari[0];
+          yukseklik = olcuAdaylari[1];
+          if (adetAdayi !== null) adet = adetAdayi;
+        } else {
+          continue; // Bu satırda hiçbir geçerli ölçü bulunamadıysa atla
+        }
       }
 
       if (adet <= 0) adet = 1;
 
       let urunAdi = arama.trim() || "ÖZEL CAM ÜRÜNÜ";
-      const benzersizId = "excel_" + Date.now() + "_" + Math.random().toString(36).substr(2, 9);
+      const benzersizId = "text_" + Date.now() + "_" + Math.random().toString(36).substr(2, 9);
       const dummyUrun = { id: benzersizId, kodu: "ÖZEL", aciklama: urunAdi.toLocaleUpperCase("tr-TR"), "Ana Birim": "m²" };
       
       const tekCamM2 = (genislik * yukseklik) / 1000000;
@@ -150,7 +199,7 @@ export default function UrunEkleFormu({
       const satir = satirHesapla(dummyUrun, 100, 100, toplamM2, Number(fiyatAna) || 0, paraBirimi, Number(kdvOrani), "m²");
       
       satir.id = benzersizId;
-      satir.pozNo = sutunlar[0] || "-";
+      satir.pozNo = pozNoVal;
       satir.urunAciklamasi = urunAdi.toLocaleUpperCase("tr-TR");
       satir.ozelAciklama = parcaAciklama;
       satir.orijinalMiktar = adet;
@@ -178,7 +227,7 @@ export default function UrunEkleFormu({
       }
       alert(`✅ Başarıyla ${yeniSepetEklentileri.length} satır ${hedefSepetNo}. Seçeneğe eklendi!`);
     } else {
-      alert("Tablo verisi uygun formatta algılanamadı. Lütfen sütunları kontrol edin.");
+      alert("Metin içinde geçerli ölçü (Örn: 1200x800 veya 1200 800) formatı bulunamadı. Lütfen kontrol edin.");
     }
   };
 
@@ -684,14 +733,14 @@ export default function UrunEkleFormu({
   return (
     <section className="panel" style={{ backgroundColor: "white", padding: "18px", borderRadius: "8px", border: "1px solid #cbd5e1", marginBottom: "20px", boxShadow: "0 2px 4px rgba(0,0,0,0.04)" }}>
       
-      {/* --- EXCEL / TABLO VERİSİNİ TOPLU YAPIŞTIRMA ALANI --- */}
+      {/* --- AKILLI YAPIŞTIRMA ALANI (EXCEL veya DÜZ YAZI) --- */}
       <div style={{ backgroundColor: "#f8fafc", border: "2px solid #cbd5e1", padding: "12px", borderRadius: "8px", marginBottom: "16px" }}>
-        <h4 style={{ margin: "0 0 4px 0", color: "#0f2942", fontSize: "14px", fontWeight: "800" }}>📋 Excel / Tablo Verisini Yapıştır</h4>
-        <p style={{ margin: "0 0 8px 0", color: "#64748b", fontSize: "11px" }}>Excel'deki tabloyu kopyalayıp aşağıdaki kutuya yapıştırın, tüm satırlar anında seçili sepete eklensin.</p>
+        <h4 style={{ margin: "0 0 4px 0", color: "#0f2942", fontSize: "14px", fontWeight: "800" }}>📋 Excel veya Düz Metin (Yazı) Yapıştır</h4>
+        <p style={{ margin: "0 0 8px 0", color: "#64748b", fontSize: "11px" }}>Buraya Excel tablosu veya WhatsApp/Mail gibi yerlerden gelen serbest yazıları (Örn: P1 1803 2348 5) yapıştırın, sistem ölçüleri okuyup sepete eklesin.</p>
         
         <textarea 
           rows="2" 
-          placeholder="Tablo verilerini buraya yapıştırın (Ctrl + V)..."
+          placeholder="Ctrl + V ile Excel tablosu veya sipariş metnini yapıştırabilirsiniz..."
           onPaste={(e) => {
             e.preventDefault();
             const pastedText = e.clipboardData.getData('text');
