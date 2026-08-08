@@ -37,36 +37,27 @@ function imalatTabloOlustur(sepet, baslikMetni) {
 
   let aciklamaGoster = false;
   for (const satir of imalatSepeti) {
-    let temizAciklama = satir.ozelAciklama || "";
-    temizAciklama = temizAciklama
-      .replace(/\(\s*\d+\s*[xX×]\s*\d+\s*mm[^)]*\)/gi, "")
-      .replace(/\d+\s*[xX×]\s*\d+\s*mm/gi, "")
-      .replace(/\d+\s*Adet/gi, "")
-      .replace(/Toplam:\s*[\d.]+\s*m²/gi, "")
-      .replace(/[-–—]/g, " ")
-      .trim();
-
-    if (temizAciklama.length > 0 || satir.gorsel) {
+    if ((satir.ozelAciklama && satir.ozelAciklama.trim().length > 0) || satir.gorsel) {
       aciklamaGoster = true;
       break; 
     }
   }
 
   const headers = [
-    { text: 'POZ NO', bold: true, fillColor: '#eeeeee', margin: [0, 5, 0, 5], alignment: 'center' },
-    { text: baslikMetni ? `${baslikMetni} - MALIN CİNSİ` : 'MALIN CİNSİ', bold: true, fillColor: '#eeeeee', margin: [5, 5, 0, 5], alignment: 'left' }
+    { text: 'POZ NO', bold: true, fillColor: '#eeeeee', margin: [0, 4, 0, 4], alignment: 'center' },
+    { text: baslikMetni ? `${baslikMetni} - MALIN CİNSİ` : 'MALIN CİNSİ', bold: true, fillColor: '#eeeeee', margin: [4, 4, 0, 4], alignment: 'left' }
   ];
 
   if (aciklamaGoster) {
-    headers.push({ text: 'AÇIKLAMA & ÇİZİM', bold: true, fillColor: '#eeeeee', margin: [5, 5, 0, 5], alignment: 'left' });
+    headers.push({ text: 'AÇIKLAMA & ÇİZİM', bold: true, fillColor: '#eeeeee', margin: [4, 4, 0, 4], alignment: 'left' });
   }
 
   headers.push(
-    { text: 'EN', bold: true, fillColor: '#eeeeee', margin: [0, 5, 0, 5], alignment: 'center' },
-    { text: 'BOY', bold: true, fillColor: '#eeeeee', margin: [0, 5, 0, 5], alignment: 'center' },
-    { text: 'ADET', bold: true, fillColor: '#eeeeee', margin: [0, 5, 0, 5], alignment: 'center' },
-    { text: 'BİRİM\n(m²)', bold: true, fillColor: '#eeeeee', margin: [0, 5, 0, 5], alignment: 'center' },
-    { text: 'TOPLAM\n(m²)', bold: true, fillColor: '#eeeeee', margin: [0, 5, 0, 5], alignment: 'center' }
+    { text: 'EN', bold: true, fillColor: '#eeeeee', margin: [0, 4, 0, 4], alignment: 'center' },
+    { text: 'BOY', bold: true, fillColor: '#eeeeee', margin: [0, 4, 0, 4], alignment: 'center' },
+    { text: 'ADET', bold: true, fillColor: '#eeeeee', margin: [0, 4, 0, 4], alignment: 'center' },
+    { text: 'BİRİM\n(m²)', bold: true, fillColor: '#eeeeee', margin: [0, 4, 0, 4], alignment: 'center' },
+    { text: 'TOPLAM\n(m²)', bold: true, fillColor: '#eeeeee', margin: [0, 4, 0, 4], alignment: 'center' }
   );
 
   const tabloGövdesi = [headers];
@@ -128,48 +119,49 @@ function imalatTabloOlustur(sepet, baslikMetni) {
       grupToplamM2 += satir.toplamM2;
 
       const satirDizisi = [
-        { text: satir.pozNo || "-", fontSize: 10, bold: true, alignment: 'center', margin: [0, 5, 0, 5] },
-        { text: satir.urunAciklamasi, fontSize: 9, bold: true, color: '#222222', margin: [5, 5, 0, 5], alignment: 'left' }
+        { text: satir.pozNo || "-", fontSize: 10, bold: true, alignment: 'center', margin: [0, 4, 0, 4] },
+        { text: satir.urunAciklamasi, fontSize: 9, bold: true, color: '#222222', margin: [4, 4, 0, 4], alignment: 'left' }
       ];
 
       if (aciklamaGoster) {
         let temizAciklama = satir.ozelAciklama || "";
+        
+        // Otomatik eklenen ölçü ve kod kalıntılarını tamamen temizle
         temizAciklama = temizAciklama
-          .replace(/\(\s*\d+\s*[xX×]\s*\d+\s*mm[^)]*\)/gi, "")
-          .replace(/\d+\s*[xX×]\s*\d+\s*mm/gi, "")
-          .replace(/\d+\s*Adet/gi, "")
-          .replace(/Toplam:\s*[\d.]+\s*m²/gi, "")
-          .replace(/[-–—]/g, " ")
+          .replace(/\(\s*\d+\s*[xX×]\s*\d+\s*mm.*?\)/gi, "")
+          .replace(/-\s*\d+\s*Adet/gi, "")
+          .replace(/-\s*Toplam:\s*[\d.]+\s*m²/gi, "")
+          .replace(/\[ŞEKİLLİ CAM:.*?\]/gi, "")
+          .replace(/RS\d+\s*L:\d+\s*H:\d+/gi, "")
+          .replace(/\|/g, " ")
+          .replace(/\s+/g, " ")
           .trim();
 
         const ozelAciklamaStack = [];
 
         if (temizAciklama.length > 0) {
-          ozelAciklamaStack.push({ text: temizAciklama, fontSize: 8.5, margin: [0, 0, 0, 4], alignment: 'left' });
+          ozelAciklamaStack.push({ text: temizAciklama, fontSize: 8.5, bold: true, margin: [0, 0, 0, 2], alignment: 'left' });
         }
 
+        // ÇİZİMİ OLAN ÜRÜNE ÖZEL KOCAMAN ALAN
         if (satir.gorsel) {
           ozelAciklamaStack.push({
             image: satir.gorsel,
-            fit: [135, 95], // Genişleyen sütuna göre sığdırma optimize edildi
+            fit: [200, 160], 
             alignment: 'center',
-            margin: [0, 4, 0, 4]
+            margin: [0, 3, 0, 3]
           });
         }
 
-        if (ozelAciklamaStack.length === 0) {
-          ozelAciklamaStack.push({ text: "", fontSize: 9, alignment: 'left' });
-        }
-
-        satirDizisi.push({ stack: ozelAciklamaStack, margin: [4, 4, 4, 4] });
+        satirDizisi.push({ stack: ozelAciklamaStack, margin: [3, 3, 3, 3] });
       }
 
       satirDizisi.push(
-        { text: satir.en > 0 ? `${satir.en}` : "-", fontSize: 12, bold: true, alignment: 'center', margin: [0, 5, 0, 5] },
-        { text: satir.boy > 0 ? `${satir.boy}` : "-", fontSize: 12, bold: true, alignment: 'center', margin: [0, 5, 0, 5] },
-        { text: `${satir.adetDegeri}`, fontSize: 11, bold: true, alignment: 'center', margin: [0, 5, 0, 5] },
-        { text: satir.birimM2 > 0 ? `${satir.birimM2.toFixed(2)}` : "-", fontSize: 11, bold: true, alignment: 'center', margin: [0, 5, 0, 5], color: '#444444' },
-        { text: satir.toplamM2 > 0 ? `${satir.toplamM2.toFixed(2)}` : "-", fontSize: 11, bold: true, alignment: 'center', margin: [0, 5, 0, 5], color: '#000000' }
+        { text: satir.en > 0 ? `${satir.en}` : "-", fontSize: 11, bold: true, alignment: 'center', margin: [0, 4, 0, 4] },
+        { text: satir.boy > 0 ? `${satir.boy}` : "-", fontSize: 11, bold: true, alignment: 'center', margin: [0, 4, 0, 4] },
+        { text: `${satir.adetDegeri}`, fontSize: 11, bold: true, alignment: 'center', margin: [0, 4, 0, 4] },
+        { text: satir.birimM2 > 0 ? `${satir.birimM2.toFixed(2)}` : "-", fontSize: 10, bold: true, alignment: 'center', margin: [0, 4, 0, 4], color: '#444444' },
+        { text: satir.toplamM2 > 0 ? `${satir.toplamM2.toFixed(2)}` : "-", fontSize: 10, bold: true, alignment: 'center', margin: [0, 4, 0, 4], color: '#000000' }
       );
 
       tabloGövdesi.push(satirDizisi);
@@ -177,15 +169,15 @@ function imalatTabloOlustur(sepet, baslikMetni) {
 
     if (grupMap.size > 1) {
       const araToplamRow = [
-        { text: 'ARA TOPLAM', colSpan: aciklamaGoster ? 5 : 4, alignment: 'right', bold: true, fillColor: '#e6f2ff', margin: [0, 5, 5, 5], color: '#003366' }
+        { text: 'ARA TOPLAM', colSpan: aciklamaGoster ? 5 : 4, alignment: 'right', bold: true, fillColor: '#e6f2ff', margin: [0, 4, 4, 4], color: '#003366' }
       ];
       for (let i = 0; i < (aciklamaGoster ? 4 : 3); i++) {
         araToplamRow.push({});
       }
       araToplamRow.push(
-        { text: `${grupToplamAdet}\nAdet`, alignment: 'center', bold: true, fillColor: '#e6f2ff', margin: [0, 5, 0, 5], color: '#003366' },
-        { text: `-`, alignment: 'center', bold: true, fillColor: '#e6f2ff', margin: [0, 5, 0, 5], color: '#003366' },
-        { text: `${grupToplamM2.toFixed(2)}\nm²`, alignment: 'center', bold: true, fillColor: '#e6f2ff', margin: [0, 5, 0, 5], color: '#003366' }
+        { text: `${grupToplamAdet}\nAdet`, alignment: 'center', bold: true, fillColor: '#e6f2ff', margin: [0, 4, 0, 4], color: '#003366' },
+        { text: `-`, alignment: 'center', bold: true, fillColor: '#e6f2ff', margin: [0, 4, 0, 4], color: '#003366' },
+        { text: `${grupToplamM2.toFixed(2)}\nm²`, alignment: 'center', bold: true, fillColor: '#e6f2ff', margin: [0, 4, 0, 4], color: '#003366' }
       );
       tabloGövdesi.push(araToplamRow);
     }
@@ -195,15 +187,15 @@ function imalatTabloOlustur(sepet, baslikMetni) {
   });
 
   const genelToplamRow = [
-    { text: 'GENEL TOPLAM', colSpan: aciklamaGoster ? 5 : 4, alignment: 'right', bold: true, fillColor: '#f5f5f5', margin: [0, 5, 5, 5] }
+    { text: 'GENEL TOPLAM', colSpan: aciklamaGoster ? 5 : 4, alignment: 'right', bold: true, fillColor: '#f5f5f5', margin: [0, 4, 4, 4] }
   ];
   for (let i = 0; i < (aciklamaGoster ? 4 : 3); i++) {
     genelToplamRow.push({});
   }
   genelToplamRow.push(
-    { text: `${genelToplamAdet}\nAdet`, alignment: 'center', bold: true, fillColor: '#f5f5f5', margin: [0, 5, 0, 5] },
-    { text: `-`, alignment: 'center', bold: true, fillColor: '#f5f5f5', margin: [0, 5, 0, 5] },
-    { text: `${genelToplamM2.toFixed(2)}\nm²`, alignment: 'center', bold: true, fillColor: '#f5f5f5', margin: [0, 5, 0, 5] }
+    { text: `${genelToplamAdet}\nAdet`, alignment: 'center', bold: true, fillColor: '#f5f5f5', margin: [0, 4, 0, 4] },
+    { text: `-`, alignment: 'center', bold: true, fillColor: '#f5f5f5', margin: [0, 4, 0, 4] },
+    { text: `${genelToplamM2.toFixed(2)}\nm²`, alignment: 'center', bold: true, fillColor: '#f5f5f5', margin: [0, 4, 0, 4] }
   );
 
   tabloGövdesi.push(genelToplamRow);
@@ -271,6 +263,8 @@ export async function imalatPdfIndir(teklif, sepet1, sepet2 = [], teklifNo, oniz
     kisi = `Sn. ${kisi}`;
   }
 
+  const widthsTable1 = sonuc1.aciklamaGoster ? [35, '*', 130, 32, 32, 28, 38, 38] : [40, '*', 38, 38, 30, 40, 40];
+
   const icerikDizisi = [
     {
       columns: [
@@ -300,8 +294,7 @@ export async function imalatPdfIndir(teklif, sepet1, sepet2 = [], teklifNo, oniz
       table: {
         headerRows: 1,
         dontBreakRows: true, 
-        // Açıklama & Çizim sütunu genişliği 145 olarak güncellendi (Görsel ve metin taşmaz)
-        widths: sonuc1.aciklamaGoster ? [40, '*', 145, 32, 32, 28, 40, 40] : [40, '*', 32, 32, 28, 40, 40],
+        widths: widthsTable1,
         body: sonuc1.tabloGövdesi
       },
       layout: {
@@ -314,13 +307,15 @@ export async function imalatPdfIndir(teklif, sepet1, sepet2 = [], teklifNo, oniz
   ];
 
   if (sonuc2 && sepet2.length > 0 && sonuc2.tabloGövdesi.length > 1) {
+    const widthsTable2 = sonuc2.aciklamaGoster ? [35, '*', 130, 32, 32, 28, 38, 38] : [40, '*', 38, 38, 30, 40, 40];
+
     icerikDizisi.push(
       { text: "", margin: [0, 15, 0, 15] },
       {
         table: {
           headerRows: 1,
           dontBreakRows: true, 
-          widths: sonuc2.aciklamaGoster ? [40, '*', 145, 32, 32, 28, 40, 40] : [40, '*', 32, 32, 28, 40, 40],
+          widths: widthsTable2,
           body: sonuc2.tabloGövdesi
         },
         layout: {
