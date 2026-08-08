@@ -89,78 +89,68 @@ export default function UrunEkleFormu({
     }
   };
 
-  // --- AKILLI METİN VE EXCEL YAPIŞTIRMA (ÖLÇÜ ALKILAYICI) ---
+  // --- HAFIZALI AKILLI YAPIŞTIRMA VE BAŞLIKTAN CAM ADI ALGILAYICI ---
   const handleTopluMetinIsle = (hamMetin) => {
     if (!hamMetin.trim()) return;
 
     const satirlar = hamMetin.trim().split("\n");
     let yeniSepetEklentileri = [];
+    let sonBulunanCamBasligi = ""; // Üst satırdaki başlığı hafızada tutma
 
     for (let satirMetni of satirlar) {
       satirMetni = satirMetni.trim();
       if (!satirMetni) continue;
 
       const ustSatir = satirMetni.toUpperCase();
-      if (ustSatir.includes("GENİŞLİK") || ustSatir.includes("YÜKSEKLİK")) continue;
-      if (ustSatir === "POZ NO" || ustSatir === "NUMARA") continue;
+      if (ustSatir.includes("GENİŞLİK") || ustSatir.includes("YÜKSEKLİK") || ustSatir.includes("CAM ÖZELLİKLERİ")) continue;
+      if (ustSatir === "POZ" || ustSatir === "POZ NO" || ustSatir === "POZ NUMARASI" || ustSatir === "NUMARA") continue;
+
+      // Eğer satırda başlık veya tek başına cam açıklaması varsa onu hafızaya al
+      if ((ustSatir.includes("MM") || ustSatir.includes("KOMBİNASYON") || ustSatir.includes("SOLAR") || ustSatir.includes("LOWE") || ustSatir.includes("TEMPER") || ustSatir.includes("LAMİNE")) && !/\d{3,}\s*[\t\s]\s*\d{3,}/.test(satirMetni)) {
+        let temizBaslik = satirMetni.replace(/^KOMBİNASYON\s*:\s*/i, "").trim();
+        if (temizBaslik.length > 10) {
+          sonBulunanCamBasligi = temizBaslik;
+        }
+      }
 
       let adet = 1;
       let genislik = 0;
       let yukseklik = 0;
       let pozNoVal = "-";
+      let algilananCamAdi = "";
 
-      const dimMatch = satirMetni.match(/(\d{2,})\s*[xX*×]\s*(\d{2,})/);
-      if (dimMatch) {
-        genislik = Number(dimMatch[1]);
-        yukseklik = Number(dimMatch[2]);
-        
-        const adetMatch = satirMetni.match(/(\d+)\s*(?:adet|ad\.|ad\b|tane|pcs|pc)/i);
-        if (adetMatch) adet = Number(adetMatch[1]);
-        else {
-            const parts = satirMetni.split(/\s+/);
-            for (let p of parts) {
-                if (/^\d+$/.test(p)) {
-                    let num = Number(p);
-                    if (num < 50 && num > 0) {
-                        adet = num;
-                        break;
-                    }
-                }
-            }
-        }
-        
-        const pozMatch = satirMetni.match(/(?:P|Poz|P-)\s*[:.-]?\s*([A-Za-z0-9/,-]+)/i);
-        if (pozMatch) pozNoVal = "P" + pozMatch[1];
-        else if (satirMetni.includes("\t")) pozNoVal = satirMetni.split("\t")[0].trim() || "-";
-      } 
-      else {
-        const isTabbed = satirMetni.includes("\t");
-        let tokens = isTabbed ? satirMetni.split("\t") : satirMetni.split(/\s+/);
-        tokens = tokens.map(t => t.trim()).filter(t => t !== "");
+      const sutunlar = satirMetni.split("\t").map(s => s.trim()).filter(s => s !== "");
 
-        if (isTabbed && tokens.length > 0) {
-            const str0 = tokens[0].toUpperCase();
-            if (/[A-Z/,-]/.test(str0) || str0.startsWith("P")) {
-                pozNoVal = tokens[0];
-            }
-        } else if (!isTabbed && tokens.length > 0) {
-            const str0 = tokens[0].toUpperCase();
-            if (/[A-Z]/.test(str0) && !/^X$/i.test(str0)) {
-                pozNoVal = tokens[0];
-            }
-        }
-
+      if (sutunlar.length >= 2) {
         let olcuAdaylari = [];
-        let adetAdayi = null;
+        let adetBulundu = false;
 
-        for (let token of tokens) {
-          const pureDigitsMatch = token.match(/^(\d+)$/);
-          if (pureDigitsMatch) {
-            const val = Number(pureDigitsMatch[1]);
+        for (let i = 0; i < sutunlar.length; i++) {
+          const sutun = sutunlar[i];
+          const sutunUst = sutun.toUpperCase();
+
+          if (i === 0 && sutun.length <= 12 && !sutunUst.includes("MM") && !sutunUst.includes("CAM")) {
+            pozNoVal = sutun;
+            continue;
+          }
+
+          if (sutun.length > 12 || sutunUst.includes("MM") || sutunUst.includes("CAM") || sutunUst.includes("TEMPER") || sutunUst.includes("RODAJ") || sutunUst.includes("ISICAM")) {
+            if (!algilananCamAdi) {
+              algilananCamAdi = sutun;
+              sonBulunanCamBasligi = sutun; // Hafızayı güncelle
+              continue;
+            }
+          }
+
+          const temizSayi = sutun.replace(/\./g, "").replace(/,/g, ".");
+          const val = Number(temizSayi);
+
+          if (!isNaN(val) && val > 0) {
             if (val >= 50) {
               olcuAdaylari.push(val);
-            } else if (val > 0 && adetAdayi === null) {
-              adetAdayi = val;
+            } else if (!adetBulundu && val < 50) {
+              adet = val;
+              adetBulundu = true;
             }
           }
         }
@@ -168,17 +158,42 @@ export default function UrunEkleFormu({
         if (olcuAdaylari.length >= 2) {
           genislik = olcuAdaylari[0];
           yukseklik = olcuAdaylari[1];
-          if (adetAdayi !== null) adet = adetAdayi;
-        } else {
-          continue; 
         }
+      }
+
+      if (genislik === 0 || yukseklik === 0) {
+        const dimMatch = satirMetni.match(/(\d{2,})\s*[xX*×]\s*(\d{2,})/);
+        if (dimMatch) {
+          genislik = Number(dimMatch[1]);
+          yukseklik = Number(dimMatch[2]);
+        } else {
+          const sayilar = satirMetni.match(/\b\d+\b/g);
+          if (sayilar) {
+            const buyukSayilar = sayilar.map(Number).filter(n => n >= 50);
+            if (buyukSayilar.length >= 2) {
+              genislik = buyukSayilar[0];
+              yukseklik = buyukSayilar[1];
+            }
+          }
+        }
+
+        if (genislik === 0 || yukseklik === 0) continue; 
+
+        const adetMatch = satirMetni.match(/(\d+)\s*(?:adet|ad\.|ad\b|tane|pcs|pc)/i);
+        if (adetMatch) adet = Number(adetMatch[1]);
+
+        const pozMatch = satirMetni.match(/(?:P|Poz|P-)\s*[:.-]?\s*([A-Za-z0-9/,-]{1,10})/i);
+        if (pozMatch) pozNoVal = pozMatch[1];
       }
 
       if (adet <= 0) adet = 1;
 
-      let urunAdi = arama.trim() || "ÖZEL CAM ÜRÜNÜ";
+      // Ürün adını sırayla bul: Satır içi cam adı -> Hafızadaki Başlık Cam Adı -> Arama kutusundaki ad
+      let nihaiUrunAdi = algilananCamAdi || sonBulunanCamBasligi || arama.trim() || "ÖZEL CAM ÜRÜNÜ";
+      nihaiUrunAdi = nihaiUrunAdi.toLocaleUpperCase("tr-TR");
+
       const benzersizId = "text_" + Date.now() + "_" + Math.random().toString(36).substr(2, 9);
-      const dummyUrun = { id: benzersizId, kodu: "ÖZEL", aciklama: urunAdi.toLocaleUpperCase("tr-TR"), "Ana Birim": "m²" };
+      const dummyUrun = { id: benzersizId, kodu: "ÖZEL", aciklama: nihaiUrunAdi, "Ana Birim": "m²" };
       
       const tekCamM2 = (genislik * yukseklik) / 1000000;
       const toplamM2 = tekCamM2 * adet;
@@ -188,8 +203,8 @@ export default function UrunEkleFormu({
       const satir = satirHesapla(dummyUrun, 100, 100, toplamM2, Number(fiyatAna) || 0, paraBirimi, Number(kdvOrani), "m²");
       
       satir.id = benzersizId;
-      satir.pozNo = pozNoVal;
-      satir.urunAciklamasi = urunAdi.toLocaleUpperCase("tr-TR");
+      satir.pozNo = pozNoVal.length <= 12 ? pozNoVal : "-";
+      satir.urunAciklamasi = nihaiUrunAdi;
       satir.ozelAciklama = parcaAciklama;
       satir.orijinalMiktar = adet;
       satir.adet = adet;
@@ -201,7 +216,7 @@ export default function UrunEkleFormu({
       satir.boy = yukseklik;
       satir.secili = true;
       satir.hamVeri = {
-        arama: urunAdi, ozelAciklama: parcaAciklama, en: genislik, boy: yukseklik, miktar: adet, 
+        arama: nihaiUrunAdi, ozelAciklama: parcaAciklama, en: genislik, boy: yukseklik, miktar: adet, 
         secilenBirim: "m²", paraBirimi, kdvOrani: Number(kdvOrani)
       };
 
@@ -216,7 +231,7 @@ export default function UrunEkleFormu({
       }
       alert(`✅ Başarıyla ${yeniSepetEklentileri.length} satır ${hedefSepetNo}. Seçeneğe eklendi!`);
     } else {
-      alert("Metin içinde geçerli ölçü (Örn: 1200x800 veya 1200 800) formatı bulunamadı. Lütfen kontrol edin.");
+      alert("Metin içinde geçerli ölçü bulunamadı. Lütfen kontrol edin.");
     }
   };
 
@@ -238,7 +253,6 @@ export default function UrunEkleFormu({
     }
   }, [en, boy, karolajEnAdet, karolajBoyAdet, miktar, iscilikTuru]);
 
-  // --- DÜZENLEME VEYA TEKRAR ETME MODUNDA FORMA BİLGİLERİ YÜKLEME ---
   useEffect(() => {
     if (islemVerisi && (islemVerisi.tip === "duzenle" || islemVerisi.tip === "tekrar") && (islemVerisi.satir || islemVerisi.hamVeri)) {
       const satir = islemVerisi.satir || islemVerisi;
@@ -276,7 +290,6 @@ export default function UrunEkleFormu({
       
       setSecilenId(ham.secilenId || "ozel_urun");
       
-      // En, boy, miktar bilgilerini tam çekelim
       const gelenEn = satir.en || ham.en || "";
       const gelenBoy = satir.boy || ham.boy || "";
       setEn(gelenEn);
@@ -729,7 +742,7 @@ export default function UrunEkleFormu({
       {/* --- AKILLI YAPIŞTIRMA ALANI (EXCEL veya DÜZ YAZI) --- */}
       <div style={{ backgroundColor: "#f8fafc", border: "2px solid #cbd5e1", padding: "12px", borderRadius: "8px", marginBottom: "16px" }}>
         <h4 style={{ margin: "0 0 4px 0", color: "#0f2942", fontSize: "14px", fontWeight: "800" }}>📋 Excel veya Düz Metin (Yazı) Yapıştır</h4>
-        <p style={{ margin: "0 0 8px 0", color: "#64748b", fontSize: "11px" }}>Buraya Excel tablosu veya WhatsApp/Mail gibi yerlerden gelen serbest yazıları (Örn: P1 1803 2348 5) yapıştırın, sistem ölçüleri okuyup sepete eklesin.</p>
+        <p style={{ margin: "0 0 8px 0", color: "#64748b", fontSize: "11px" }}>Buraya Excel tablosu veya WhatsApp/Mail gibi yerlerden gelen serbest yazıları (Örn: P1 1889 2734 2) yapıştırın, sistem ölçüleri okuyup sepete eklesin.</p>
         
         <textarea 
           rows="2" 
@@ -1046,12 +1059,13 @@ export default function UrunEkleFormu({
             </select>
           </div>
 
-          <div style={{ display: "flex", alignItems: "center", gap: "6px", backgroundColor: "#fef3c7", padding: "7px 10px", borderRadius: "6px", border: "1px solid #f59e0b", height: "35px" }}>
-            <input type="checkbox" id="ihracatCheck" checked={ihracatMi} onChange={(e) => handleIhracatToggle(e.target.checked)} style={{ width: "16px", height: "16px", cursor: "pointer" }} />
-            <label htmlFor="ihracatCheck" style={{ fontSize: "11.5px", fontWeight: "800", color: "#92400e", cursor: "pointer" }}>
+          {/* CHECKBOX DOKUNMA/TIKLAMA ALANI BÜYÜTÜLDÜ */}
+          <label htmlFor="ihracatCheck" style={{ display: "flex", alignItems: "center", gap: "8px", backgroundColor: "#fef3c7", padding: "8px 12px", borderRadius: "6px", border: "1px solid #f59e0b", height: "38px", cursor: "pointer", userSelect: "none" }}>
+            <input type="checkbox" id="ihracatCheck" checked={ihracatMi} onChange={(e) => handleIhracatToggle(e.target.checked)} style={{ width: "18px", height: "18px", cursor: "pointer" }} />
+            <span style={{ fontSize: "12px", fontWeight: "800", color: "#92400e" }}>
               🌍 İhracat (KDV %0)
-            </label>
-          </div>
+            </span>
+          </label>
         </div>
 
         <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>

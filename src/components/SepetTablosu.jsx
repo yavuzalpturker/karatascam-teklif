@@ -211,15 +211,26 @@ export default function SepetTablosu({
           <thead>
             <tr style={{ backgroundColor: "#0f2942", color: "white", textAlign: "left" }}>
               <th style={{ padding: "10px", textAlign: "center", width: "30px", borderRadius: "4px 0 0 0" }} title="Sürüklemek için tut">↕️</th>
-              <th style={{ padding: "10px", textAlign: "center", width: "40px" }}>
-                <input 
-                  type="checkbox"
-                  checked={hepsiSeciliMi}
-                  onChange={(e) => tumunuSecVeyaKaldir(e.target.checked)}
-                  title="İmalat Listesi İçin Tümünü Seç / Kaldır"
-                  style={{ cursor: "pointer", width: "16px", height: "16px" }}
-                />
+              
+              {/* TÜMÜNÜ SEÇ / KALDIR HÜCRESİ GENİŞLETİLDİ */}
+              <th 
+                style={{ padding: "0", textAlign: "center", width: "45px", cursor: "pointer", userSelect: "none" }}
+                onClick={() => tumunuSecVeyaKaldir(!hepsiSeciliMi)}
+                title="Tümünü Seç / Kaldır"
+              >
+                <div style={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100%", width: "100%", padding: "10px 0" }}>
+                  <input 
+                    type="checkbox"
+                    checked={hepsiSeciliMi}
+                    onChange={(e) => {
+                      e.stopPropagation();
+                      tumunuSecVeyaKaldir(e.target.checked);
+                    }}
+                    style={{ cursor: "pointer", width: "18px", height: "18px" }}
+                  />
+                </div>
               </th>
+
               <th style={{ padding: "10px", textAlign: "center", width: "70px" }}>Poz No</th>
               <th style={{ padding: "10px" }}>Ürün Açıklaması</th>
               <th style={{ padding: "10px" }}>Özel Açıklama</th>
@@ -241,6 +252,7 @@ export default function SepetTablosu({
 
               const urunGrubuAdi = satir.urunAciklamasi || "DİĞER";
               const grupArkaPlani = renkMap[urunGrubuAdi] || "#ffffff";
+              const seciliMi = satir.secili !== false;
 
               return (
                 <tr 
@@ -259,15 +271,29 @@ export default function SepetTablosu({
                   title="Aynı türdeki ürünler otomatik aynı renkte gruplanır. Sürükleyip yerini değiştirebilirsiniz."
                 >
                   <td style={{ padding: "10px", textAlign: "center", color: "#94a3b8", fontWeight: "bold" }}>☰</td>
-                  <td style={{ padding: "10px", textAlign: "center" }} onClick={(e) => e.stopPropagation()}>
-                    <input 
-                      type="checkbox"
-                      checked={satir.secili !== false}
-                      onChange={(e) => tekliSecimDegistir(index, e.target.checked)}
-                      title="İmalat Listesine Ekle"
-                      style={{ cursor: "pointer", width: "16px", height: "16px" }}
-                    />
+                  
+                  {/* KOLAY TIKLANABİLİR KUTUCUK HÜCRESİ */}
+                  <td 
+                    style={{ padding: "0", textAlign: "center", cursor: "pointer", userSelect: "none" }}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      tekliSecimDegistir(index, !seciliMi);
+                    }}
+                    title="İmalat Listesine Ekle / Çıkar"
+                  >
+                    <div style={{ display: "flex", justifyContent: "center", alignItems: "center", width: "100%", height: "100%", padding: "12px 0" }}>
+                      <input 
+                        type="checkbox"
+                        checked={seciliMi}
+                        onChange={(e) => {
+                          e.stopPropagation();
+                          tekliSecimDegistir(index, e.target.checked);
+                        }}
+                        style={{ cursor: "pointer", width: "18px", height: "18px" }}
+                      />
+                    </div>
                   </td>
+
                   <td style={{ padding: "10px", textAlign: "center", fontWeight: "700", color: "#0f2942" }}>
                     {satir.pozNo || "-"}
                   </td>
@@ -333,7 +359,7 @@ export default function SepetTablosu({
       {/* --- SEPET TABLOSUNUN ALTINDA CANLI HESAPLAYAN METRAJ ÖZET BANNER'I --- */}
       <div style={{ 
         display: "flex", 
-        justifyContent: "space-between", 
+        justify: "space-between", 
         alignItems: "center", 
         backgroundColor: "#f0fdf4", 
         border: "1px solid #16a34a", 

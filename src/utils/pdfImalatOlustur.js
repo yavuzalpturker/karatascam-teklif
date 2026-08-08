@@ -151,7 +151,7 @@ function imalatTabloOlustur(sepet, baslikMetni) {
         if (satir.gorsel) {
           ozelAciklamaStack.push({
             image: satir.gorsel,
-            width: 100, 
+            fit: [100, 85], // BOY VE EN SINIRI: Resmi bu boyutların dışına kesinlikle çıkarmaz, dikey taşmayı önler.
             alignment: 'center',
             margin: [0, 4, 0, 4]
           });
@@ -300,7 +300,7 @@ export async function imalatPdfIndir(teklif, sepet1, sepet2 = [], teklifNo, oniz
       table: {
         headerRows: 1,
         dontBreakRows: true, 
-        widths: sonuc1.aciklamaGoster ? [48, '*', 70, 35, 35, 30, 45, 45] : [48, '*', 35, 35, 30, 45, 45],
+        widths: sonuc1.aciklamaGoster ? [48, '*', 110, 35, 35, 30, 45, 45] : [48, '*', 35, 35, 30, 45, 45],
         body: sonuc1.tabloGövdesi
       },
       layout: {
@@ -319,7 +319,7 @@ export async function imalatPdfIndir(teklif, sepet1, sepet2 = [], teklifNo, oniz
         table: {
           headerRows: 1,
           dontBreakRows: true, 
-          widths: sonuc2.aciklamaGoster ? [48, '*', 70, 35, 35, 30, 45, 45] : [48, '*', 35, 35, 30, 45, 45],
+          widths: sonuc2.aciklamaGoster ? [48, '*', 110, 35, 35, 30, 45, 45] : [48, '*', 35, 35, 30, 45, 45],
           body: sonuc2.tabloGövdesi
         },
         layout: {
