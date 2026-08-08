@@ -145,13 +145,13 @@ function imalatTabloOlustur(sepet, baslikMetni) {
         const ozelAciklamaStack = [];
 
         if (temizAciklama.length > 0) {
-          ozelAciklamaStack.push({ text: temizAciklama, fontSize: 9, margin: [0, 0, 0, 6], alignment: 'left' });
+          ozelAciklamaStack.push({ text: temizAciklama, fontSize: 8.5, margin: [0, 0, 0, 4], alignment: 'left' });
         }
 
         if (satir.gorsel) {
           ozelAciklamaStack.push({
             image: satir.gorsel,
-            fit: [100, 85], // BOY VE EN SINIRI: Resmi bu boyutların dışına kesinlikle çıkarmaz, dikey taşmayı önler.
+            fit: [135, 95], // Genişleyen sütuna göre sığdırma optimize edildi
             alignment: 'center',
             margin: [0, 4, 0, 4]
           });
@@ -161,7 +161,7 @@ function imalatTabloOlustur(sepet, baslikMetni) {
           ozelAciklamaStack.push({ text: "", fontSize: 9, alignment: 'left' });
         }
 
-        satirDizisi.push({ stack: ozelAciklamaStack, margin: [5, 5, 5, 5] });
+        satirDizisi.push({ stack: ozelAciklamaStack, margin: [4, 4, 4, 4] });
       }
 
       satirDizisi.push(
@@ -300,7 +300,8 @@ export async function imalatPdfIndir(teklif, sepet1, sepet2 = [], teklifNo, oniz
       table: {
         headerRows: 1,
         dontBreakRows: true, 
-        widths: sonuc1.aciklamaGoster ? [48, '*', 110, 35, 35, 30, 45, 45] : [48, '*', 35, 35, 30, 45, 45],
+        // Açıklama & Çizim sütunu genişliği 145 olarak güncellendi (Görsel ve metin taşmaz)
+        widths: sonuc1.aciklamaGoster ? [40, '*', 145, 32, 32, 28, 40, 40] : [40, '*', 32, 32, 28, 40, 40],
         body: sonuc1.tabloGövdesi
       },
       layout: {
@@ -319,7 +320,7 @@ export async function imalatPdfIndir(teklif, sepet1, sepet2 = [], teklifNo, oniz
         table: {
           headerRows: 1,
           dontBreakRows: true, 
-          widths: sonuc2.aciklamaGoster ? [48, '*', 110, 35, 35, 30, 45, 45] : [48, '*', 35, 35, 30, 45, 45],
+          widths: sonuc2.aciklamaGoster ? [40, '*', 145, 32, 32, 28, 40, 40] : [40, '*', 32, 32, 28, 40, 40],
           body: sonuc2.tabloGövdesi
         },
         layout: {

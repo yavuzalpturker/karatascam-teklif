@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { satirHesapla, paraFormatla } from "../utils/hesaplama";
 import { supabase } from "../lib/supabaseClient";
 import CamKombinasyonSihirbazi from "./CamKombinasyonSihirbazi";
+import SekilCiziciModal from "./SekilCiziciModal"; // YENİ EKLENEN MODAL
 
 export default function UrunEkleFormu({ 
   urunler = [], 
@@ -52,6 +53,9 @@ export default function UrunEkleFormu({
   const [eklenenOzelUrunler, setEklenenOzelUrunler] = useState([]);
   const [sihirbazVerisi, setSihirbazVerisi] = useState(null);
 
+  // YENİ: Şekil Çizici Modal Durumu
+  const [sekilModalAcik, setSekilModalAcik] = useState(false);
+
   const gercekAktifSepet = aktifSecenekNo || seciliSepet || 1;
   const hedefSepetNo = (islemVerisi?.tip === "duzenle" && islemVerisi?.sepetNo) ? islemVerisi.sepetNo : Number(gercekAktifSepet) || 1;
   const aktifSepetDizisi = hedefSepetNo === 1 ? sepet1 : sepet2;
@@ -89,13 +93,12 @@ export default function UrunEkleFormu({
     }
   };
 
-  // --- HAFIZALI AKILLI YAPIŞTIRMA VE BAŞLIKTAN CAM ADI ALGILAYICI ---
   const handleTopluMetinIsle = (hamMetin) => {
     if (!hamMetin.trim()) return;
 
     const satirlar = hamMetin.trim().split("\n");
     let yeniSepetEklentileri = [];
-    let sonBulunanCamBasligi = ""; // Üst satırdaki başlığı hafızada tutma
+    let sonBulunanCamBasligi = ""; 
 
     for (let satirMetni of satirlar) {
       satirMetni = satirMetni.trim();
@@ -105,7 +108,6 @@ export default function UrunEkleFormu({
       if (ustSatir.includes("GENİŞLİK") || ustSatir.includes("YÜKSEKLİK") || ustSatir.includes("CAM ÖZELLİKLERİ")) continue;
       if (ustSatir === "POZ" || ustSatir === "POZ NO" || ustSatir === "POZ NUMARASI" || ustSatir === "NUMARA") continue;
 
-      // Eğer satırda başlık veya tek başına cam açıklaması varsa onu hafızaya al
       if ((ustSatir.includes("MM") || ustSatir.includes("KOMBİNASYON") || ustSatir.includes("SOLAR") || ustSatir.includes("LOWE") || ustSatir.includes("TEMPER") || ustSatir.includes("LAMİNE")) && !/\d{3,}\s*[\t\s]\s*\d{3,}/.test(satirMetni)) {
         let temizBaslik = satirMetni.replace(/^KOMBİNASYON\s*:\s*/i, "").trim();
         if (temizBaslik.length > 10) {
@@ -137,7 +139,7 @@ export default function UrunEkleFormu({
           if (sutun.length > 12 || sutunUst.includes("MM") || sutunUst.includes("CAM") || sutunUst.includes("TEMPER") || sutunUst.includes("RODAJ") || sutunUst.includes("ISICAM")) {
             if (!algilananCamAdi) {
               algilananCamAdi = sutun;
-              sonBulunanCamBasligi = sutun; // Hafızayı güncelle
+              sonBulunanCamBasligi = sutun; 
               continue;
             }
           }
@@ -188,7 +190,6 @@ export default function UrunEkleFormu({
 
       if (adet <= 0) adet = 1;
 
-      // Ürün adını sırayla bul: Satır içi cam adı -> Hafızadaki Başlık Cam Adı -> Arama kutusundaki ad
       let nihaiUrunAdi = algilananCamAdi || sonBulunanCamBasligi || arama.trim() || "ÖZEL CAM ÜRÜNÜ";
       nihaiUrunAdi = nihaiUrunAdi.toLocaleUpperCase("tr-TR");
 
@@ -233,6 +234,14 @@ export default function UrunEkleFormu({
     } else {
       alert("Metin içinde geçerli ölçü bulunamadı. Lütfen kontrol edin.");
     }
+  };
+
+  // YENİ: Şekil Çiziciden Gelen Çizim Bilgisini Kaydetme
+  const handleSekilCizimKaydet = (cizimVerisi) => {
+    setUrunGorselBase64(cizimVerisi.base64Gorsel);
+    setEn(cizimVerisi.en);
+    setBoy(cizimVerisi.boy);
+    setOzelAciklama(prev => (prev ? `${prev} | ${cizimVerisi.ozetMetin}` : cizimVerisi.ozetMetin));
   };
 
   useEffect(() => {
@@ -739,6 +748,15 @@ export default function UrunEkleFormu({
   return (
     <section className="panel" style={{ backgroundColor: "white", padding: "18px", borderRadius: "8px", border: "1px solid #cbd5e1", marginBottom: "20px", boxShadow: "0 2px 4px rgba(0,0,0,0.04)" }}>
       
+      {/* PARAMETRİK ŞEKİL ÇİZİCİ MODALI */}
+      <SekilCiziciModal 
+        acik={sekilModalAcik}
+        onKapat={() => setSekilModalAcik(false)}
+        onCizimKaydet={handleSekilCizimKaydet}
+        varsayilanEn={en}
+        varsayilanBoy={boy}
+      />
+
       {/* --- AKILLI YAPIŞTIRMA ALANI (EXCEL veya DÜZ YAZI) --- */}
       <div style={{ backgroundColor: "#f8fafc", border: "2px solid #cbd5e1", padding: "12px", borderRadius: "8px", marginBottom: "16px" }}>
         <h4 style={{ margin: "0 0 4px 0", color: "#0f2942", fontSize: "14px", fontWeight: "800" }}>📋 Excel veya Düz Metin (Yazı) Yapıştır</h4>
@@ -845,21 +863,45 @@ export default function UrunEkleFormu({
           />
         </div>
 
-        <div style={{ flex: 1.5, minWidth: "140px" }}>
-          <label style={{ display: "block", fontSize: "12px", fontWeight: "700", color: "#0f2942", marginBottom: "4px" }}>🖼️ Görsel Ekle</label>
-          <input
-            type="file"
-            accept="image/*"
-            onChange={handleGorselYukle}
-            style={{ fontSize: "11px", padding: "6px", width: "100%", border: "1px solid #cbd5e1", borderRadius: "6px", backgroundColor: "#f8fafc" }}
-          />
+        {/* GÖRSEL VE ŞEKİL ÇİZİCİ BUTONLARI YAN YANA */}
+        <div style={{ flex: 1.5, minWidth: "220px", display: "flex", gap: "8px", alignItems: "flex-end" }}>
+          <div style={{ flex: 1 }}>
+            <label style={{ display: "block", fontSize: "12px", fontWeight: "700", color: "#0f2942", marginBottom: "4px" }}>🖼️ Görsel</label>
+            <input
+              type="file"
+              accept="image/*"
+              onChange={handleGorselYukle}
+              style={{ fontSize: "11px", padding: "6px", width: "100%", border: "1px solid #cbd5e1", borderRadius: "6px", backgroundColor: "#f8fafc" }}
+            />
+          </div>
+
+          <button
+            type="button"
+            onClick={() => setSekilModalAcik(true)}
+            style={{ 
+              backgroundColor: "#16a34a", 
+              color: "white", 
+              border: "none", 
+              padding: "8px 12px", 
+              borderRadius: "6px", 
+              fontSize: "12px", 
+              fontWeight: "800", 
+              cursor: "pointer",
+              whiteSpace: "nowrap",
+              height: "33px",
+              boxShadow: "0 2px 4px rgba(0,0,0,0.1)"
+            }}
+            title="Parametrik CNC Cam Şekli Çizicisini Aç"
+          >
+            📐 Şekil Çizici
+          </button>
         </div>
       </div>
 
       {urunGorselBase64 && (
         <div style={{ marginTop: "8px", marginBottom: "12px", padding: "10px", backgroundColor: "#f1f5f9", borderRadius: "6px", display: "flex", alignItems: "center", gap: "10px", border: "1px solid #cbd5e1" }}>
           <img src={urunGorselBase64} alt="Önizleme" style={{ height: "50px", width: "auto", borderRadius: "4px", border: "1px solid #cbd5e1" }} />
-          <span style={{ fontSize: "12px", color: "#166534", fontWeight: "bold" }}>✓ Görsel Seçildi</span>
+          <span style={{ fontSize: "12px", color: "#166534", fontWeight: "bold" }}>✓ Görsel / Çizim Hazır</span>
           <button 
             type="button" 
             onClick={() => setUrunGorselBase64(null)} 
@@ -1059,7 +1101,6 @@ export default function UrunEkleFormu({
             </select>
           </div>
 
-          {/* CHECKBOX DOKUNMA/TIKLAMA ALANI BÜYÜTÜLDÜ */}
           <label htmlFor="ihracatCheck" style={{ display: "flex", alignItems: "center", gap: "8px", backgroundColor: "#fef3c7", padding: "8px 12px", borderRadius: "6px", border: "1px solid #f59e0b", height: "38px", cursor: "pointer", userSelect: "none" }}>
             <input type="checkbox" id="ihracatCheck" checked={ihracatMi} onChange={(e) => handleIhracatToggle(e.target.checked)} style={{ width: "18px", height: "18px", cursor: "pointer" }} />
             <span style={{ fontSize: "12px", fontWeight: "800", color: "#92400e" }}>

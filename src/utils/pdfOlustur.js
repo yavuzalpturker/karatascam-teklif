@@ -186,13 +186,13 @@ function sepetIcerikOlustur(sepet, baslikMetni, teklif) {
     if (satir.gorsel) {
       elemanlar.push({
         image: satir.gorsel,
-        width: 130, 
+        fit: [130, 90], // Teklif sayfasında taşmayı önleyen sınırlandırma
         margin: [0, 4, 0, 6]
       });
     }
 
     elemanlar.push({
-      text: `${satir.miktarDetay}  =  ${paraFormatla(satir.toplamTutar, satir.paraBirimi)}${ihracatMi ? "" : " + KDV"}`,
+      text: `${satir.miktarDetay}   =   ${paraFormatla(satir.toplamTutar, satir.paraBirimi)}${ihracatMi ? "" : " + KDV"}`,
       alignment: "right",
       fontSize: 10,
       margin: [0, 0, 0, 8],
@@ -448,7 +448,12 @@ function proformaTabloOlustur(sepet, baslikMetni, teklif) {
          aciklamaStack.push({ text: kullaniciAciklamasi, fontSize: 8.5, color: '#333333', margin: [0, 0, 0, 2] });
       }
       if (satir.gorsel) {
-         aciklamaStack.push({ image: satir.gorsel, width: 80, alignment: 'center', margin: [0, 2, 0, 2] });
+         aciklamaStack.push({ 
+           image: satir.gorsel, 
+           fit: [100, 75], // Proforma tablosunda hücre içine düzgün hizalama
+           alignment: 'center', 
+           margin: [0, 2, 0, 2] 
+         });
       }
     }
 
@@ -487,8 +492,6 @@ function proformaTabloOlustur(sepet, baslikMetni, teklif) {
   const kdvOrani = ihracatMi ? 0 : (sepet[0]?.kdvOrani !== undefined ? Number(sepet[0].kdvOrani) : 20);
   
   let yalnizMetni = "";
-  
-  // --- TOPLAM ALANI TEK PARÇA KOCA BLOK HÂLİNDE AYARLANDI ---
   const colSpanCount = aciklamaSutunuGerekli ? 7 : 6; 
 
   Object.entries(genelToplamlar).forEach(([paraBirimi, tutar]) => {
@@ -570,9 +573,9 @@ export async function proformaPdfIndir(teklif, sepet1, sepet2 = [], teklifNo, on
     });
   }
 
-  // --- SÜTUN GENİŞLİKLERİ ---
+  // --- SÜTUN GENİŞLİKLERİ (Açıklama & Çizim sütunu 110 piksele çıkarıldı) ---
   const widths1 = sonuc1.aciklamaSutunuGerekli 
-    ? [35, '*', 65, 30, 30, 42, 50, 28, 78] 
+    ? [30, '*', 110, 28, 28, 38, 45, 25, 70] 
     : [35, '*', 35, 35, 45, 55, 30, 78];
 
   const icerikDizisi = [
@@ -618,7 +621,7 @@ export async function proformaPdfIndir(teklif, sepet1, sepet2 = [], teklifNo, on
 
   if (sonuc2 && temizSepet2.length > 0) {
     const widths2 = sonuc2.aciklamaSutunuGerekli 
-      ? [35, '*', 65, 30, 30, 42, 50, 28, 78] 
+      ? [30, '*', 110, 28, 28, 38, 45, 25, 70] 
       : [35, '*', 35, 35, 45, 55, 30, 78];
 
     icerikDizisi.push(
