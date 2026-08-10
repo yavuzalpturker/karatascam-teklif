@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { satirHesapla, paraFormatla } from "../utils/hesaplama";
 import { supabase } from "../lib/supabaseClient";
 import CamKombinasyonSihirbazi from "./CamKombinasyonSihirbazi";
-import SekilCiziciModal from "./SekilCiziciModal"; // YENİ EKLENEN MODAL
+import SekilCiziciModal from "./SekilCiziciModal";
 
 export default function UrunEkleFormu({ 
   urunler = [], 
@@ -53,7 +53,6 @@ export default function UrunEkleFormu({
   const [eklenenOzelUrunler, setEklenenOzelUrunler] = useState([]);
   const [sihirbazVerisi, setSihirbazVerisi] = useState(null);
 
-  // YENİ: Şekil Çizici Modal Durumu
   const [sekilModalAcik, setSekilModalAcik] = useState(false);
 
   const gercekAktifSepet = aktifSecenekNo || seciliSepet || 1;
@@ -198,26 +197,31 @@ export default function UrunEkleFormu({
       
       const tekCamM2 = (genislik * yukseklik) / 1000000;
       const toplamM2 = tekCamM2 * adet;
-      
-      let parcaAciklama = `(${genislik}×${yukseklik} mm - ${adet} Adet - Toplam: ${toplamM2.toFixed(2)} m²)`;
+      const nihaiFiyat = Number(fiyatAna) || 0;
 
-      const satir = satirHesapla(dummyUrun, 100, 100, toplamM2, Number(fiyatAna) || 0, paraBirimi, Number(kdvOrani), "m²");
+      // DOĞRU HESAPLAMA: 100x100 faked değerler yerine gerçek genislik ve yukseklik gönderiliyor
+      const satir = satirHesapla(dummyUrun, genislik, yukseklik, adet, nihaiFiyat, paraBirimi, Number(kdvOrani), "m²");
       
+      // HESAPLAMAYI ZORLA KORUMA
+      satir.miktar = Number(toplamM2.toFixed(3));
+      satir.toplamTutar = satir.miktar * nihaiFiyat;
+      satir.kdvTutar = satir.toplamTutar * (Number(kdvOrani) / 100);
+      satir.genelToplam = satir.toplamTutar + satir.kdvTutar;
+
       satir.id = benzersizId;
       satir.pozNo = pozNoVal.length <= 12 ? pozNoVal : "-";
       satir.urunAciklamasi = nihaiUrunAdi;
-      satir.ozelAciklama = parcaAciklama;
+      satir.ozelAciklama = "";
       satir.orijinalMiktar = adet;
       satir.adet = adet;
       satir.Adet = adet;
       satir.kdvOrani = Number(kdvOrani);
-      satir.miktar = Number(toplamM2.toFixed(3));
       satir.secilenBirim = "m²";
       satir.en = genislik;
       satir.boy = yukseklik;
       satir.secili = true;
       satir.hamVeri = {
-        arama: nihaiUrunAdi, ozelAciklama: parcaAciklama, en: genislik, boy: yukseklik, miktar: adet, 
+        arama: nihaiUrunAdi, ozelAciklama: "", en: genislik, boy: yukseklik, miktar: adet, 
         secilenBirim: "m²", paraBirimi, kdvOrani: Number(kdvOrani)
       };
 
@@ -236,12 +240,10 @@ export default function UrunEkleFormu({
     }
   };
 
-  // YENİ: Şekil Çiziciden Gelen Çizim Bilgisini Kaydetme
   const handleSekilCizimKaydet = (cizimVerisi) => {
     setUrunGorselBase64(cizimVerisi.base64Gorsel);
     setEn(cizimVerisi.en);
     setBoy(cizimVerisi.boy);
-    setOzelAciklama(prev => (prev ? `${prev} | ${cizimVerisi.ozetMetin}` : cizimVerisi.ozetMetin));
   };
 
   useEffect(() => {
@@ -290,11 +292,17 @@ export default function UrunEkleFormu({
       setArama(gelenAd);
       
       let temizAciklama = ham.ozelAciklama || satir.ozelAciklama || "";
-      temizAciklama = temizAciklama.replace(/\(.*?Toplam:.*?m²\)/gi, "")
-                                   .replace(/\(.*?Adet.*?m²\)/gi, "")
-                                   .replace(/\(.*?×.*?mm.*?\)/gi, "")
-                                   .replace(/\(\d+\s*Adet\)/gi, "")
-                                   .replace(/^\|\s*/g, "").replace(/\s*\|\s*$/g, "").trim();
+      temizAciklama = temizAciklama
+        .replace(/\(.*?Toplam:.*?m²\)/gi, "")
+        .replace(/\(.*?Adet.*?m²\)/gi, "")
+        .replace(/\(.*?×.*?mm.*?\)/gi, "")
+        .replace(/\(\d+\s*Adet\)/gi, "")
+        .replace(/\[ŞEKİLLİ CAM:.*?\]/gi, "")
+        .replace(/RS\d+\s*L:\d+\s*H:\d+/gi, "")
+        .replace(/\|/g, " ")
+        .replace(/\s+/g, " ")
+        .trim();
+      
       setOzelAciklama(temizAciklama); 
       
       setSecilenId(ham.secilenId || "ozel_urun");
@@ -453,7 +461,6 @@ export default function UrunEkleFormu({
     const boyDegeri = Number(hedefBoy) || 0;
     const manuelM2Degeri = Number(hedefManuelM2) || 0;
     
-    let ekstraAciklama = "";
     let nihaiFiyat = Number(fiyatAna) || Number(fiyatAdet) || 0;
     let nihaiBirim = hedefBirim;
     let hesaplananMiktar = miktarDegeri !== null ? miktarDegeri : 1;
@@ -465,24 +472,9 @@ export default function UrunEkleFormu({
 
     if (manuelM2Degeri > 0) {
       toplamM2 = miktarDegeri !== null ? manuelM2Degeri * miktarDegeri : manuelM2Degeri;
-      ekstraAciklama = miktarDegeri !== null 
-        ? ` (${manuelM2Degeri} m² - ${miktarDegeri} Adet - Toplam: ${toplamM2.toFixed(2)} m²)` 
-        : ` (${manuelM2Degeri} m²)`;
     } else if (enDegeri > 0 && boyDegeri > 0) {
       const tekCamM2 = (enDegeri * boyDegeri) / 1000000;
       toplamM2 = miktarDegeri !== null ? tekCamM2 * miktarDegeri : tekCamM2;
-      
-      if (iscilikTuru === "Sıvama Bedeli" && (sivamaIcEn || sivamaDisEn)) {
-        ekstraAciklama = ` (Dış Cam: ${sivamaDisEn || enDegeri}×${sivamaDisBoy || boyDegeri} mm | İç Cam: ${sivamaIcEn || "-"}×${sivamaIcBoy || "-"} mm - ${miktarDegeri || 1} Adet - Toplam: ${toplamM2.toFixed(2)} m²)`;
-      } else {
-        ekstraAciklama = miktarDegeri !== null 
-          ? ` (${enDegeri}×${boyDegeri} mm - ${miktarDegeri} Adet - Toplam: ${toplamM2.toFixed(2)} m²)` 
-          : ` (${enDegeri}×${boyDegeri} mm - Toplam: ${toplamM2.toFixed(2)} m²)`;
-      }
-    } else if (boyDegeri > 0) {
-      ekstraAciklama = miktarDegeri !== null ? ` (${boyDegeri} mm - ${miktarDegeri} Adet)` : ` (${boyDegeri} mm)`;
-    } else {
-      ekstraAciklama = miktarDegeri !== null ? ` (${miktarDegeri} Adet)` : "";
     }
 
     if (hedefBirim === "m²" || hedefBirim === "ad") {
@@ -512,19 +504,32 @@ export default function UrunEkleFormu({
       Açıklama: arama.trim() || aciklamaBul(secilenSonUrun)
     };
 
-    const satir = satirHesapla(duzeltilmisUrun, 100, 100, hesaplananMiktar, nihaiFiyat, paraBirimi, Number(kdvOrani), nihaiBirim);
+    // DOĞRU HESAPLAMA: Gerçek En ve Boy değerleri fonksiyona gönderiliyor (100, 100 hatası düzeltildi)
+    const satir = satirHesapla(
+      duzeltilmisUrun, 
+      enDegeri, 
+      boyDegeri, 
+      miktarDegeri !== null ? miktarDegeri : 1, 
+      nihaiFiyat, 
+      paraBirimi, 
+      Number(kdvOrani), 
+      nihaiBirim
+    );
+    
     satir.pozNo = hedefPozNo || "-"; 
     satir.urunAciklamasi = arama.trim() || aciklamaBul(secilenSonUrun);
     
     let kullanilacakOzelAciklama = hedefOzelAciklama !== null ? hedefOzelAciklama : ozelAciklama;
     kullanilacakOzelAciklama = kullanilacakOzelAciklama
-      .replace(/\(\s*\d+\s*[xX×]\s*\d+\s*mm[^)]*\)/gi, "")
-      .replace(/\d+\s*[xX×]\s*\d+\s*mm/gi, "")
+      .replace(/\(.*?Toplam:.*?m²\)/gi, "")
+      .replace(/\(.*?Adet.*?m²\)/gi, "")
+      .replace(/\(.*?×.*?mm.*?\)/gi, "")
       .replace(/\(\d+\s*Adet\)/gi, "")
-      .replace(/\|\s*$/g, "")
+      .replace(/\[ŞEKİLLİ CAM:.*?\]/gi, "")
+      .replace(/RS\d+\s*L:\d+\s*H:\d+/gi, "")
       .trim();
 
-    satir.ozelAciklama = kullanilacakOzelAciklama ? `${kullanilacakOzelAciklama} | ${ekstraAciklama}` : ekstraAciklama;
+    satir.ozelAciklama = kullanilacakOzelAciklama;
     satir.gorsel = urunGorselBase64; 
     
     satir.orijinalMiktar = miktarDegeri;
@@ -532,18 +537,25 @@ export default function UrunEkleFormu({
     satir.Adet = miktarDegeri;
     satir.kdvOrani = Number(kdvOrani);
     
+    // HESAPLAMAYI ZORLA KORUMA: Kendi miktar ve tutar hesabımızı zorla atıyoruz ki sıfırlanmasın
     satir.miktar = Number(hesaplananMiktar.toFixed(3)); 
+    satir.toplamTutar = satir.miktar * nihaiFiyat;
+    satir.kdvTutar = satir.toplamTutar * (Number(kdvOrani) / 100);
+    satir.genelToplam = satir.toplamTutar + satir.kdvTutar;
+
     satir.secilenBirim = nihaiBirim;
     satir.birimFiyat = nihaiFiyat;
     satir.birim = nihaiBirim; 
     satir.Birim = nihaiBirim;
     satir.secili = hedefSecili;
-    satir.en = Number(enDegeri);
-    satir.boy = Number(boyDegeri);
+
+    // EN VE BOY MUTLAKA KAYDEDİLİR: Bu sayede tablo "Ölçü" sütununu her zaman doldurur
+    satir.en = enDegeri;
+    satir.boy = boyDegeri;
     satir.manuelM2 = manuelM2Degeri;
     
     satir.hamVeri = {
-      arama, secilenId, pozNo: hedefPozNo, ozelAciklama: kullanilacakOzelAciklama, en: hedefEn, boy: hedefBoy, 
+      arama, secilenId, pozNo: hedefPozNo, ozelAciklama: kullanilacakOzelAciklama, en: enDegeri, boy: boyDegeri, 
       manuelM2: manuelM2Degeri, miktar: miktarDegeri, secilenBirim: hedefBirim, 
       fiyatAna, fiyatAdet, paraBirimi, kdvOrani: Number(kdvOrani), karolajEnAdet, karolajBoyAdet, 
       sivamaIcEn, sivamaIcBoy, sivamaDisEn, sivamaDisBoy,
@@ -581,8 +593,14 @@ export default function UrunEkleFormu({
       "Ana Birim": "mt"
     };
 
-    const satir = satirHesapla(iscilikUrunu, 100, 100, mtMiktari, mtBirimFiyat, paraBirimi, Number(kdvOrani), "mt");
+    const satir = satirHesapla(iscilikUrunu, Number(hedefEn)||0, Number(hedefBoy)||0, miktarDegeri, mtBirimFiyat, paraBirimi, Number(kdvOrani), "mt");
+    
+    // ZORUNLU KORUMA
+    satir.miktar = mtMiktari;
     satir.toplamTutar = toplamIscilikTutari;
+    satir.kdvTutar = satir.toplamTutar * (Number(kdvOrani) / 100);
+    satir.genelToplam = satir.toplamTutar + satir.kdvTutar;
+
     satir.pozNo = hedefPozNo || "-";
     satir.urunAciklamasi = iscilikTuru ? iscilikTuru.toLocaleUpperCase("tr-TR") : "İŞÇİLİK";
     satir.kdvOrani = Number(kdvOrani);
@@ -604,7 +622,6 @@ export default function UrunEkleFormu({
     satir.orijinalMiktar = hedefMiktar; 
     satir.adet = hedefMiktar;
     satir.Adet = hedefMiktar;
-    satir.miktar = mtMiktari; 
     satir.secilenBirim = "mt";
     satir.birimFiyat = mtBirimFiyat;
     satir.birim = "mt";
@@ -748,16 +765,18 @@ export default function UrunEkleFormu({
   return (
     <section className="panel" style={{ backgroundColor: "white", padding: "18px", borderRadius: "8px", border: "1px solid #cbd5e1", marginBottom: "20px", boxShadow: "0 2px 4px rgba(0,0,0,0.04)" }}>
       
-      {/* PARAMETRİK ŞEKİL ÇİZİCİ MODALI */}
       <SekilCiziciModal 
         acik={sekilModalAcik}
         onKapat={() => setSekilModalAcik(false)}
-        onCizimKaydet={handleSekilCizimKaydet}
+        onCizimKaydet={(cizimVerisi) => {
+          setUrunGorselBase64(cizimVerisi.base64Gorsel);
+          setEn(cizimVerisi.en);
+          setBoy(cizimVerisi.boy);
+        }}
         varsayilanEn={en}
         varsayilanBoy={boy}
       />
 
-      {/* --- AKILLI YAPIŞTIRMA ALANI (EXCEL veya DÜZ YAZI) --- */}
       <div style={{ backgroundColor: "#f8fafc", border: "2px solid #cbd5e1", padding: "12px", borderRadius: "8px", marginBottom: "16px" }}>
         <h4 style={{ margin: "0 0 4px 0", color: "#0f2942", fontSize: "14px", fontWeight: "800" }}>📋 Excel veya Düz Metin (Yazı) Yapıştır</h4>
         <p style={{ margin: "0 0 8px 0", color: "#64748b", fontSize: "11px" }}>Buraya Excel tablosu veya WhatsApp/Mail gibi yerlerden gelen serbest yazıları (Örn: P1 1889 2734 2) yapıştırın, sistem ölçüleri okuyup sepete eklesin.</p>
@@ -863,7 +882,6 @@ export default function UrunEkleFormu({
           />
         </div>
 
-        {/* GÖRSEL VE ŞEKİL ÇİZİCİ BUTONLARI YAN YANA */}
         <div style={{ flex: 1.5, minWidth: "220px", display: "flex", gap: "8px", alignItems: "flex-end" }}>
           <div style={{ flex: 1 }}>
             <label style={{ display: "block", fontSize: "12px", fontWeight: "700", color: "#0f2942", marginBottom: "4px" }}>🖼️ Görsel</label>

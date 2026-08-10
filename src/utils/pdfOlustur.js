@@ -69,7 +69,7 @@ const ISICAM_GARANTI_SARTLARI = [
   "Isıcam Yetkili Üretici firma, ürettiği Isıcam ünitelerini, başlangıçta veya kullanım süresince Isıcam ünitesinin iç yüzeyinde (ara boşlukta) tespit edilecek; çizik, kirlilik, leke ve buğulanma gibi Isıcam üretiminden kaynaklanan hatalara karşı 10 yıl süre ile garanti eder.",
   "Yukarıda belirtilen Üretim kaynaklı hataların olduğu Isıcam üniteleri herhangi bir bedel talep etmeksizin Isıcam Yetkili Üretici firma tarafından yenisi ile değiştirilerek montajı yapılır.",
   "Isıcam ünitelerinin montajı, isicam.com.tr'de yer alan ve Isıcam Yetkili Üreticileri'nden temin edilebilen \"Isıcam Montaj Kılavuzu\"ndaki detaylar dikkate alınarak yapılmalıdır. Isıcam üniteleri, Isıcam Yetkili Üreticisi firma tarafından monte edildiyse, montaj kaynaklı hatalardan dolayı bozulan Isıcam üniteleri de garanti kapsamı içindedir. Montajın Isıcam Yetkili Üreticisi dışında bir firma tarafından yapıldığı ve Isıcam ünitesindeki bozulmanın montaj kaynaklı olduğunun tespit edildiği durumlar garanti kapsamı dışındadır.",
-  "Isıcam ünitelerinin montajı sırasında kullanılan ve ünite ile temas eden montaj malzemelerinin, Isıcam üretiminde kullanılan birincil (butil) ve ikincil yalıtım macunları (polisülfid, poliüretan, Isıcam dolgu silikonu) ile uyum testlerinin yaptırılması, montajı yapan firmanın sorumluluğundadır. Isıcam montajı öncesinde bu testlerin yaptırılmadığı durumlarda, Isıcam ünitelerinin kenarları ile herhangi bir montaj kimyasalının (yapıştırıcı, silikon vb) teması halinde söz konusu ürünler garanti kapsamı dışında kalacak olup, bu durumda yaşanan şikayetlerin giderilmesi montajı yapan firma sorumluluğunda olacaktır.",
+  "Isıcam ünitelerinin montajı sırasında kullanılan ve ünite ile temas eden montaj malzemelerinin, Isıcam üretiminde kullanılan birincil (butil) ve ikincil yalıtım macunları (polisülfid, poliüretan, Isıcam dolgu silikonu) ile uyum testlerinin yaptırılması, montajı yapan firmanın sorumluluğundadır. Isıcam montajı öncesinde bu testlerin yaptırılmadığı durumlarda, Isıcam ünitelerinin kenarları ile herhangi bir montaj kimyasalının (yapıştırıcı, silikon vb) teması halinde söz konusu ürünler garanti kapsamı dışındaki kalacak olup, bu durumda yaşanan şikayetlerin giderilmesi montajı yapan firma sorumluluğunda olacaktır.",
   "Isıcam ünitelerinin kırılması durumunda, kırılmalar garanti kapsamı dışındadır.",
   "Karolajlı, jaluzili, boyalı alüminyum ara boşluk çıtalı, bombeli, delikli, bondingli, yarı bondingli, özel ve parça u cıtalı üniteler ve Isıcam ünitesinin dış yüzeyine sonradan yapılacak uygulamalarda (cam filmi, folyo, boya, yüzeyi aşındırma vb) üniteler Isıcam garanti kapsamının dışındadır.",
   "-30 dereceden düşük, +80 dereceden yüksek cam yüzeyi sıcaklıklarındaki kullanımlara ilişkin ürünler Isıcam garanti kapsamı dışındadır.",
@@ -164,35 +164,38 @@ function sepetIcerikOlustur(sepet, baslikMetni, teklif) {
   const urunSatirlari = sepet.map((satir) => {
     let baslik = satir.urunAciklamasi || "ÖZEL CAM ÜRÜNÜ";
     
-    const enVal = satir.en || satir.hamVeri?.en || 0;
-    const boyVal = satir.boy || satir.hamVeri?.boy || 0;
-    const adetVal = satir.orijinalMiktar !== undefined && satir.orijinalMiktar !== null ? satir.orijinalMiktar : (satir.adet || satir.hamVeri?.miktar || 1);
-    const m2Val = satir.miktar || 0;
-
+    // KATİ SIFIRLAMA: Kullanıcı elle girmedikçe açıklama asla türetilmez
     let temizAciklama = satir.ozelAciklama || "";
-    if (!temizAciklama || temizAciklama.includes("{boy}")) {
-      if (enVal > 0 && boyVal > 0) {
-        temizAciklama = `(${enVal}×${boyVal} mm - ${adetVal} Adet - Toplam: ${m2Val.toFixed(2)} m²)`;
-      } else {
-        temizAciklama = `(${adetVal} Adet - Toplam: ${m2Val.toFixed(2)} m²)`;
-      }
-    }
 
     const elemanlar = [
-      { text: baslik, bold: true, fontSize: 10, color: '#0f2942', margin: [0, 6, 0, 2] },
-      { text: temizAciklama, fontSize: 9, color: '#333333', margin: [0, 0, 0, 4] }
+      { text: baslik, bold: true, fontSize: 10, color: '#0f2942', margin: [0, 6, 0, 2] }
     ];
+
+    if (temizAciklama.trim() !== "") {
+      elemanlar.push({ text: temizAciklama, fontSize: 9, color: '#333333', margin: [0, 0, 0, 4] });
+    }
 
     if (satir.gorsel) {
       elemanlar.push({
         image: satir.gorsel,
-        fit: [130, 90], // Teklif sayfasında taşmayı önleyen sınırlandırma
+        fit: [130, 90],
         margin: [0, 4, 0, 6]
       });
     }
 
+    // Birim fiyatı bozmadan doğru formatlama
+    let miktarMetni = satir.miktarDetay || "";
+    if (satir.birimFiyat) {
+      const bFiyatFormatli = paraFormatla(satir.birimFiyat, satir.paraBirimi);
+      if (satir.miktar) {
+        miktarMetni = `${satir.miktar} mt x ${bFiyatFormatli}`;
+      } else {
+        miktarMetni = bFiyatFormatli;
+      }
+    }
+
     elemanlar.push({
-      text: `${satir.miktarDetay}   =   ${paraFormatla(satir.toplamTutar, satir.paraBirimi)}${ihracatMi ? "" : " + KDV"}`,
+      text: `${miktarMetni}   =   ${paraFormatla(satir.toplamTutar, satir.paraBirimi)}${ihracatMi ? "" : " + KDV"}`,
       alignment: "right",
       fontSize: 10,
       margin: [0, 0, 0, 8],
@@ -377,19 +380,11 @@ function proformaTabloOlustur(sepet, baslikMetni, teklif) {
 
   const ihracatMi = teklif?.ihracatMi || teklif?.kdvMuaf || sepet.some(s => Number(s.kdvOrani) === 0);
 
-  // --- DİNAMİK AÇIKLAMA SÜTUNU KONTROLÜ ---
+  // AÇIKLAMA SÜTUNU KONTROLÜ: Yalnızca elle yazılmış ozelAciklama veya gorsel varsa açılır
   let aciklamaSutunuGerekli = false;
   
   sepet.forEach(satir => {
-    let safAciklama = (satir.hamVeri && satir.hamVeri.ozelAciklama) ? satir.hamVeri.ozelAciklama : (satir.ozelAciklama || "");
-    
-    safAciklama = safAciklama.replace(/\(.*?Toplam:.*?m²\)/gi, "");
-    safAciklama = safAciklama.replace(/\(.*?Adet.*?m²\)/gi, "");
-    safAciklama = safAciklama.replace(/\(.*?×.*?mm.*?\)/gi, "");
-    safAciklama = safAciklama.replace(/\(\d+\s*Adet\)/gi, "");
-    safAciklama = safAciklama.replace(/^\|\s*/g, "").replace(/\s*\|\s*$/g, ""); 
-    safAciklama = safAciklama.trim();
-    
+    const safAciklama = (satir.ozelAciklama || "").trim();
     if (safAciklama.length > 0 || satir.gorsel) {
       aciklamaSutunuGerekli = true;
     }
@@ -418,12 +413,7 @@ function proformaTabloOlustur(sepet, baslikMetni, teklif) {
 
   sepet.forEach(satir => {
     let birimFiyatMetni = "-";
-    if (satir.miktarDetay && satir.miktarDetay.includes(" x ")) {
-      const parcalar = satir.miktarDetay.split(" x ");
-      if (parcalar[1]) {
-        birimFiyatMetni = parcalar[1].trim();
-      }
-    } else if (satir.birimFiyat) {
+    if (satir.birimFiyat) {
       birimFiyatMetni = paraFormatla(satir.birimFiyat, satir.paraBirimi);
     }
 
@@ -450,7 +440,7 @@ function proformaTabloOlustur(sepet, baslikMetni, teklif) {
       if (satir.gorsel) {
          aciklamaStack.push({ 
            image: satir.gorsel, 
-           fit: [100, 75], // Proforma tablosunda hücre içine düzgün hizalama
+           fit: [100, 75], 
            alignment: 'center', 
            margin: [0, 2, 0, 2] 
          });
@@ -573,10 +563,10 @@ export async function proformaPdfIndir(teklif, sepet1, sepet2 = [], teklifNo, on
     });
   }
 
-  // --- SÜTUN GENİŞLİKLERİ (Açıklama & Çizim sütunu 110 piksele çıkarıldı) ---
+  // SÜTUN GENİŞLİKLERİ: Açıklama Yoksa 8 Sütunlu Temiz Tablo Düzeni
   const widths1 = sonuc1.aciklamaSutunuGerekli 
     ? [30, '*', 110, 28, 28, 38, 45, 25, 70] 
-    : [35, '*', 35, 35, 45, 55, 30, 78];
+    : [35, '*', 35, 35, 50, 60, 35, 80];
 
   const icerikDizisi = [
     {
@@ -622,7 +612,7 @@ export async function proformaPdfIndir(teklif, sepet1, sepet2 = [], teklifNo, on
   if (sonuc2 && temizSepet2.length > 0) {
     const widths2 = sonuc2.aciklamaSutunuGerekli 
       ? [30, '*', 110, 28, 28, 38, 45, 25, 70] 
-      : [35, '*', 35, 35, 45, 55, 30, 78];
+      : [35, '*', 35, 35, 50, 60, 35, 80];
 
     icerikDizisi.push(
       { text: "", margin: [0, 6, 0, 6] },

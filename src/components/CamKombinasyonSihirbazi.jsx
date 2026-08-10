@@ -3,7 +3,8 @@ import { useState, useEffect } from "react";
 // --- ŞİŞECAM GENİŞ CAM RENK VE TİP LİSTESİ ---
 const CAM_RENKLERI = [
   "Clear (Şeffaf)", "Extra Clear", "Ultra Clear", "Satine Cam", "Füme", "Bronz", "Mavi", "Yeşil", 
-  "Koyu Füme", "Derin Füme", "Açık Füme", "Turkuaz", "Ara Yeşil"
+  "Koyu Füme", "Derin Füme", "Açık Füme", "Turkuaz", "Ara Yeşil",
+  "Gümüş Reflekte", "Yeşil Reflekte", "Mavi Reflekte", "Bronz Reflekte"
 ];
 
 const AYNA_RENKLERI = [
