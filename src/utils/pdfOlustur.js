@@ -164,11 +164,65 @@ function sepetIcerikOlustur(sepet, baslikMetni, teklif) {
   const urunSatirlari = sepet.map((satir) => {
     let baslik = satir.urunAciklamasi || "ÖZEL CAM ÜRÜNÜ";
     
-    let temizAciklama = satir.ozelAciklama || "";
+    let temizAciklama = (satir.ozelAciklama || "")
+      .replace(/\(\s*\d+\s*[xX×]\s*\d+\s*mm.*?\)/gi, "")
+      .replace(/-\s*\d+\s*Adet/gi, "")
+      .replace(/-\s*Toplam:\s*[\d.]+\s*m²/gi, "")
+      .replace(/\[ŞEKİLLİ CAM:.*?\]/gi, "")
+      .replace(/RS\d+\s*L:\d+\s*H:\d+/gi, "")
+      .replace(/\|/g, " ")
+      .replace(/\s+/g, " ")
+      .trim();
+
+    let finalEn = Number(satir.en || satir.hamVeri?.en || 0);
+    let finalBoy = Number(satir.boy || satir.hamVeri?.boy || 0);
+
+    if (finalEn === 0 || finalBoy === 0) {
+      const tamMetin = `${satir.urunAciklamasi || ""} ${satir.ozelAciklama || ""} ${satir.hamVeri?.arama || ""}`;
+      const match = tamMetin.match(/(\d{2,})\s*[xX×]\s*(\d{2,})/);
+      if (match) {
+        finalEn = Number(match[1]);
+        finalBoy = Number(match[2]);
+      }
+    }
+
+    const adetVal = (satir.orijinalMiktar !== undefined && satir.orijinalMiktar !== null && satir.orijinalMiktar !== "")
+      ? Number(satir.orijinalMiktar)
+      : Number(satir.adet || satir.hamVeri?.miktar || 1);
+
+    const m2Val = Number(satir.miktar || 0);
+    const birimTuru = (satir.secilenBirim || satir.birim || "m²").toLowerCase();
 
     const elemanlar = [
       { text: baslik, bold: true, fontSize: 10, color: '#0f2942', margin: [0, 6, 0, 2] }
     ];
+
+    let detaySatiri = [];
+    if (finalEn > 0 && finalBoy > 0) {
+      detaySatiri.push(`Ölçü: ${finalEn} × ${finalBoy} mm`);
+    }
+
+    if (birimTuru === "m²" || birimTuru === "m2") {
+      detaySatiri.push(`Miktar: ${adetVal} Adet (${m2Val > 0 ? m2Val.toFixed(2) : "0.00"} m²)`);
+    } else if (birimTuru === "ad" || birimTuru === "adet") {
+      let gercekM2 = 0;
+      if (finalEn > 0 && finalBoy > 0) {
+        gercekM2 = ((finalEn * finalBoy) / 1000000) * adetVal;
+      }
+      detaySatiri.push(`Miktar: ${adetVal} Adet${gercekM2 > 0 ? ` (${gercekM2.toFixed(2)} m²)` : ""}`);
+    } else if (birimTuru === "mt") {
+      detaySatiri.push(`Miktar: ${m2Val.toFixed(2)} mt (${adetVal} Adet)`);
+    }
+
+    if (detaySatiri.length > 0) {
+      elemanlar.push({
+        text: detaySatiri.join("   •   "),
+        fontSize: 9,
+        bold: true,
+        color: '#0284c7',
+        margin: [0, 2, 0, 4]
+      });
+    }
 
     if (temizAciklama.trim() !== "") {
       elemanlar.push({ text: temizAciklama, fontSize: 9, color: '#333333', margin: [0, 0, 0, 4] });
@@ -182,15 +236,18 @@ function sepetIcerikOlustur(sepet, baslikMetni, teklif) {
       });
     }
 
-    let miktarMetni = satir.miktarDetay || "";
+    let miktarMetni = "";
     if (satir.birimFiyat) {
       const bFiyatFormatli = paraFormatla(satir.birimFiyat, satir.paraBirimi);
-      const birimTuru = satir.secilenBirim || satir.birim || "m²";
-      if (satir.miktar) {
-        miktarMetni = `${satir.miktar} ${birimTuru} x ${bFiyatFormatli}`;
+      if (birimTuru === "ad" || birimTuru === "adet") {
+        miktarMetni = `${adetVal} ad x ${bFiyatFormatli}`;
+      } else if (birimTuru === "mt") {
+        miktarMetni = `${m2Val.toFixed(2)} mt x ${bFiyatFormatli}`;
       } else {
-        miktarMetni = bFiyatFormatli;
+        miktarMetni = `${m2Val > 0 ? m2Val.toFixed(2) : adetVal} m² x ${bFiyatFormatli}`;
       }
+    } else if (satir.miktarDetay) {
+      miktarMetni = satir.miktarDetay;
     }
 
     elemanlar.push({
@@ -287,6 +344,11 @@ export async function teklifPdfIndir(teklif, sepet1, sepet2 = [], teklifNo, oniz
     });
   }
 
+  const temizNotlar = teklif.notlar ? teklif.notlar.split('\n').map((satir) => {
+    const temizSatir = satir.replace(/[\uFFFD\u0000-\u0008\u000B\u000C\u000E-\u001F]/g, "").replace(/^[*•\-\s]+/, "").trim();
+    return temizSatir ? { text: `• ${temizSatir}`, fontSize: 8.5, margin: [2, 2, 0, 1] } : null;
+  }).filter(Boolean) : [];
+
   const docDefinition = {
     pageMargins: [40, 95, 40, 55],
     header: ortakHeaderOlustur(logoSisecam, logoIso),
@@ -297,13 +359,13 @@ export async function teklifPdfIndir(teklif, sepet1, sepet2 = [], teklifNo, oniz
         columns: [
           {
             stack: [
-              { text: teklif.musteriAdi, fontSize: 9.5, bold: true },
+              { text: teklif.musteriAdi || "Bilinmeyen Müşteri", fontSize: 9.5, bold: true },
               { 
                 text: (!teklif.ilgiliKisi || teklif.ilgiliKisi.includes("Sn.")) ? teklif.ilgiliKisi : `Sn. ${teklif.ilgiliKisi} Dikkatine,`, 
                 fontSize: 9.5, 
                 margin: [0, 2, 0, 8] 
               },
-              { text: `Proje Adı: ${teklif.projeAdi}`, bold: true, fontSize: 10 }
+              { text: `Proje Adı: ${teklif.projeAdi || ""}`, bold: true, fontSize: 10 }
             ],
             alignment: 'left'
           },
@@ -323,11 +385,7 @@ export async function teklifPdfIndir(teklif, sepet1, sepet2 = [], teklifNo, oniz
       ...birinciSecenekIcerik,
       ...ikinciSecenekIcerik,
       
-      ...(teklif.notlar ? teklif.notlar.split('\n').map((satir) => ({
-        text: `* ${satir}`,
-        fontSize: 8.5,
-        margin: [2, 4, 0, 1],
-      })) : []),
+      ...temizNotlar,
       
       {
         columns: [
@@ -382,10 +440,8 @@ function proformaTabloOlustur(sepet, baslikMetni, teklif) {
   let aciklamaSutunuGerekli = false;
   
   sepet.forEach(satir => {
-    // Sadece elle girilmiş veya özelleştirilmiş açıklamalar tutulur
     let safAciklama = (satir.ozelAciklama || "").trim();
     
-    // Otomatik ölçü kalıntılarını temizle
     safAciklama = safAciklama
       .replace(/\(\s*\d+\s*[xX×]\s*\d+\s*mm.*?\)/gi, "")
       .replace(/-\s*\d+\s*Adet/gi, "")
@@ -431,15 +487,22 @@ function proformaTabloOlustur(sepet, baslikMetni, teklif) {
     const pozNo = satir.pozNo || "-";
     let malinCinsi = satir.urunAciklamasi || "ÖZEL CAM ÜRÜNÜ";
     
-    const enVal = satir.en || satir.hamVeri?.en || 0;
-    const boyVal = satir.boy || satir.hamVeri?.boy || 0;
+    let enVal = Number(satir.en || satir.hamVeri?.en || 0);
+    let boyVal = Number(satir.boy || satir.hamVeri?.boy || 0);
+
+    if (enVal === 0 || boyVal === 0) {
+      const tamMetin = `${satir.urunAciklamasi || ""} ${satir.ozelAciklama || ""} ${satir.hamVeri?.arama || ""}`;
+      const match = tamMetin.match(/(\d{2,})\s*[xX×]\s*(\d{2,})/);
+      if (match) {
+        enVal = Number(match[1]);
+        boyVal = Number(match[2]);
+      }
+    }
+
+    const adetVal = (satir.orijinalMiktar !== undefined && satir.orijinalMiktar !== null && satir.orijinalMiktar !== "")
+      ? Number(satir.orijinalMiktar) 
+      : Number(satir.adet || satir.hamVeri?.miktar || 1);
     
-    // Gerçek Adet Sayısı
-    const adetVal = satir.orijinalMiktar !== undefined && satir.orijinalMiktar !== null && satir.orijinalMiktar !== ""
-      ? satir.orijinalMiktar 
-      : (satir.adet || satir.hamVeri?.miktar || 1);
-    
-    // Gerçek Metrekare / Metretül Değeri
     const m2Val = Number(satir.miktar || 0);
 
     const kullaniciAciklamasi = satir._safAciklama || "";
@@ -467,16 +530,22 @@ function proformaTabloOlustur(sepet, baslikMetni, teklif) {
     const enDegeri = (enVal > 0) ? `${enVal}` : "-";
     const boyDegeri = (boyVal > 0) ? `${boyVal}` : "-";
     
-    // TAM DÜZELTME: BİRİM KONTROLÜ İLE KUSURSUZ MİKTAR FORMATLAMA
     const birimTuru = (satir.secilenBirim || satir.birim || "m²").toLowerCase();
     let adetMetni = "-";
 
-    if (birimTuru === "m²") {
-      adetMetni = `${adetVal} Adet\n(${m2Val.toFixed(2)} m²)`;
+    // KRİTİK DÜZELTME: BIRIM ADET OLDUGUNDA M² 'EN x BOY x ADET' YOLUYLA HESAPLANIR
+    if (birimTuru === "m²" || birimTuru === "m2") {
+      adetMetni = `${adetVal} Adet\n(${m2Val > 0 ? m2Val.toFixed(2) : "0.00"} m²)`;
     } else if (birimTuru === "mt") {
       adetMetni = `${m2Val.toFixed(2)} mt`;
-    } else {
-      adetMetni = `${adetVal} Adet`;
+    } else { // "ad" veya "adet"
+      let gercekM2 = 0;
+      if (enVal > 0 && boyVal > 0) {
+        gercekM2 = ((enVal * boyVal) / 1000000) * adetVal;
+      }
+      adetMetni = gercekM2 > 0 
+        ? `${adetVal} Adet\n(${gercekM2.toFixed(2)} m²)` 
+        : `${adetVal} Adet`;
     }
 
     const satirKdvOrani = ihracatMi ? 0 : (satir.kdvOrani !== undefined ? Number(satir.kdvOrani) : 20);
@@ -658,12 +727,13 @@ export async function proformaPdfIndir(teklif, sepet1, sepet2 = [], teklifNo, on
     );
   }
 
+  const temizProformaNotlar = teklif.notlar ? teklif.notlar.split('\n').map((satir) => {
+    const temizSatir = satir.replace(/[\uFFFD\u0000-\u0008\u000B\u000C\u000E-\u001F]/g, "").replace(/^[*•\-\s]+/, "").trim();
+    return temizSatir ? { text: `• ${temizSatir}`, fontSize: 8.5, margin: [2, 2, 0, 1] } : null;
+  }).filter(Boolean) : [];
+
   icerikDizisi.push(
-    ...(teklif.notlar ? teklif.notlar.split('\n').map((satir) => ({
-      text: `* ${satir}`,
-      fontSize: 8.5,
-      margin: [2, 4, 0, 1],
-    })) : []),
+    ...temizProformaNotlar,
     {
       columns: [
         {

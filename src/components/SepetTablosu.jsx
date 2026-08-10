@@ -131,13 +131,18 @@ export default function SepetTablosu({
   const seciliUrunler = (sepet || []).filter(item => item.secili !== false);
   const seciliMetraj = seciliUrunler.reduce((acc, item) => {
     const birim = (item.secilenBirim || item.birim || "m²").toLowerCase();
+    const enVal = Number(item.en || item.hamVeri?.en || 0);
+    const boyVal = Number(item.boy || item.hamVeri?.boy || 0);
     const miktarVal = Number(item.miktar || item.toplamM2 || 0);
-    const adetVal = Number(item.orijinalMiktar !== undefined ? item.orijinalMiktar : (item.adet || 1));
+    const adetVal = Number(item.orijinalMiktar !== undefined && item.orijinalMiktar !== null && item.orijinalMiktar !== "" ? item.orijinalMiktar : (item.adet || 1));
 
     acc.toplamAdet += adetVal;
 
     if (birim.includes("m²") || birim.includes("m2")) {
       acc.toplamM2 += miktarVal;
+    } else if (enVal > 0 && boyVal > 0) {
+      // Birim Adet olsa bile En ve Boy varsa m² hesabını banner'a ekler
+      acc.toplamM2 += ((enVal * boyVal) / 1000000) * adetVal;
     } else if (birim.includes("mt")) {
       acc.toplamMt += miktarVal;
     }
@@ -212,7 +217,6 @@ export default function SepetTablosu({
             <tr style={{ backgroundColor: "#0f2942", color: "white", textAlign: "left" }}>
               <th style={{ padding: "10px", textAlign: "center", width: "30px", borderRadius: "4px 0 0 0" }} title="Sürüklemek için tut">↕️</th>
               
-              {/* TÜMÜNÜ SEÇ / KALDIR HÜCRESİ GENİŞLETİLDİ */}
               <th 
                 style={{ padding: "0", textAlign: "center", width: "45px", cursor: "pointer", userSelect: "none" }}
                 onClick={() => tumunuSecVeyaKaldir(!hepsiSeciliMi)}
@@ -244,11 +248,25 @@ export default function SepetTablosu({
           </thead>
           <tbody>
             {sepet.map((satir, index) => {
-              const tamMetin = `${satir.ozelAciklama || ""} ${satir.miktarDetay || ""} ${satir.urunAciklamasi || ""}`;
-              const olcuMatch = tamMetin.match(/(\d+)\s*[xX×]\s*(\d+)/);
-              const enBoyMetni = olcuMatch ? `${olcuMatch[1]} × ${olcuMatch[2]} mm` : "-";
+              // ÖNCELİK 1: Nesnenin doğrudan 'en' ve 'boy' sayısal özelliklerini oku
+              const enVal = Number(satir.en || satir.hamVeri?.en || 0);
+              const boyVal = Number(satir.boy || satir.hamVeri?.boy || 0);
 
-              const gercekAdet = satir.orijinalMiktar || satir.hamVeri?.miktar || satir.adet || 1;
+              let enBoyMetni = "-";
+              if (enVal > 0 && boyVal > 0) {
+                enBoyMetni = `${enVal} × ${boyVal} mm`;
+              } else {
+                // ÖNCELİK 2: Nesne içinde yoksa metinlerin içinden arayıp bul
+                const tamMetin = `${satir.ozelAciklama || ""} ${satir.miktarDetay || ""} ${satir.urunAciklamasi || ""}`;
+                const olcuMatch = tamMetin.match(/(\d+)\s*[xX×]\s*(\d+)/);
+                if (olcuMatch) {
+                  enBoyMetni = `${olcuMatch[1]} × ${olcuMatch[2]} mm`;
+                }
+              }
+
+              const gercekAdet = satir.orijinalMiktar !== undefined && satir.orijinalMiktar !== null && satir.orijinalMiktar !== ""
+                ? satir.orijinalMiktar 
+                : (satir.hamVeri?.miktar || satir.adet || 1);
 
               const urunGrubuAdi = satir.urunAciklamasi || "DİĞER";
               const grupArkaPlani = renkMap[urunGrubuAdi] || "#ffffff";
@@ -272,7 +290,6 @@ export default function SepetTablosu({
                 >
                   <td style={{ padding: "10px", textAlign: "center", color: "#94a3b8", fontWeight: "bold" }}>☰</td>
                   
-                  {/* KOLAY TIKLANABİLİR KUTUCUK HÜCRESİ */}
                   <td 
                     style={{ padding: "0", textAlign: "center", cursor: "pointer", userSelect: "none" }}
                     onClick={(e) => {
@@ -359,7 +376,7 @@ export default function SepetTablosu({
       {/* --- SEPET TABLOSUNUN ALTINDA CANLI HESAPLAYAN METRAJ ÖZET BANNER'I --- */}
       <div style={{ 
         display: "flex", 
-        justify: "space-between", 
+        justifyContent: "space-between", 
         alignItems: "center", 
         backgroundColor: "#f0fdf4", 
         border: "1px solid #16a34a", 
