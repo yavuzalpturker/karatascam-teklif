@@ -74,7 +74,7 @@ const ISICAM_GARANTI_SARTLARI = [
   "Karolajlı, jaluzili, boyalı alüminyum ara boşluk çıtalı, bombeli, delikli, bondingli, yarı bondingli, özel ve parça u cıtalı üniteler ve Isıcam ünitesinin dış yüzeyine sonradan yapılacak uygulamalarda (cam filmi, folyo, boya, yüzeyi aşındırma vb) üniteler Isıcam garanti kapsamının dışındadır.",
   "-30 dereceden düşük, +80 dereceden yüksek cam yüzeyi sıcaklıklarındaki kullanımlara ilişkin ürünler Isıcam garanti kapsamı dışındadır.",
   "Isıcam Yetkili Üreticisi'nin Isıcam ünitelerinin basınç, yükseklik ve diğer coğrafi şartlara uygunluğunu sağlaması ve gerekli gördüğü ambalaj ve paketleme önlemlerini alabilmesi için cam talebinde bulunan müşterinin montajın yapılacağı yeri Isıcam Yetkili Üreticisi'ne yazılı olarak bildirmesi gerekmektedir. Montajın yapılacağı yerin yazılı bildirilmemesi durumunda yukarıdaki nedenlerden kaynaklanan hatalar garanti kapsamı dışındadır.",
-  "Isıcam üniteleri \"TS EN 1279 Cam - Binalarda Kullanılan - Cam Yalıtım Birimleri Standardı\"na göre üretilir ve kalite kontrolü bu standarda göre yapılır. Isıcam ünitesindeki hatalar bu standartlar kapsamında değerlendirilir. Söz konusu standartta belirtildiği gibi, Isıcam ünitelerinin dış yüzeyinde oluşan buğulanmalar hata olarak değerlendirilmez.",
+  "Isıcam üniteleri \"TS EN 1279 Cam - Binalarda Kullanılan - Cam Yalıtım Birimleri Standardı\"na göre üretilir ve kalite kontrolü bu standartlara göre yapılır. Isıcam ünitesindeki hatalar bu standartlar kapsamında değerlendirilir. Söz konusu standartta belirtildiği gibi, Isıcam ünitelerinin dış yüzeyinde oluşan buğulanmalar hata olarak değerlendirilmez.",
   "Standart ve garanti şartları ile ilgili detaylı bilgiler www.isicam.com.tr web sitesinde yer almaktadır."
 ];
 
@@ -237,8 +237,12 @@ function sepetIcerikOlustur(sepet, baslikMetni, teklif) {
     }
 
     let miktarMetni = "";
+    let birimEki = "/ m²";
+    if (birimTuru === "ad" || birimTuru === "adet") birimEki = "/ ad";
+    else if (birimTuru === "mt") birimEki = "/ mt";
+
     if (satir.birimFiyat) {
-      const bFiyatFormatli = paraFormatla(satir.birimFiyat, satir.paraBirimi);
+      const bFiyatFormatli = `${paraFormatla(satir.birimFiyat, satir.paraBirimi)} ${birimEki}`;
       if (birimTuru === "ad" || birimTuru === "adet") {
         miktarMetni = `${adetVal} ad x ${bFiyatFormatli}`;
       } else if (birimTuru === "mt") {
@@ -479,9 +483,19 @@ function proformaTabloOlustur(sepet, baslikMetni, teklif) {
   const tabloGövdesi = [headerRow];
 
   sepet.forEach(satir => {
+    const birimTuru = (satir.secilenBirim || satir.birim || "m²").toLowerCase();
+    
+    // BİRİM İŞARETİ EKLEME (m², ad veya mt olarak ayırır)
+    let birimEki = "/ m²";
+    if (birimTuru === "ad" || birimTuru === "adet") {
+      birimEki = "/ ad";
+    } else if (birimTuru === "mt") {
+      birimEki = "/ mt";
+    }
+
     let birimFiyatMetni = "-";
     if (satir.birimFiyat) {
-      birimFiyatMetni = paraFormatla(satir.birimFiyat, satir.paraBirimi);
+      birimFiyatMetni = `${paraFormatla(satir.birimFiyat, satir.paraBirimi)} ${birimEki}`;
     }
 
     const pozNo = satir.pozNo || "-";
@@ -530,10 +544,8 @@ function proformaTabloOlustur(sepet, baslikMetni, teklif) {
     const enDegeri = (enVal > 0) ? `${enVal}` : "-";
     const boyDegeri = (boyVal > 0) ? `${boyVal}` : "-";
     
-    const birimTuru = (satir.secilenBirim || satir.birim || "m²").toLowerCase();
     let adetMetni = "-";
 
-    // KRİTİK DÜZELTME: BIRIM ADET OLDUGUNDA M² 'EN x BOY x ADET' YOLUYLA HESAPLANIR
     if (birimTuru === "m²" || birimTuru === "m2") {
       adetMetni = `${adetVal} Adet\n(${m2Val > 0 ? m2Val.toFixed(2) : "0.00"} m²)`;
     } else if (birimTuru === "mt") {
@@ -658,8 +670,8 @@ export async function proformaPdfIndir(teklif, sepet1, sepet2 = [], teklifNo, on
   }
 
   const widths1 = sonuc1.aciklamaSutunuGerekli 
-    ? [30, '*', 110, 28, 28, 50, 45, 25, 70] 
-    : [35, '*', 35, 35, 55, 60, 35, 80];
+    ? [30, '*', 110, 28, 28, 50, 55, 25, 70] 
+    : [35, '*', 35, 35, 55, 70, 35, 80];
 
   const icerikDizisi = [
     {
@@ -704,8 +716,8 @@ export async function proformaPdfIndir(teklif, sepet1, sepet2 = [], teklifNo, on
 
   if (sonuc2 && temizSepet2.length > 0) {
     const widths2 = sonuc2.aciklamaSutunuGerekli 
-      ? [30, '*', 110, 28, 28, 50, 45, 25, 70] 
-      : [35, '*', 35, 35, 55, 60, 35, 80];
+      ? [30, '*', 110, 28, 28, 50, 55, 25, 70] 
+      : [35, '*', 35, 35, 55, 70, 35, 80];
 
     icerikDizisi.push(
       { text: "", margin: [0, 6, 0, 6] },
