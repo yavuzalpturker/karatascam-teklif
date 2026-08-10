@@ -164,7 +164,6 @@ function sepetIcerikOlustur(sepet, baslikMetni, teklif) {
   const urunSatirlari = sepet.map((satir) => {
     let baslik = satir.urunAciklamasi || "ÖZEL CAM ÜRÜNÜ";
     
-    // KATİ SIFIRLAMA: Kullanıcı elle girmedikçe açıklama asla türetilmez
     let temizAciklama = satir.ozelAciklama || "";
 
     const elemanlar = [
@@ -183,12 +182,12 @@ function sepetIcerikOlustur(sepet, baslikMetni, teklif) {
       });
     }
 
-    // Birim fiyatı bozmadan doğru formatlama
     let miktarMetni = satir.miktarDetay || "";
     if (satir.birimFiyat) {
       const bFiyatFormatli = paraFormatla(satir.birimFiyat, satir.paraBirimi);
+      const birimTuru = satir.secilenBirim || satir.birim || "m²";
       if (satir.miktar) {
-        miktarMetni = `${satir.miktar} mt x ${bFiyatFormatli}`;
+        miktarMetni = `${satir.miktar} ${birimTuru} x ${bFiyatFormatli}`;
       } else {
         miktarMetni = bFiyatFormatli;
       }
@@ -380,11 +379,23 @@ function proformaTabloOlustur(sepet, baslikMetni, teklif) {
 
   const ihracatMi = teklif?.ihracatMi || teklif?.kdvMuaf || sepet.some(s => Number(s.kdvOrani) === 0);
 
-  // AÇIKLAMA SÜTUNU KONTROLÜ: Yalnızca elle yazılmış ozelAciklama veya gorsel varsa açılır
   let aciklamaSutunuGerekli = false;
   
   sepet.forEach(satir => {
-    const safAciklama = (satir.ozelAciklama || "").trim();
+    // Sadece elle girilmiş veya özelleştirilmiş açıklamalar tutulur
+    let safAciklama = (satir.ozelAciklama || "").trim();
+    
+    // Otomatik ölçü kalıntılarını temizle
+    safAciklama = safAciklama
+      .replace(/\(\s*\d+\s*[xX×]\s*\d+\s*mm.*?\)/gi, "")
+      .replace(/-\s*\d+\s*Adet/gi, "")
+      .replace(/-\s*Toplam:\s*[\d.]+\s*m²/gi, "")
+      .replace(/\[ŞEKİLLİ CAM:.*?\]/gi, "")
+      .replace(/RS\d+\s*L:\d+\s*H:\d+/gi, "")
+      .replace(/\|/g, " ")
+      .replace(/\s+/g, " ")
+      .trim();
+
     if (safAciklama.length > 0 || satir.gorsel) {
       aciklamaSutunuGerekli = true;
     }
@@ -422,8 +433,14 @@ function proformaTabloOlustur(sepet, baslikMetni, teklif) {
     
     const enVal = satir.en || satir.hamVeri?.en || 0;
     const boyVal = satir.boy || satir.hamVeri?.boy || 0;
-    const adetVal = satir.orijinalMiktar !== undefined && satir.orijinalMiktar !== null ? satir.orijinalMiktar : (satir.adet || satir.hamVeri?.miktar || 1);
-    const m2Val = satir.miktar || 0;
+    
+    // Gerçek Adet Sayısı
+    const adetVal = satir.orijinalMiktar !== undefined && satir.orijinalMiktar !== null && satir.orijinalMiktar !== ""
+      ? satir.orijinalMiktar 
+      : (satir.adet || satir.hamVeri?.miktar || 1);
+    
+    // Gerçek Metrekare / Metretül Değeri
+    const m2Val = Number(satir.miktar || 0);
 
     const kullaniciAciklamasi = satir._safAciklama || "";
 
@@ -450,9 +467,17 @@ function proformaTabloOlustur(sepet, baslikMetni, teklif) {
     const enDegeri = (enVal > 0) ? `${enVal}` : "-";
     const boyDegeri = (boyVal > 0) ? `${boyVal}` : "-";
     
-    const adetMetni = (adetVal !== null && adetVal !== undefined && adetVal !== "") 
-      ? `${adetVal} Adet\n(${m2Val.toFixed(2)} m²)` 
-      : "-";
+    // TAM DÜZELTME: BİRİM KONTROLÜ İLE KUSURSUZ MİKTAR FORMATLAMA
+    const birimTuru = (satir.secilenBirim || satir.birim || "m²").toLowerCase();
+    let adetMetni = "-";
+
+    if (birimTuru === "m²") {
+      adetMetni = `${adetVal} Adet\n(${m2Val.toFixed(2)} m²)`;
+    } else if (birimTuru === "mt") {
+      adetMetni = `${m2Val.toFixed(2)} mt`;
+    } else {
+      adetMetni = `${adetVal} Adet`;
+    }
 
     const satirKdvOrani = ihracatMi ? 0 : (satir.kdvOrani !== undefined ? Number(satir.kdvOrani) : 20);
 
@@ -563,10 +588,9 @@ export async function proformaPdfIndir(teklif, sepet1, sepet2 = [], teklifNo, on
     });
   }
 
-  // SÜTUN GENİŞLİKLERİ: Açıklama Yoksa 8 Sütunlu Temiz Tablo Düzeni
   const widths1 = sonuc1.aciklamaSutunuGerekli 
-    ? [30, '*', 110, 28, 28, 38, 45, 25, 70] 
-    : [35, '*', 35, 35, 50, 60, 35, 80];
+    ? [30, '*', 110, 28, 28, 50, 45, 25, 70] 
+    : [35, '*', 35, 35, 55, 60, 35, 80];
 
   const icerikDizisi = [
     {
@@ -611,8 +635,8 @@ export async function proformaPdfIndir(teklif, sepet1, sepet2 = [], teklifNo, on
 
   if (sonuc2 && temizSepet2.length > 0) {
     const widths2 = sonuc2.aciklamaSutunuGerekli 
-      ? [30, '*', 110, 28, 28, 38, 45, 25, 70] 
-      : [35, '*', 35, 35, 50, 60, 35, 80];
+      ? [30, '*', 110, 28, 28, 50, 45, 25, 70] 
+      : [35, '*', 35, 35, 55, 60, 35, 80];
 
     icerikDizisi.push(
       { text: "", margin: [0, 6, 0, 6] },
