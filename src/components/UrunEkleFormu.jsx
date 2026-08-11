@@ -92,7 +92,7 @@ export default function UrunEkleFormu({
     }
   };
 
-  // --- AKILLI EXCEL / METİN YAPIŞTIRMA PARSERİ (TAM DÜZELTİLDİ) ---
+  // --- KOPYALA YAPIŞTIR PARSERİ (ADET VE ÖLÇÜ SORUNU KÖKTEN ÇÖZÜLDÜ) ---
   const handleTopluMetinIsle = (hamMetin) => {
     if (!hamMetin.trim()) return;
 
@@ -108,17 +108,16 @@ export default function UrunEkleFormu({
       if (ustSatir.includes("SİPARİŞ") || ustSatir.includes("ÜRETİM") || ustSatir.includes("BİRİM M2") || ustSatir.includes("TOPLAM M2") || ustSatir.includes("TOPLAMLAR")) continue;
       if (ustSatir.includes("GENİŞLİK") || ustSatir.includes("YÜKSEKLİK") || ustSatir.includes("CAM ÖZELLİKLERİ") || ustSatir.includes("CAMIN CİNSİ")) continue;
 
-      let adet = 1;
+      let adet = null;
       let genislik = 0;
       let yukseklik = 0;
       let pozNoVal = "-";
       let algilananCamAdi = "";
 
-      // Excel Sütunlarını Tab (\t) İle Ayır
+      // Excel Sütunlarını Ayır
       let sutunlar = satirMetni.split("\t").map(s => s.trim()).filter(s => s !== "" && s !== "X" && s !== "x" && s !== "×");
 
-      // Eğer X ayrı sütun olarak geldiyse veya tek sütunda birleşmişse temizleme işlemi
-      let sayisalDegerler = [];
+      let sayilar = [];
 
       for (let s of sutunlar) {
         let sUst = s.toUpperCase();
@@ -127,23 +126,39 @@ export default function UrunEkleFormu({
           continue;
         }
 
-        // Metre virgüllü sayıyı tespit et (Örn: "0,904" veya "2,439")
-        let temizSayi = s.replace(",", ".");
-        let sayi = parseFloat(temizSayi);
+        // Virgüllü metrik sayı tespiti
+        let temizVal = s.replace(",", ".");
+        let val = parseFloat(temizVal);
 
-        if (!isNaN(sayi) && sayi > 0) {
-          // Eğer sayı 10'dan küçükse ve küsüratlıysa muhtemelen Metre cinsindendir -> mm'ye çevir
-          if (sayi < 10 && temizSayi.includes(".")) {
-            sayi = Math.round(sayi * 1000);
+        if (!isNaN(val) && val > 0) {
+          // Metre olarak girildiyse (Örn: 0.904, 2.439) mm'ye çevir
+          let mmVal = val;
+          if (val < 10 && temizVal.includes(".")) {
+            mmVal = Math.round(val * 1000);
           }
-          sayisalDegerler.push(sayi);
+          sayilar.push({ orjinal: val, mm: mmVal, isFloat: temizVal.includes(".") });
         }
       }
 
-      // Eğer Tab ayrımı başarısız olduysa regex ile X araması yap
-      if (sayisalDegerler.length < 2) {
-        const regexOlcu = /([0-9.,]+)\s*[xX×*]\s*([0-9.,]+)/;
-        const match = satirMetni.match(regexOlcu);
+      // Sayılardan Ölçüleri ve Adeti Ayıkla
+      let olcuAdaylari = sayilar.filter(item => item.isFloat || item.mm >= 10);
+      let adetAdaylari = sayilar.filter(item => !item.isFloat && item.orjinal % 1 === 0);
+
+      if (olcuAdaylari.length >= 2) {
+        genislik = olcuAdaylari[0].mm;
+        yukseklik = olcuAdaylari[1].mm;
+      }
+
+      if (adetAdaylari.length > 0) {
+        // En uygun tam sayı adettir (Örn: 4, 2, 4)
+        adet = adetAdaylari[adetAdaylari.length - 1].orjinal;
+      } else if (sayilar.length >= 3) {
+        adet = Math.round(sayilar[2].orjinal);
+      }
+
+      // Regex ile ek kontrol
+      if (genislik === 0 || yukseklik === 0) {
+        const match = satirMetni.match(/([0-9.,]+)\s*[xX×*]\s*([0-9.,]+)/);
         if (match) {
           let e = parseFloat(match[1].replace(",", "."));
           let b = parseFloat(match[2].replace(",", "."));
@@ -151,27 +166,11 @@ export default function UrunEkleFormu({
           if (b < 10) b = Math.round(b * 1000);
           genislik = e;
           yukseklik = b;
-
-          // Ölçüden sonra kalan kısmı adet araması için kullan
-          const kalanMetin = satirMetni.replace(match[0], "");
-          const adetMatch = kalanMetin.match(/\b(\d{1,4})\b/);
-          if (adetMatch) {
-            adet = parseInt(adetMatch[1], 10);
-          }
-        }
-      } else {
-        // İlk iki büyük sayı En ve Boy'dur
-        genislik = sayisalDegerler[0];
-        yukseklik = sayisalDegerler[1];
-
-        // 3. Sayı var ise o kesinlikle Adet'tir!
-        if (sayisalDegerler.length >= 3) {
-          adet = sayisalDegerler[2];
         }
       }
 
       if (genislik === 0 || yukseklik === 0) continue; 
-      if (adet <= 0) adet = 1;
+      if (!adet || isNaN(adet) || adet <= 0) adet = 1;
 
       let nihaiUrunAdi = algilananCamAdi || sonBulunanCamBasligi || arama.trim() || "ÖZEL CAM ÜRÜNÜ";
       nihaiUrunAdi = nihaiUrunAdi.toLocaleUpperCase("tr-TR");
