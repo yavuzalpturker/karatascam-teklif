@@ -92,7 +92,7 @@ export default function UrunEkleFormu({
     }
   };
 
-  // --- KOPYALA YAPIŞTIR PARSERİ (ADET VE ÖLÇÜ SORUNU KÖKTEN ÇÖZÜLDÜ) ---
+  // --- KOPYALA YAPIŞTIR PARSERİ (M² HESABI 1.000.000 İLE KESİN DÜZELTİLDİ) ---
   const handleTopluMetinIsle = (hamMetin) => {
     if (!hamMetin.trim()) return;
 
@@ -114,9 +114,7 @@ export default function UrunEkleFormu({
       let pozNoVal = "-";
       let algilananCamAdi = "";
 
-      // Excel Sütunlarını Ayır
       let sutunlar = satirMetni.split("\t").map(s => s.trim()).filter(s => s !== "" && s !== "X" && s !== "x" && s !== "×");
-
       let sayilar = [];
 
       for (let s of sutunlar) {
@@ -126,12 +124,10 @@ export default function UrunEkleFormu({
           continue;
         }
 
-        // Virgüllü metrik sayı tespiti
         let temizVal = s.replace(",", ".");
         let val = parseFloat(temizVal);
 
         if (!isNaN(val) && val > 0) {
-          // Metre olarak girildiyse (Örn: 0.904, 2.439) mm'ye çevir
           let mmVal = val;
           if (val < 10 && temizVal.includes(".")) {
             mmVal = Math.round(val * 1000);
@@ -140,7 +136,6 @@ export default function UrunEkleFormu({
         }
       }
 
-      // Sayılardan Ölçüleri ve Adeti Ayıkla
       let olcuAdaylari = sayilar.filter(item => item.isFloat || item.mm >= 10);
       let adetAdaylari = sayilar.filter(item => !item.isFloat && item.orjinal % 1 === 0);
 
@@ -150,13 +145,11 @@ export default function UrunEkleFormu({
       }
 
       if (adetAdaylari.length > 0) {
-        // En uygun tam sayı adettir (Örn: 4, 2, 4)
         adet = adetAdaylari[adetAdaylari.length - 1].orjinal;
       } else if (sayilar.length >= 3) {
         adet = Math.round(sayilar[2].orjinal);
       }
 
-      // Regex ile ek kontrol
       if (genislik === 0 || yukseklik === 0) {
         const match = satirMetni.match(/([0-9.,]+)\s*[xX×*]\s*([0-9.,]+)/);
         if (match) {
@@ -178,16 +171,21 @@ export default function UrunEkleFormu({
       const benzersizId = "text_" + Date.now() + "_" + Math.random().toString(36).substr(2, 9);
       const dummyUrun = { id: benzersizId, kodu: "ÖZEL", aciklama: nihaiUrunAdi, "Ana Birim": "m²" };
       
+      // DOGRU METREKARE HESABI (mm * mm / 1.000.000)
       const tekCamM2 = (genislik * yukseklik) / 1000000;
       const toplamM2 = tekCamM2 * adet;
       const nihaiFiyat = Number(fiyatAna) || 0;
 
       const satir = satirHesapla(dummyUrun, genislik, yukseklik, adet, nihaiFiyat, paraBirimi, Number(kdvOrani), "m²");
       
-      satir.miktar = Number(toplamM2.toFixed(3));
-      satir.toplamTutar = satir.miktar * nihaiFiyat;
-      satir.kdvTutar = satir.toplamTutar * (Number(kdvOrani) / 100);
-      satir.genelToplam = satir.toplamTutar + satir.kdvTutar;
+      // KESIN METREKARE AATAMASI
+      satir.miktar = Number(toplamM2.toFixed(2));
+      satir.toplamTutar = Number((satir.miktar * nihaiFiyat).toFixed(2));
+      satir.kdvTutar = Number((satir.toplamTutar * (Number(kdvOrani) / 100)).toFixed(2));
+      satir.genelToplam = Number((satir.toplamTutar + satir.kdvTutar).toFixed(2));
+
+      let birimFiyatStr = paraFormatla(nihaiFiyat, paraBirimi);
+      satir.miktarDetay = `${adet} Adet (${satir.miktar.toFixed(2)} m²) x ${birimFiyatStr}`;
 
       satir.id = benzersizId;
       satir.pozNo = pozNoVal.length <= 12 ? pozNoVal : "-";
@@ -437,14 +435,14 @@ export default function UrunEkleFormu({
   };
 
   const anaSatirOlusturHelper = (hedefEn, hedefBoy, hedefManuelM2, hedefMiktar, hedefBirim, hedefPozNo, hedefSecili, secilenSonUrun, hedefOzelAciklama = null) => {
-    const miktarDegeri = (hedefMiktar !== "" && hedefMiktar !== null && !isNaN(hedefMiktar)) ? Number(hedefMiktar) : null;
+    const miktarDegeri = (hedefMiktar !== "" && hedefMiktar !== null && !isNaN(hedefMiktar)) ? Number(hedefMiktar) : 1;
     const enDegeri = Number(hedefEn) || 0;
     const boyDegeri = Number(hedefBoy) || 0;
     const manuelM2Degeri = Number(hedefManuelM2) || 0;
     
     let nihaiFiyat = Number(fiyatAna) || Number(fiyatAdet) || 0;
     let nihaiBirim = hedefBirim;
-    let hesaplananMiktar = miktarDegeri !== null ? miktarDegeri : 1;
+    let hesaplananMiktar = miktarDegeri;
     let toplamM2 = 0;
 
     if (iscilikTuru === "Sıvama Bedeli") {
@@ -452,30 +450,18 @@ export default function UrunEkleFormu({
     }
 
     if (manuelM2Degeri > 0) {
-      toplamM2 = miktarDegeri !== null ? manuelM2Degeri * miktarDegeri : manuelM2Degeri;
+      toplamM2 = manuelM2Degeri * miktarDegeri;
     } else if (enDegeri > 0 && boyDegeri > 0) {
-      const tekCamM2 = (enDegeri * boyDegeri) / 1000000;
-      toplamM2 = miktarDegeri !== null ? tekCamM2 * miktarDegeri : tekCamM2;
+      // DOGRU METREKARE HESABI
+      toplamM2 = ((enDegeri * boyDegeri) / 1000000) * miktarDegeri;
     }
 
-    if (hedefBirim === "m²" || hedefBirim === "ad") {
-      if (fiyatAdet && Number(fiyatAdet) > 0 && iscilikTuru !== "Sıvama Bedeli") {
-        nihaiFiyat = Number(fiyatAdet);
-        nihaiBirim = "ad"; 
-      } else {
-        hesaplananMiktar = toplamM2 > 0 ? toplamM2 : (miktarDegeri !== null ? miktarDegeri : 1);
-        if (iscilikTuru !== "Sıvama Bedeli") {
-          nihaiFiyat = Number(fiyatAna) || 0;
-          nihaiBirim = toplamM2 > 0 ? "m²" : "ad";
-        }
-      }
+    if (hedefBirim === "m²") {
+      hesaplananMiktar = toplamM2 > 0 ? toplamM2 : miktarDegeri;
     } else if (hedefBirim === "mt") {
-      hesaplananMiktar = miktarDegeri !== null ? (boyDegeri / 1000) * miktarDegeri : (boyDegeri / 1000);
-      nihaiFiyat = Number(fiyatAna) || 0;
-      nihaiBirim = "mt";
-    } else {
-      nihaiFiyat = Number(fiyatAna) || 0;
-      nihaiBirim = "ad";
+      hesaplananMiktar = (boyDegeri / 1000) * miktarDegeri;
+    } else { // "ad"
+      hesaplananMiktar = miktarDegeri;
     }
 
     const duzeltilmisUrun = {
@@ -489,7 +475,7 @@ export default function UrunEkleFormu({
       duzeltilmisUrun, 
       enDegeri, 
       boyDegeri, 
-      miktarDegeri !== null ? miktarDegeri : 1, 
+      miktarDegeri, 
       nihaiFiyat, 
       paraBirimi, 
       Number(kdvOrani), 
@@ -517,10 +503,19 @@ export default function UrunEkleFormu({
     satir.Adet = miktarDegeri;
     satir.kdvOrani = Number(kdvOrani);
     
-    satir.miktar = Number(hesaplananMiktar.toFixed(3)); 
-    satir.toplamTutar = satir.miktar * nihaiFiyat;
-    satir.kdvTutar = satir.toplamTutar * (Number(kdvOrani) / 100);
-    satir.genelToplam = satir.toplamTutar + satir.kdvTutar;
+    satir.miktar = Number(hesaplananMiktar.toFixed(2)); 
+    satir.toplamTutar = Number((satir.miktar * nihaiFiyat).toFixed(2));
+    satir.kdvTutar = Number((satir.toplamTutar * (Number(kdvOrani) / 100)).toFixed(2));
+    satir.genelToplam = Number((satir.toplamTutar + satir.kdvTutar).toFixed(2));
+
+    let bFiyatStr = paraFormatla(nihaiFiyat, paraBirimi);
+    if (hedefBirim === "m²") {
+      satir.miktarDetay = `${miktarDegeri} Adet (${satir.miktar.toFixed(2)} m²) x ${bFiyatStr}`;
+    } else if (hedefBirim === "mt") {
+      satir.miktarDetay = `${satir.miktar.toFixed(2)} mt x ${bFiyatStr}`;
+    } else {
+      satir.miktarDetay = `${miktarDegeri} ad x ${bFiyatStr}`;
+    }
 
     satir.secilenBirim = nihaiBirim;
     satir.birimFiyat = nihaiFiyat;
@@ -925,7 +920,7 @@ export default function UrunEkleFormu({
         </div>
       )}
 
-      {/* --- YENİ DÜZEN: BİRİM - ADET - TOPLAM M2 - EN - BOY --- */}
+      {/* --- DÜZEN: BİRİM - ADET - TOPLAM M2 - EN - BOY --- */}
       <div style={{ display: "grid", gridTemplateColumns: secilenBirim === "m²" ? "130px 100px 120px 1fr 1fr" : "130px 100px 1fr 1fr", gap: "10px", marginBottom: "12px", alignItems: "center" }}>
         <div>
           <label style={{ display: "block", fontSize: "12px", fontWeight: "700", color: "#334155", marginBottom: "4px" }}>Birim</label>

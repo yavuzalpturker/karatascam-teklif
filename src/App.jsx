@@ -46,6 +46,23 @@ export default function App() {
     }
   };
 
+  // --- DİNAMİK ÇOKLU SEÇENEK (SEPETLER) YAPISI ---
+  const [sepetler, setSepetler] = useState([[], []]); // Başlangıçta 1. ve 2. Seçenek
+  const [sepetGecmisleri, setSepetGecmisleri] = useState([[], []]);
+  const [aktifSepetNumarasi, setAktifSepetNumarasi] = useState(1);
+  const [islemVerisi, setIslemVerisi] = useState(null);
+
+  const [teklif, setTeklif] = useState({
+    musteriAdi: "",
+    ilgiliKisi: "",
+    projeAdi: "",
+    teklifNo: "",
+    siparisNo: "",
+    odemeSekli: "",
+    tarih: new Date(),
+    onayDurumu: "onaylandi"
+  });
+
   const cikisYap = () => {
     sessionStorage.removeItem('karatas_oturum');
     sessionStorage.removeItem('karatas_rol');
@@ -64,34 +81,12 @@ export default function App() {
       tarih: new Date(),
       onayDurumu: "onaylandi"
     });
-    setSepet1([]);
-    setSepet2([]);
-    setSepet1Gecmis([]);
-    setSepet2Gecmis([]);
+    setSepetler([[], []]);
+    setSepetGecmisleri([[], []]);
   };
 
-  const [teklif, setTeklif] = useState({
-    musteriAdi: "",
-    ilgiliKisi: "",
-    projeAdi: "",
-    teklifNo: "",
-    siparisNo: "",
-    odemeSekli: "",
-    tarih: new Date(),
-    onayDurumu: "onaylandi"
-  });
-  
-  const [sepet1, setSepet1] = useState([]);
-  const [sepet2, setSepet2] = useState([]);
-
-  const [sepet1Gecmis, setSepet1Gecmis] = useState([]);
-  const [sepet2Gecmis, setSepet2Gecmis] = useState([]);
-
-  const [aktifSepetNumarasi, setAktifSepetNumarasi] = useState(1);
-  const [islemVerisi, setIslemVerisi] = useState(null);
-
   const yeniTeklifBaslat = () => {
-    const onay = window.confirm("Mevcut sepet ve teklif bilgileri sıfırlanacak. Yeni teklif başlatmak istiyor musunuz?");
+    const onay = window.confirm("Mevcut sepetler ve teklif bilgileri sıfırlanacak. Yeni teklif başlatmak istiyor musunuz?");
     if (!onay) return;
 
     setTeklif({
@@ -104,63 +99,77 @@ export default function App() {
       tarih: new Date(),
       onayDurumu: "onaylandi"
     });
-    setSepet1([]);
-    setSepet2([]);
-    setSepet1Gecmis([]);
-    setSepet2Gecmis([]);
+    setSepetler([[], []]);
+    setSepetGecmisleri([[], []]);
+    setAktifSepetNumarasi(1);
     setIslemVerisi(null);
   };
 
-  const sepetGuncelle1 = (yeniSepet) => {
-    setSepet1Gecmis(prev => [...prev, sepet1]);
-    setSepet1(yeniSepet);
+  // Dinamik Seçenek Ekleme
+  const yeniSecenekEkle = () => {
+    setSepetler(prev => [...prev, []]);
+    setSepetGecmisleri(prev => [...prev, []]);
+    setAktifSepetNumarasi(sepetler.length + 1);
   };
 
-  const sepetGuncelle2 = (yeniSepet) => {
-    setSepet2Gecmis(prev => [...prev, sepet2]);
-    setSepet2(yeniSepet);
+  // Seçenek Silme
+  const secenekSil = (secenekIndex) => {
+    if (sepetler.length <= 1) {
+      alert("En az 1 seçenek bulunmalıdır!");
+      return;
+    }
+    const onay = window.confirm(`${secenekIndex + 1}. Seçeneği silmek istediğinize emin misiniz?`);
+    if (!onay) return;
+
+    setSepetler(prev => prev.filter((_, idx) => idx !== secenekIndex));
+    setSepetGecmisleri(prev => prev.filter((_, idx) => idx !== secenekIndex));
+    setAktifSepetNumarasi(1);
   };
 
-  const geriAl1 = () => {
-    if (sepet1Gecmis.length === 0) return;
-    const oncekiHal = sepet1Gecmis[sepet1Gecmis.length - 1];
-    setSepet1(oncekiHal);
-    setSepet1Gecmis(prev => prev.slice(0, prev.length - 1));
+  // Genel Sepet Güncelleme
+  const sepetiGuncelle = (sepetNo, yeniSepet) => {
+    const idx = sepetNo - 1;
+    setSepetGecmisleri(prev => {
+      const kopya = [...prev];
+      kopya[idx] = [...(kopya[idx] || []), sepetler[idx] || []];
+      return kopya;
+    });
+    setSepetler(prev => {
+      const kopya = [...prev];
+      kopya[idx] = yeniSepet;
+      return kopya;
+    });
   };
 
-  const geriAl2 = () => {
-    if (sepet2Gecmis.length === 0) return;
-    const oncekiHal = sepet2Gecmis[sepet2Gecmis.length - 1];
-    setSepet2(oncekiHal);
-    setSepet2Gecmis(prev => prev.slice(0, prev.length - 1));
-  };
+  const geriAl = (sepetNo) => {
+    const idx = sepetNo - 1;
+    const gecmis = sepetGecmisleri[idx] || [];
+    if (gecmis.length === 0) return;
 
-  const secenekleriYerDegistir = () => {
-    setSepet1Gecmis(prev => [...prev, sepet1]);
-    setSepet2Gecmis(prev => [...prev, sepet2]);
-    const geciciSepet = [...sepet1];
-    setSepet1([...sepet2]);
-    setSepet2(geciciSepet);
+    const oncekiHal = gecmis[gecmis.length - 1];
+    setSepetler(prev => {
+      const kopya = [...prev];
+      kopya[idx] = oncekiHal;
+      return kopya;
+    });
+    setSepetGecmisleri(prev => {
+      const kopya = [...prev];
+      kopya[idx] = kopya[idx].slice(0, kopya[idx].length - 1);
+      return kopya;
+    });
   };
 
   const sepettenUrunSil = (silinecekIndex, sepetNo) => {
-    if (sepetNo === 1) {
-      sepetGuncelle1(sepet1.filter((_, index) => index !== silinecekIndex));
-    } else {
-      sepetGuncelle2(sepet2.filter((_, index) => index !== silinecekIndex));
-    }
+    const idx = sepetNo - 1;
+    const guncel = (sepetler[idx] || []).filter((_, index) => index !== silinecekIndex);
+    sepetiGuncelle(sepetNo, guncel);
   };
 
   const handleGuncelle = (index, guncelSatir, sepetNo) => {
-    if (sepetNo === 1) {
-      const yeniSepet = [...sepet1];
-      yeniSepet[index] = guncelSatir;
-      sepetGuncelle1(yeniSepet);
-    } else {
-      const yeniSepet = [...sepet2];
-      yeniSepet[index] = guncelSatir;
-      sepetGuncelle2(yeniSepet);
-    }
+    const idx = sepetNo - 1;
+    const kopya = [...(sepetler[idx] || [])];
+    kopya[index] = guncelSatir;
+    sepetiGuncelle(sepetNo, kopya);
   };
 
   if (!girisBasarili) {
@@ -236,67 +245,54 @@ export default function App() {
             <TeklifBilgileriForm teklif={teklif} onDegistir={setTeklif} />
 
             <main className="ana-icerik">
-              <div style={{ display: 'flex', gap: '10px', marginBottom: '15px', backgroundColor: '#e2e8f0', padding: '6px', borderRadius: '8px', alignItems: 'center' }}>
-                <button
-                  type="button"
-                  onClick={() => setAktifSepetNumarasi(1)}
-                  style={{
-                    flex: 1, padding: '10px', borderRadius: '6px', border: 'none',
-                    backgroundColor: aktifSepetNumarasi === 1 ? '#0f2942' : 'transparent',
-                    color: aktifSepetNumarasi === 1 ? 'white' : '#475569',
-                    fontWeight: '600', cursor: 'pointer', transition: 'all 0.2s'
-                  }}
-                >
-                  1. Seçenek [{sepet1.length} Ürün]
-                </button>
+              {/* DİNAMİK SEÇENEK SEKMELERİ */}
+              <div style={{ display: 'flex', gap: '8px', marginBottom: '15px', backgroundColor: '#e2e8f0', padding: '6px', borderRadius: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
+                {sepetler.map((sIcerik, idx) => {
+                  const sNo = idx + 1;
+                  return (
+                    <button
+                      key={idx}
+                      type="button"
+                      onClick={() => setAktifSepetNumarasi(sNo)}
+                      style={{
+                        flex: 1, minWidth: '120px', padding: '10px', borderRadius: '6px', border: 'none',
+                        backgroundColor: aktifSepetNumarasi === sNo ? '#0f2942' : 'transparent',
+                        color: aktifSepetNumarasi === sNo ? 'white' : '#475569',
+                        fontWeight: '700', cursor: 'pointer', transition: 'all 0.2s'
+                      }}
+                    >
+                      {sNo}. Seçenek [{sIcerik.length} Ürün]
+                    </button>
+                  );
+                })}
 
                 <button
                   type="button"
-                  onClick={secenekleriYerDegistir}
-                  title="1. ve 2. Seçeneğin Yerini Değiştir"
+                  onClick={yeniSecenekEkle}
+                  title="Yeni Seçenek Ekle"
                   style={{
-                    backgroundColor: '#0f2942', color: 'white', border: 'none',
+                    backgroundColor: '#16a34a', color: 'white', border: 'none',
                     padding: '10px 16px', borderRadius: '6px', fontSize: '13px',
                     fontWeight: 'bold', cursor: 'pointer', whiteSpace: 'nowrap',
                     boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
                   }}
                 >
-                  ⇄ Seçenekleri Takas Et (1 ↔ 2)
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setAktifSepetNumarasi(2)}
-                  style={{
-                    flex: 1, padding: '10px', borderRadius: '6px', border: 'none',
-                    backgroundColor: aktifSepetNumarasi === 2 ? '#0f2942' : 'transparent',
-                    color: aktifSepetNumarasi === 2 ? 'white' : '#475569',
-                    fontWeight: '600', cursor: 'pointer', transition: 'all 0.2s'
-                  }}
-                >
-                  2. Seçenek [{sepet2.length} Ürün]
+                  ➕ Yeni Seçenek
                 </button>
               </div>
 
+              {/* ÜRÜN EKLEME FORMU */}
               <UrunEkleFormu
                 urunler={urunler}
                 yukleniyor={yukleniyor}
                 hata={hata}
-                sepet1={sepet1}
-                sepet2={sepet2}
-                onTopluGuncelle={(hedefSepetNo, guncelSepet) => {
-                  if (hedefSepetNo === 1) {
-                    sepetGuncelle1(guncelSepet);
-                  } else {
-                    sepetGuncelle2(guncelSepet);
-                  }
-                }}
+                sepet1={sepetler[0] || []}
+                sepet2={sepetler[1] || []}
+                aktifSecenekNo={aktifSepetNumarasi}
+                onTopluGuncelle={(hedefSepetNo, guncelSepet) => sepetiGuncelle(hedefSepetNo, guncelSepet)}
                 onEkle={(satir) => {
-                  if (aktifSepetNumarasi === 1) {
-                    sepetGuncelle1([...sepet1, satir]);
-                  } else {
-                    sepetGuncelle2([...sepet2, satir]);
-                  }
+                  const guncel = [...(sepetler[aktifSepetNumarasi - 1] || []), satir];
+                  sepetiGuncelle(aktifSepetNumarasi, guncel);
                 }}
                 islemVerisi={islemVerisi}
                 onGuncelle={(index, guncelSatir) => {
@@ -306,51 +302,47 @@ export default function App() {
                 onIptal={() => setIslemVerisi(null)}
               />
 
-              <div style={{ marginBottom: '30px' }}>
-                <h3 style={{ color: '#0f2942', borderBottom: '2px solid #0f2942', paddingBottom: '8px', marginBottom: '15px', fontSize: '16px', fontWeight: '700' }}>
-                  1. Seçenek
-                </h3>
-                <SepetTablosu 
-                  sepet={sepet1} 
-                  gecmisUzunluk={sepet1Gecmis.length}
-                  onGeriAl={geriAl1}
-                  onTemizle={() => sepetGuncelle1([])} 
-                  onSil={(index) => sepettenUrunSil(index, 1)} 
-                  onDuzenle={(index, satir) => {
-                    setIslemVerisi({ tip: "duzenle", index, satir, sepetNo: 1 });
-                    window.scrollTo({ top: 0, behavior: 'smooth' });
-                  }}
-                  onTekrarEt={(satir) => {
-                    setIslemVerisi({ tip: "tekrar", satir, sepetNo: 1 });
-                    window.scrollTo({ top: 0, behavior: 'smooth' });
-                  }}
-                  onTopluFiyatGuncelle={(yeniSepet) => sepetGuncelle1(yeniSepet)}
-                />
-              </div>
+              {/* SEÇENEK TABLOLARI LİSTESİ */}
+              {sepetler.map((sIcerik, idx) => {
+                const sNo = idx + 1;
+                return (
+                  <div key={idx} style={{ marginBottom: '30px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '2px solid #0f2942', paddingBottom: '8px', marginBottom: '15px' }}>
+                      <h3 style={{ color: '#0f2942', margin: 0, fontSize: '16px', fontWeight: '700' }}>
+                        {sNo}. Seçenek
+                      </h3>
+                      {sepetler.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={() => secenekSil(idx)}
+                          style={{ backgroundColor: '#fee2e2', color: '#991b1b', border: '1px solid #fca5a5', padding: '4px 10px', borderRadius: '4px', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer' }}
+                        >
+                          🗑️ {sNo}. Seçeneği Sil
+                        </button>
+                      )}
+                    </div>
 
-              <div style={{ marginBottom: '30px' }}>
-                <h3 style={{ color: '#0f2942', borderBottom: '2px solid #0f2942', paddingBottom: '8px', marginBottom: '15px', fontSize: '16px', fontWeight: '700' }}>
-                  2. Seçenek
-                </h3>
-                <SepetTablosu 
-                  sepet={sepet2} 
-                  gecmisUzunluk={sepet2Gecmis.length}
-                  onGeriAl={geriAl2}
-                  onTemizle={() => sepetGuncelle2([])} 
-                  onSil={(index) => sepettenUrunSil(index, 2)} 
-                  onDuzenle={(index, satir) => {
-                    setIslemVerisi({ tip: "duzenle", index, satir, sepetNo: 2 });
-                    window.scrollTo({ top: 0, behavior: 'smooth' });
-                  }}
-                  onTekrarEt={(satir) => {
-                    setIslemVerisi({ tip: "tekrar", satir, sepetNo: 2 });
-                    window.scrollTo({ top: 0, behavior: 'smooth' });
-                  }}
-                  onTopluFiyatGuncelle={(yeniSepet) => sepetGuncelle2(yeniSepet)}
-                />
-              </div>
+                    <SepetTablosu 
+                      sepet={sIcerik} 
+                      gecmisUzunluk={(sepetGecmisleri[idx] || []).length}
+                      onGeriAl={() => geriAl(sNo)}
+                      onTemizle={() => sepetiGuncelle(sNo, [])} 
+                      onSil={(index) => sepettenUrunSil(index, sNo)} 
+                      onDuzenle={(index, satir) => {
+                        setIslemVerisi({ tip: "duzenle", index, satir, sepetNo: sNo });
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                      }}
+                      onTekrarEt={(satir) => {
+                        setIslemVerisi({ tip: "tekrar", satir, sepetNo: sNo });
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                      }}
+                      onTopluFiyatGuncelle={(yeniSepet) => sepetiGuncelle(sNo, yeniSepet)}
+                    />
+                  </div>
+                );
+              })}
 
-              <CiktiButonu teklif={teklif} sepet={sepet1} sepet2={sepet2} kullaniciRolu={kullaniciRolu} />
+              <CiktiButonu teklif={teklif} sepet={sepetler[0] || []} sepet2={sepetler[1] || []} kullaniciRolu={kullaniciRolu} />
 
               <GecmisTeklifler 
                 kullaniciRolu={kullaniciRolu} 
@@ -369,8 +361,8 @@ export default function App() {
                     tarih: new Date(),
                     onayDurumu: "onaylandi"
                   });
-                  sepetGuncelle1(yuklenenSepet1 || []);
-                  sepetGuncelle2(yuklenenSepet2 || []);
+                  sepetiGuncelle(1, yuklenenSepet1 || []);
+                  sepetiGuncelle(2, yuklenenSepet2 || []);
                   window.scrollTo({ top: 0, behavior: 'smooth' });
                 }}
               />
