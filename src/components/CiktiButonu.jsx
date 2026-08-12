@@ -10,10 +10,10 @@ export default function CiktiButonu({ teklif, sepetler = [], sepet = [], sepet2 
   const [sonSiparisNo, setSonSiparisNo] = useState("");
   const [sonSeciliUrunler, setSonSeciliUrunler] = useState("");
 
-  // Eski sepet ve sepet2 bağımlılığını çoklu sepet dizisiyle birleştir
+  // Eski tekli sepet bağlantıları ile yeni çoklu seçenek dizisini birleştir
   const tumSepetlerListesi = sepetler.length > 0 ? sepetler : [sepet || [], sepet2 || []];
 
-  // Eğer hiçbir sepette ürün yoksa butonu gösterme
+  // Sepette hiçbir ürün yoksa butonları gizle
   const sepetBosMu = tumSepetlerListesi.every(s => !s || s.length === 0);
   if (sepetBosMu) return null;
 
@@ -49,7 +49,7 @@ export default function CiktiButonu({ teklif, sepetler = [], sepet = [], sepet2 
     const yil = new Date().getFullYear();
     const belgeNo = `${yil}/${sayac.toString().padStart(3, "0")}`;
 
-    // Oturumdan ad soyad bilgisini güvenli bir şekilde çekiyoruz
+    // Oturumdaki kullanıcı adını güvenli çek
     let hazirlayanKisi = sessionStorage.getItem("karatas_personel_adi");
     if (!hazirlayanKisi) {
       try {
@@ -65,19 +65,23 @@ export default function CiktiButonu({ teklif, sepetler = [], sepet = [], sepet2 
       hazirlayanKisi = kullaniciRolu === 'admin' ? 'Yönetici' : 'Personel';
     }
 
+    // Kaydın arşivde EN BAŞA düşmesini sağlayan hassas ISO zaman damgası
+    const suAnkiZaman = new Date().toISOString();
+
     const yeniKayit = {
       teklif_no: belgeNo,
       siparis_no: aktifTeklif.siparisNo || null, 
       tur: tur,
       musteri_adi: aktifTeklif.musteriAdi || "Bilinmeyen Müşteri",
-      proje_adi: aktifTeklif.projeAdi,
-      ilgili_kisi: aktifTeklif.ilgiliKisi,
+      proje_adi: aktifTeklif.projeAdi || "",
+      ilgili_kisi: aktifTeklif.ilgiliKisi || "",
       notlar: aktifTeklif.notlar || "",
       odeme_sekli: aktifTeklif.odemeSekli || "", 
-      tarih: new Date().toISOString(),
+      tarih: suAnkiZaman,
+      created_at: suAnkiZaman, // En üste sıralanması için eklendi
       sepet: imalatSepetlerDizisi[0] || [],
       sepet2: imalatSepetlerDizisi[1] || [],
-      sepetler: imalatSepetlerDizisi, // Çoklu seçeneklerin tamamı
+      sepetler: imalatSepetlerDizisi,
       onay_durumu: onayDurumu,
       hazirlayan: hazirlayanKisi
     };
@@ -85,8 +89,8 @@ export default function CiktiButonu({ teklif, sepetler = [], sepet = [], sepet2 
     const { error } = await supabase.from("teklifler").insert([yeniKayit]);
     
     if (error) {
-      console.error("Supabase Kayıt Hatası:", error);
-      alert("Arşive kaydedilirken bir hata oluştu.");
+      console.error("Supabase Kayıt Hatası Detayı:", error);
+      alert("Arşive kaydedilirken hata oluştu:\n" + (error.message || JSON.stringify(error)));
       return null;
     }
 
@@ -96,7 +100,7 @@ export default function CiktiButonu({ teklif, sepetler = [], sepet = [], sepet2 
     if (onayDurumu === "bekliyor") {
       alert("✅ Sepet başarıyla yönetici onayına sunuldu!");
     } else {
-      alert("Başarıyla arşive kaydedildi!");
+      alert("✅ Başarıyla arşive kaydedildi!");
     }
     return belgeNo;
   };
@@ -181,6 +185,7 @@ export default function CiktiButonu({ teklif, sepetler = [], sepet = [], sepet2 
         
         {tamYetki ? (
           <>
+            {/* TEKLİF BUTONLARI */}
             <div style={{ display: "flex", flexDirection: "column", gap: "5px" }}>
               <button 
                 className="buton" 
@@ -198,6 +203,7 @@ export default function CiktiButonu({ teklif, sepetler = [], sepet = [], sepet2 
               </button>
             </div>
 
+            {/* PROFORMA BUTONLARI */}
             <div style={{ display: "flex", flexDirection: "column", gap: "5px" }}>
               <button 
                 className="buton" 
@@ -215,6 +221,7 @@ export default function CiktiButonu({ teklif, sepetler = [], sepet = [], sepet2 
               </button>
             </div>
 
+            {/* İMALAT BUTONLARI */}
             <div style={{ display: "flex", flexDirection: "column", gap: "5px" }}>
               <button 
                 className="buton" 

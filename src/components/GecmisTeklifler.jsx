@@ -22,16 +22,26 @@ export default function GecmisTeklifler({ kullaniciRolu, onSepetiYukle }) {
     };
   }, []);
 
+  // EN YENİ KAYITLARI HER ZAMAN EN BAŞTA LİSTELEYEN SORGULAR
   async function fetchGecmisTeklifler() {
     setYukleniyor(true);
-    const { data, error } = await supabase
-      .from("teklifler")
-      .select("*")
-      .order("created_at", { ascending: false });
-      
-    if (error) console.error("Hata:", error);
-    setTeklifler(data || []);
-    setYukleniyor(false);
+    try {
+      const { data, error } = await supabase
+        .from("teklifler")
+        .select("*")
+        .order("created_at", { ascending: false, nullsFirst: false }) // En yeni tarihi kesin olarak en üstte dök
+        .order("id", { ascending: false }); // Tarih eşitliği varsa ID'si büyük olanı en üste koy
+
+      if (error) {
+        console.error("Supabase Veri Çekme Hatası:", error);
+      } else {
+        setTeklifler(data || []);
+      }
+    } catch (err) {
+      console.error("Geçmiş çekme hatası:", err);
+    } finally {
+      setYukleniyor(false);
+    }
   }
 
   const handleTekliSecim = (id) => {
@@ -84,18 +94,19 @@ export default function GecmisTeklifler({ kullaniciRolu, onSepetiYukle }) {
       notlar: t.notlar,
       odemeSekli: t.odeme_sekli || "", 
       siparisNo: t.siparis_no || "", 
-      tarih: new Date(t.tarih)
+      tarih: new Date(t.created_at || t.tarih)
     };
 
-    const sepet1 = t.sepet || [];
-    const sepet2 = t.sepet2 || [];
+    const tumSepetler = t.sepetler && t.sepetler.length > 0 
+      ? t.sepetler 
+      : [t.sepet || [], t.sepet2 || []];
 
     if (t.tur === "PROFORMA") {
-      proformaPdfIndir(teklifBilgisi, sepet1, sepet2, t.teklif_no, false);
+      proformaPdfIndir(teklifBilgisi, ...tumSepetler, t.teklif_no, false);
     } else if (t.tur === "İMALAT") {
-      imalatPdfIndir(teklifBilgisi, sepet1, sepet2, t.teklif_no, false);
+      imalatPdfIndir(teklifBilgisi, tumSepetler[0] || [], tumSepetler[1] || [], t.teklif_no, false);
     } else {
-      teklifPdfIndir(teklifBilgisi, sepet1, sepet2, t.teklif_no, false);
+      teklifPdfIndir(teklifBilgisi, ...tumSepetler, t.teklif_no, false);
     }
   }
 
@@ -107,18 +118,19 @@ export default function GecmisTeklifler({ kullaniciRolu, onSepetiYukle }) {
       notlar: t.notlar,
       odemeSekli: t.odeme_sekli || "", 
       siparisNo: t.siparis_no || "", 
-      tarih: new Date(t.tarih)
+      tarih: new Date(t.created_at || t.tarih)
     };
 
-    const sepet1 = t.sepet || [];
-    const sepet2 = t.sepet2 || [];
+    const tumSepetler = t.sepetler && t.sepetler.length > 0 
+      ? t.sepetler 
+      : [t.sepet || [], t.sepet2 || []];
 
     if (t.tur === "PROFORMA") {
-      proformaPdfIndir(teklifBilgisi, sepet1, sepet2, t.teklif_no, true);
+      proformaPdfIndir(teklifBilgisi, ...tumSepetler, t.teklif_no, true);
     } else if (t.tur === "İMALAT") {
-      imalatPdfIndir(teklifBilgisi, sepet1, sepet2, t.teklif_no, true);
+      imalatPdfIndir(teklifBilgisi, tumSepetler[0] || [], tumSepetler[1] || [], t.teklif_no, true);
     } else {
-      teklifPdfIndir(teklifBilgisi, sepet1, sepet2, t.teklif_no, true);
+      teklifPdfIndir(teklifBilgisi, ...tumSepetler, t.teklif_no, true);
     }
   }
 
@@ -133,7 +145,7 @@ export default function GecmisTeklifler({ kullaniciRolu, onSepetiYukle }) {
 
     let tarihUygun = true;
     if (secilenTarih) {
-      const kayitTarihi = t.tarih ? new Date(t.tarih).toISOString().split("T")[0] : "";
+      const kayitTarihi = t.created_at || t.tarih ? new Date(t.created_at || t.tarih).toISOString().split("T")[0] : "";
       tarihUygun = kayitTarihi === secilenTarih;
     }
 
@@ -158,15 +170,27 @@ export default function GecmisTeklifler({ kullaniciRolu, onSepetiYukle }) {
   return (
     <section className="panel" style={{ marginTop: "30px" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "15px" }}>
-        <h2 className="panel__baslik" style={{ margin: 0, color: "#0f2942" }}>Geçmiş Teklifler</h2>
-        {kullaniciRolu === 'admin' && secilenler.length > 0 && (
+        <h2 className="panel__baslik" style={{ margin: 0, color: "#0f2942" }}>
+          Geçmiş Teklifler ({filtrelenmisTeklifler.length} / Toplam {teklifler.length})
+        </h2>
+
+        <div style={{ display: "flex", gap: "10px" }}>
           <button 
-            onClick={topluSil} 
-            style={{ backgroundColor: "#991b1b", color: "white", border: "none", padding: "8px 14px", borderRadius: "6px", cursor: "pointer", fontSize: "13px", fontWeight: "600" }}
+            onClick={fetchGecmisTeklifler}
+            style={{ backgroundColor: "#0284c7", color: "white", border: "none", padding: "8px 14px", borderRadius: "6px", cursor: "pointer", fontSize: "13px", fontWeight: "600" }}
           >
-            🗑️ Seçilenleri Sil ({secilenler.length})
+            🔄 Yenile
           </button>
-        )}
+
+          {kullaniciRolu === 'admin' && secilenler.length > 0 && (
+            <button 
+              onClick={topluSil} 
+              style={{ backgroundColor: "#991b1b", color: "white", border: "none", padding: "8px 14px", borderRadius: "6px", cursor: "pointer", fontSize: "13px", fontWeight: "600" }}
+            >
+              🗑️ Seçilenleri Sil ({secilenler.length})
+            </button>
+          )}
+        </div>
       </div>
 
       <div style={{ display: "flex", gap: "10px", marginBottom: "15px", flexWrap: "wrap", alignItems: "center" }}>
@@ -255,30 +279,35 @@ export default function GecmisTeklifler({ kullaniciRolu, onSepetiYukle }) {
                       />
                     </td>
                   )}
-                  <td style={{ padding: "12px 16px", fontWeight: "600", color: "#1e293b" }}>{t.teklif_no}</td>
+                  <td style={{ padding: "12px 16px", fontWeight: "600", color: "#1e293b" }}>{t.teklif_no || t.teklifNo || "-"}</td>
                   <td style={{ padding: "12px 16px" }}>
                     <span style={{
                       padding: "4px 10px", borderRadius: "5px", fontSize: "11px", fontWeight: "700", letterSpacing: "0.5px",
                       ...getTurRozetStili(t.tur)
                     }}>
-                      {t.tur}
+                      {t.tur || "TEKLİF"}
                     </span>
                   </td>
-                  <td style={{ padding: "12px 16px", color: "#334155", fontWeight: "500" }}>{t.musteri_adi}</td>
-                  <td style={{ padding: "12px 16px", color: "#0f2942", fontWeight: "600" }}>{t.proje_adi || "-"}</td>
+                  <td style={{ padding: "12px 16px", color: "#334155", fontWeight: "500" }}>{t.musteri_adi || t.musteriAdi || "-"}</td>
+                  <td style={{ padding: "12px 16px", color: "#0f2942", fontWeight: "600" }}>{t.proje_adi || t.projeAdi || "-"}</td>
                   <td style={{ padding: "12px 16px" }}>
                     <span style={{ backgroundColor: '#f1f5f9', padding: '4px 8px', borderRadius: '4px', fontSize: '11.5px', fontWeight: 'bold', color: '#0f2942', border: '1px solid #e2e8f0' }}>
                       👤 {t.hazirlayan || "Bilinmiyor"}
                     </span>
                   </td>
                   <td style={{ padding: "12px 16px", color: "#64748b", fontSize: "13px" }}>
-                    {t.tarih ? new Date(t.tarih).toLocaleDateString("tr-TR") : "-"}
+                    {t.created_at || t.tarih ? new Date(t.created_at || t.tarih).toLocaleDateString("tr-TR") : "-"}
                   </td>
                   <td style={{ padding: "12px 16px", textAlign: "center", whiteSpace: "nowrap" }}>
                     <div style={{ display: "inline-flex", gap: "6px", justifyContent: "center" }}>
                       
                       <button 
-                        onClick={() => onSepetiYukle(t, t.sepet, t.sepet2)} 
+                        onClick={() => {
+                          const tumSepetler = t.sepetler && t.sepetler.length > 0 ? t.sepetler : null;
+                          if (onSepetiYukle) {
+                            onSepetiYukle(t, t.sepet, t.sepet2, tumSepetler);
+                          }
+                        }} 
                         title="Bu teklifin sepetini ve bilgilerini ana ekrana yükle"
                         style={{ 
                           backgroundColor: "#334155", 
