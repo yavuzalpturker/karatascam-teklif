@@ -3,16 +3,21 @@ import { supabase } from "../lib/supabaseClient";
 import { teklifPdfIndir, proformaPdfIndir } from "../utils/pdfOlustur";
 import { imalatPdfIndir } from "../utils/pdfImalatOlustur";
 
-export default function CiktiButonu({ teklif, sepet, sepet2 = [], kullaniciRolu }) {
+export default function CiktiButonu({ teklif, sepetler = [], sepet = [], sepet2 = [], kullaniciRolu }) {
   const [islemDurumu, setIslemDurumu] = useState(null);
   
   const [imalatSayaci, setImalatSayaci] = useState(1);
   const [sonSiparisNo, setSonSiparisNo] = useState("");
   const [sonSeciliUrunler, setSonSeciliUrunler] = useState("");
 
-  if (sepet.length === 0 && sepet2.length === 0) return null;
+  // Eski sepet ve sepet2 bağımlılığını çoklu sepet dizisiyle birleştir
+  const tumSepetlerListesi = sepetler.length > 0 ? sepetler : [sepet || [], sepet2 || []];
 
-  const getAkilliImalatTeklifi = (seciliSepet1, seciliSepet2, tumuSeciliMi) => {
+  // Eğer hiçbir sepette ürün yoksa butonu gösterme
+  const sepetBosMu = tumSepetlerListesi.every(s => !s || s.length === 0);
+  if (sepetBosMu) return null;
+
+  const getAkilliImalatTeklifi = (seciliSepetlerDizisi, tumuSeciliMi) => {
     const islemTeklifi = { ...teklif };
     if (!islemTeklifi.siparisNo) return islemTeklifi; 
 
@@ -20,7 +25,7 @@ export default function CiktiButonu({ teklif, sepet, sepet2 = [], kullaniciRolu 
       return islemTeklifi;
     }
 
-    const seciliVeri = JSON.stringify([...seciliSepet1, ...seciliSepet2]);
+    const seciliVeri = JSON.stringify(seciliSepetlerDizisi);
     let guncelSayac = imalatSayaci;
 
     if (islemTeklifi.siparisNo !== sonSiparisNo) {
@@ -39,7 +44,7 @@ export default function CiktiButonu({ teklif, sepet, sepet2 = [], kullaniciRolu 
     return islemTeklifi;
   };
 
-  const supabaseKaydet = async (tur, aktifTeklif, imalatSepet1 = sepet, imalatSepet2 = sepet2, onayDurumu = "onaylandi") => {
+  const supabaseKaydet = async (tur, aktifTeklif, imalatSepetlerDizisi = tumSepetlerListesi, onayDurumu = "onaylandi") => {
     let sayac = parseInt(localStorage.getItem("proforma_sayac") || "1", 10);
     const yil = new Date().getFullYear();
     const belgeNo = `${yil}/${sayac.toString().padStart(3, "0")}`;
@@ -70,10 +75,11 @@ export default function CiktiButonu({ teklif, sepet, sepet2 = [], kullaniciRolu 
       notlar: aktifTeklif.notlar || "",
       odeme_sekli: aktifTeklif.odemeSekli || "", 
       tarih: new Date().toISOString(),
-      sepet: imalatSepet1,
-      sepet2: imalatSepet2,
+      sepet: imalatSepetlerDizisi[0] || [],
+      sepet2: imalatSepetlerDizisi[1] || [],
+      sepetler: imalatSepetlerDizisi, // Çoklu seçeneklerin tamamı
       onay_durumu: onayDurumu,
-      hazirlayan: hazirlayanKisi // <-- Girdiğin Ad Soyad arşive yazılıyor
+      hazirlayan: hazirlayanKisi
     };
 
     const { error } = await supabase.from("teklifler").insert([yeniKayit]);
@@ -99,19 +105,20 @@ export default function CiktiButonu({ teklif, sepet, sepet2 = [], kullaniciRolu 
     setIslemDurumu(tur + "_KAYDET");
     try {
       if (tur === "İMALAT") {
-        const seciliSepet1 = sepet.filter(item => item.secili !== false);
-        const seciliSepet2 = sepet2.filter(item => item.secili !== false);
-        const tumuSeciliMi = (seciliSepet1.length === sepet.length) && (seciliSepet2.length === sepet2.length);
+        const seciliSepetler = tumSepetlerListesi.map(s => (s || []).filter(item => item.secili !== false));
+        const toplamSeciliAdet = seciliSepetler.reduce((acc, s) => acc + s.length, 0);
+        const toplamUrunAdeti = tumSepetlerListesi.reduce((acc, s) => acc + (s || []).length, 0);
+        const tumuSeciliMi = toplamSeciliAdet === toplamUrunAdeti;
 
-        if (seciliSepet1.length === 0 && seciliSepet2.length === 0) {
+        if (toplamSeciliAdet === 0) {
           alert("Lütfen imalat listesine kaydetmek için en az 1 ürün seçin (checkbox)!");
           return;
         }
         
-        const islemTeklifi = getAkilliImalatTeklifi(seciliSepet1, seciliSepet2, tumuSeciliMi);
-        await supabaseKaydet(tur, islemTeklifi, seciliSepet1, seciliSepet2, "onaylandi");
+        const islemTeklifi = getAkilliImalatTeklifi(seciliSepetler, tumuSeciliMi);
+        await supabaseKaydet(tur, islemTeklifi, seciliSepetler, "onaylandi");
       } else {
-        await supabaseKaydet(tur, teklif, sepet, sepet2, "onaylandi");
+        await supabaseKaydet(tur, teklif, tumSepetlerListesi, "onaylandi");
       }
     } finally {
       setIslemDurumu(null);
@@ -124,22 +131,23 @@ export default function CiktiButonu({ teklif, sepet, sepet2 = [], kullaniciRolu 
       let belgeNo = teklif.teklifNo || "";
 
       if (tur === "İMALAT") {
-        const seciliSepet1 = sepet.filter(item => item.secili !== false);
-        const seciliSepet2 = sepet2.filter(item => item.secili !== false);
-        const tumuSeciliMi = (seciliSepet1.length === sepet.length) && (seciliSepet2.length === sepet2.length);
+        const seciliSepetler = tumSepetlerListesi.map(s => (s || []).filter(item => item.secili !== false));
+        const toplamSeciliAdet = seciliSepetler.reduce((acc, s) => acc + s.length, 0);
+        const toplamUrunAdeti = tumSepetlerListesi.reduce((acc, s) => acc + (s || []).length, 0);
+        const tumuSeciliMi = toplamSeciliAdet === toplamUrunAdeti;
 
-        if (seciliSepet1.length === 0 && seciliSepet2.length === 0) {
+        if (toplamSeciliAdet === 0) {
           alert("Lütfen imalat listesine eklemek için en az 1 ürün seçin (checkbox)!");
           return;
         }
 
-        const islemTeklifi = getAkilliImalatTeklifi(seciliSepet1, seciliSepet2, tumuSeciliMi);
-        await imalatPdfIndir(islemTeklifi, seciliSepet1, seciliSepet2, belgeNo, onizlemeMi);
+        const islemTeklifi = getAkilliImalatTeklifi(seciliSepetler, tumuSeciliMi);
+        await imalatPdfIndir(islemTeklifi, seciliSepetler[0] || [], seciliSepetler[1] || [], belgeNo, onizlemeMi);
       } else {
         if (tur === "TEKLİF") {
-          await teklifPdfIndir(teklif, sepet, sepet2, belgeNo, onizlemeMi);
+          await teklifPdfIndir(teklif, ...tumSepetlerListesi, belgeNo, onizlemeMi);
         } else {
-          await proformaPdfIndir(teklif, sepet, sepet2, belgeNo, onizlemeMi);
+          await proformaPdfIndir(teklif, ...tumSepetlerListesi, belgeNo, onizlemeMi);
         }
       }
     } finally {
@@ -150,12 +158,13 @@ export default function CiktiButonu({ teklif, sepet, sepet2 = [], kullaniciRolu 
   async function personelOnayGonder() {
     setIslemDurumu("ONAY_GONDER");
     try {
-      const seciliSepet1 = sepet.filter(item => item.secili !== false);
-      const seciliSepet2 = sepet2.filter(item => item.secili !== false);
-      const tumuSeciliMi = (seciliSepet1.length === sepet.length) && (seciliSepet2.length === sepet2.length);
+      const seciliSepetler = tumSepetlerListesi.map(s => (s || []).filter(item => item.secili !== false));
+      const toplamSeciliAdet = seciliSepetler.reduce((acc, s) => acc + s.length, 0);
+      const toplamUrunAdeti = tumSepetlerListesi.reduce((acc, s) => acc + (s || []).length, 0);
+      const tumuSeciliMi = toplamSeciliAdet === toplamUrunAdeti;
 
-      const islemTeklifi = getAkilliImalatTeklifi(seciliSepet1, seciliSepet2, tumuSeciliMi);
-      await supabaseKaydet("TEKLİF", islemTeklifi, seciliSepet1, seciliSepet2, "bekliyor");
+      const islemTeklifi = getAkilliImalatTeklifi(seciliSepetler, tumuSeciliMi);
+      await supabaseKaydet("TEKLİF", islemTeklifi, seciliSepetler, "bekliyor");
     } finally {
       setIslemDurumu(null);
     }

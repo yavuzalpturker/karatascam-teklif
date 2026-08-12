@@ -78,10 +78,10 @@ const ISICAM_GARANTI_SARTLARI = [
   "Standart ve garanti şartları ile ilgili detaylı bilgiler www.isicam.com.tr web sitesinde yer almaktadır."
 ];
 
-function isicamVarmiKontrolEt(...sepetler) {
-  const tumUrunler = sepetler.flat().filter(Boolean);
+function isicamVarmiKontrolEt(sepetlerDizisi) {
+  const tumUrunler = (sepetlerDizisi || []).flat().filter(Boolean);
   return tumUrunler.some(satir => {
-    const metin = `${satir.urunAciklamasi || ""} ${satir.ozelAciklama || ""}`.toLocaleUpperCase("TR-TR");
+    const metin = `${satir?.urunAciklamasi || ""} ${satir?.ozelAciklama || ""}`.toLocaleUpperCase("TR-TR");
     return metin.includes("ISICAM") || metin.includes("ÜÇLÜ ISICAM");
   });
 }
@@ -308,20 +308,33 @@ function sepetIcerikOlustur(sepet, baslikMetni, teklif) {
   ];
 }
 
-// --- DİNAMİK ÇOKLU SEÇENEK DESTEKLİ TEKLİF PDF İNDİRME ---
-export async function teklifPdfIndir(teklif, ...sepetler) {
+// --- AKILLI TEKLİF PDF (İNDİRME VE ÖNİZLEME) ---
+export async function teklifPdfIndir(teklif, ...parametreler) {
+  let onizlemeMi = false;
+  let teklifNo = null;
+
+  let sepetDizileri = [];
+  for (let p of parametreler) {
+    if (typeof p === "boolean") {
+      onizlemeMi = p;
+    } else if (typeof p === "string") {
+      teklifNo = p;
+    } else if (Array.isArray(p)) {
+      sepetDizileri.push(p);
+    }
+  }
+
   const logoSisecam = await gorseliBase64eCevir("/sisecam.png");
   const logoIso = await gorseliBase64eCevir("/birinci-logo.jpg");
 
-  // Dizi olarak gelen tüm seçeneklerin görsellerini hazırla
-  const temizSepetler = await Promise.all(sepetler.map(s => sepetGorselleriniHazirla(s || [])));
+  const temizSepetler = await Promise.all(sepetDizileri.map(s => sepetGorselleriniHazirla(s || [])));
   const doluSepetler = temizSepetler.filter(s => s && s.length > 0);
   const cokluMi = doluSepetler.length > 1;
 
-  const imzalayanKisi = teklif.imzalayan || "Sercan Temel";
+  const imzalayanKisi = teklif?.imzalayan || "Sercan Temel";
   const bankaIban = "TR26 0006 4000 0014 2210 2141 37";
   
-  const isicamVar = isicamVarmiKontrolEt(...sepetler);
+  const isicamVar = isicamVarmiKontrolEt(sepetDizileri);
   const dinamikSartlar = isicamVar 
     ? [...SOZLESME_SARTLARI, ...ISICAM_GARANTI_SARTLARI] 
     : SOZLESME_SARTLARI;
@@ -334,15 +347,15 @@ export async function teklifPdfIndir(teklif, ...sepetler) {
     }
   });
 
-  const tarihYazisi = teklif.tarih ? new Date(teklif.tarih).toLocaleDateString("tr-TR") : new Date().toLocaleDateString("tr-TR");
-  const belgeNo = teklif.teklifNo || siradakiProformaNoGetir(); 
+  const tarihYazisi = teklif?.tarih ? new Date(teklif.tarih).toLocaleDateString("tr-TR") : new Date().toLocaleDateString("tr-TR");
+  const belgeNo = teklif?.teklifNo || teklifNo || siradakiProformaNoGetir(); 
 
   const bankaStack = [
     { text: 'İŞBANKASI / SİTELER ŞUBESİ', bold: true, fontSize: 9.5, margin: [0, 0, 0, 2] },
     { text: `IBAN NO : ${bankaIban}`, fontSize: 9.5, margin: [0, 0, 0, 2] }
   ];
 
-  if (teklif.odemeSekli && teklif.odemeSekli.trim() !== "") {
+  if (teklif?.odemeSekli && teklif.odemeSekli.trim() !== "") {
     bankaStack.unshift({ 
       text: `ÖDEME ŞEKLİ : ${teklif.odemeSekli}`, 
       bold: true, 
@@ -352,7 +365,7 @@ export async function teklifPdfIndir(teklif, ...sepetler) {
     });
   }
 
-  const temizNotlar = teklif.notlar ? teklif.notlar.split('\n').map((satir) => {
+  const temizNotlar = teklif?.notlar ? teklif.notlar.split('\n').map((satir) => {
     const temizSatir = satir.replace(/[\uFFFD\u0000-\u0008\u000B\u000C\u000E-\u001F]/g, "").replace(/^[*•\-\s]+/, "").trim();
     return temizSatir ? { text: `• ${temizSatir}`, fontSize: 8.5, margin: [2, 2, 0, 1] } : null;
   }).filter(Boolean) : [];
@@ -367,13 +380,13 @@ export async function teklifPdfIndir(teklif, ...sepetler) {
         columns: [
           {
             stack: [
-              { text: teklif.musteriAdi || "Bilinmeyen Müşteri", fontSize: 9.5, bold: true },
+              { text: teklif?.musteriAdi || "Bilinmeyen Müşteri", fontSize: 9.5, bold: true },
               { 
-                text: (!teklif.ilgiliKisi || teklif.ilgiliKisi.includes("Sn.")) ? teklif.ilgiliKisi : `Sn. ${teklif.ilgiliKisi} Dikkatine,`, 
+                text: (!teklif?.ilgiliKisi || teklif.ilgiliKisi.includes("Sn.")) ? teklif?.ilgiliKisi || "" : `Sn. ${teklif.ilgiliKisi} Dikkatine,`, 
                 fontSize: 9.5, 
                 margin: [0, 2, 0, 8] 
               },
-              { text: `Proje Adı: ${teklif.projeAdi || ""}`, bold: true, fontSize: 10 }
+              { text: `Proje Adı: ${teklif?.projeAdi || ""}`, bold: true, fontSize: 10 }
             ],
             alignment: 'left'
           },
@@ -381,7 +394,7 @@ export async function teklifPdfIndir(teklif, ...sepetler) {
             stack: [
               { text: `Tarih: ${tarihYazisi}`, fontSize: 9.5 },
               { text: `No: ${belgeNo}`, fontSize: 9.5, bold: true },
-              teklif.siparisNo ? { text: `Sipariş No: ${teklif.siparisNo}`, fontSize: 9.5, bold: true, color: '#000000', margin: [0, 2, 0, 0] } : null
+              teklif?.siparisNo ? { text: `Sipariş No: ${teklif.siparisNo}`, fontSize: 9.5, bold: true, color: '#000000', margin: [0, 2, 0, 0] } : null
             ].filter(Boolean),
             alignment: 'right'
           }
@@ -423,11 +436,16 @@ export async function teklifPdfIndir(teklif, ...sepetler) {
     defaultStyle: { font: "Roboto" },
   };
 
-  const temizMusteri = (teklif.musteriAdi || "Yeni").replace(/[^a-zA-Z0-9çÇğĞıİöÖşŞüÜ]/g, "_");
-  const temizProje = (teklif.projeAdi || "Proje").replace(/[^a-zA-Z0-9çÇğĞıİöÖşŞüÜ]/g, "_");
+  const temizMusteri = (teklif?.musteriAdi || "Yeni").replace(/[^a-zA-Z0-9çÇğĞıİöÖşŞüÜ]/g, "_");
+  const temizProje = (teklif?.projeAdi || "Proje").replace(/[^a-zA-Z0-9çÇğĞıİöÖşŞüÜ]/g, "_");
   const dosyaAdi = `Karatascam_Teklif_${temizMusteri}_${temizProje}_${belgeNo}.pdf`;
 
-  pdfMake.createPdf(docDefinition).download(dosyaAdi);
+  const pdfDoc = pdfMake.createPdf(docDefinition);
+  if (onizlemeMi) {
+    pdfDoc.open();
+  } else {
+    pdfDoc.download(dosyaAdi);
+  }
 }
 
 function proformaTabloOlustur(sepet, baslikMetni, teklif) {
@@ -543,7 +561,7 @@ function proformaTabloOlustur(sepet, baslikMetni, teklif) {
       adetMetni = `${adetVal} Adet\n(${m2Val > 0 ? m2Val.toFixed(2) : "0.00"} m²)`;
     } else if (birimTuru === "mt") {
       adetMetni = `${m2Val.toFixed(2)} mt`;
-    } else { // "ad" veya "adet"
+    } else {
       let gercekM2 = 0;
       if (enVal > 0 && boyVal > 0) {
         gercekM2 = ((enVal * boyVal) / 1000000) * adetVal;
@@ -615,31 +633,42 @@ function proformaTabloOlustur(sepet, baslikMetni, teklif) {
   return { tabloGövdesi, yalnizMetni, aciklamaSutunuGerekli };
 }
 
-// --- DİNAMİK ÇOKLU SEÇENEK DESTEKLİ PROFORMA PDF İNDİRME ---
-export async function proformaPdfIndir(teklif, ...sepetler) {
+// --- AKILLI PROFORMA PDF (İNDİRME VE ÖNİZLEME) ---
+export async function proformaPdfIndir(teklif, ...parametreler) {
+  let onizlemeMi = false;
+  let teklifNo = null;
+
+  let sepetDizileri = [];
+  for (let p of parametreler) {
+    if (typeof p === "boolean") {
+      onizlemeMi = p;
+    } else if (typeof p === "string") {
+      teklifNo = p;
+    } else if (Array.isArray(p)) {
+      sepetDizileri.push(p);
+    }
+  }
+
   const logoSisecam = await gorseliBase64eCevir("/sisecam.png");
   const logoIso = await gorseliBase64eCevir("/birinci-logo.jpg");
 
-  const temizSepetler = await Promise.all(sepetler.map(s => sepetGorselleriniHazirla(s || [])));
+  const temizSepetler = await Promise.all(sepetDizileri.map(s => sepetGorselleriniHazirla(s || [])));
   const doluSepetler = temizSepetler.filter(s => s && s.length > 0);
   const cokluMi = doluSepetler.length > 1;
 
-  const imzalayanKisi = teklif.imzalayan || "Sercan Temel";
+  const imzalayanKisi = teklif?.imzalayan || "Sercan Temel";
   const bankaIban = "TR26 0006 4000 0014 2210 2141 37";
   
-  const isicamVar = isicamVarmiKontrolEt(...sepetler);
+  const isicamVar = isicamVarmiKontrolEt(sepetDizileri);
   const dinamikSartlar = isicamVar 
     ? [...SOZLESME_SARTLARI, ...ISICAM_GARANTI_SARTLARI] 
     : SOZLESME_SARTLARI;
 
-  const tarihYazisi = teklif.tarih ? new Date(teklif.tarih).toLocaleDateString("tr-TR") : new Date().toLocaleDateString("tr-TR");
-  const belgeNo = teklif.teklifNo || siradakiProformaNoGetir(); 
+  const tarihYazisi = teklif?.tarih ? new Date(teklif.tarih).toLocaleDateString("tr-TR") : new Date().toLocaleDateString("tr-TR");
+  const belgeNo = teklif?.teklifNo || teklifNo || siradakiProformaNoGetir(); 
 
-  let kisi = (teklif.ilgiliKisi || "").toLocaleUpperCase("tr-TR");
-  kisi = kisi.replace(/DİKKATİNE/g, "").replace(/[,;]/g, "").trim();
-  if (kisi && !kisi.startsWith("SN.") && !kisi.startsWith("SN ")) {
-    kisi = `Sn. ${kisi}`;
-  }
+  let kisi = (teklif?.ilgiliKisi || "").toLocaleUpperCase("tr-TR").replace(/DİKKATİNE/g, "").replace(/[,;]/g, "").trim();
+  if (kisi && !kisi.startsWith("SN.") && !kisi.startsWith("SN ")) kisi = `Sn. ${kisi}`;
   const dikkatineSatiri = kisi ? `${kisi} Dikkatine;` : "";
 
   const bankaStack = [
@@ -647,7 +676,7 @@ export async function proformaPdfIndir(teklif, ...sepetler) {
     { text: `IBAN NO : ${bankaIban}`, fontSize: 9.5, margin: [0, 0, 0, 2] }
   ];
 
-  if (teklif.odemeSekli && teklif.odemeSekli.trim() !== "") {
+  if (teklif?.odemeSekli && teklif.odemeSekli.trim() !== "") {
     bankaStack.unshift({ 
       text: `ÖDEME ŞEKLİ : ${teklif.odemeSekli}`, 
       bold: true, 
@@ -662,8 +691,8 @@ export async function proformaPdfIndir(teklif, ...sepetler) {
       columns: [
         {
           stack: [
-            { text: teklif.musteriAdi || "", fontSize: 9.5, bold: true }, 
-            { text: `Proje Adı: ${teklif.projeAdi || ""}`, bold: true, fontSize: 9.5, margin: [0, 2, 0, 0] }
+            { text: teklif?.musteriAdi || "", fontSize: 9.5, bold: true }, 
+            { text: `Proje Adı: ${teklif?.projeAdi || ""}`, bold: true, fontSize: 9.5, margin: [0, 2, 0, 0] }
           ],
           alignment: 'left'
         },
@@ -671,7 +700,7 @@ export async function proformaPdfIndir(teklif, ...sepetler) {
           stack: [
             { text: `Tarih: ${tarihYazisi}`, fontSize: 9.5 },
             { text: `No: ${belgeNo}`, fontSize: 9.5, bold: true },
-            teklif.siparisNo ? { text: `Sipariş No: ${teklif.siparisNo}`, fontSize: 9.5, bold: true, color: '#000000', margin: [0, 2, 0, 0] } : null
+            teklif?.siparisNo ? { text: `Sipariş No: ${teklif.siparisNo}`, fontSize: 9.5, bold: true, color: '#000000', margin: [0, 2, 0, 0] } : null
           ].filter(Boolean),
           alignment: 'right'
         }
@@ -682,7 +711,6 @@ export async function proformaPdfIndir(teklif, ...sepetler) {
     { text: dikkatineSatiri, bold: true, fontSize: 9.5, margin: [0, 0, 0, 8] }
   ];
 
-  // Tüm seçenekleri dinamik olarak döngüye al
   temizSepetler.forEach((sepet, idx) => {
     if (sepet && sepet.length > 0) {
       const baslikMetni = cokluMi ? `${idx + 1}. SEÇENEK` : null;
@@ -701,10 +729,10 @@ export async function proformaPdfIndir(teklif, ...sepetler) {
             body: sonuc.tabloGövdesi
           },
           layout: {
-            hLineWidth: function (i, node) { return 0.5; },
-            vLineWidth: function (i, node) { return 0.5; },
-            hLineColor: function (i, node) { return '#cccccc'; },
-            vLineColor: function (i, node) { return '#cccccc'; },
+            hLineWidth: function () { return 0.5; },
+            vLineWidth: function () { return 0.5; },
+            hLineColor: function () { return '#cccccc'; },
+            vLineColor: function () { return '#cccccc'; },
           }
         },
         { text: [ {text: cokluMi ? `YALNIZ (${idx + 1}. Seçenek): ` : 'YALNIZ: ', bold: true}, `${sonuc.yalnizMetni}.` ], fontSize: 9, alignment: 'right', margin: [0, 4, 0, 14] }
@@ -712,7 +740,7 @@ export async function proformaPdfIndir(teklif, ...sepetler) {
     }
   });
 
-  const temizProformaNotlar = teklif.notlar ? teklif.notlar.split('\n').map((satir) => {
+  const temizProformaNotlar = teklif?.notlar ? teklif.notlar.split('\n').map((satir) => {
     const temizSatir = satir.replace(/[\uFFFD\u0000-\u0008\u000B\u000C\u000E-\u001F]/g, "").replace(/^[*•\-\s]+/, "").trim();
     return temizSatir ? { text: `• ${temizSatir}`, fontSize: 8.5, margin: [2, 2, 0, 1] } : null;
   }).filter(Boolean) : [];
@@ -753,9 +781,14 @@ export async function proformaPdfIndir(teklif, ...sepetler) {
     defaultStyle: { font: "Roboto" },
   };
 
-  const temizMusteri = (teklif.musteriAdi || "Yeni").replace(/[^a-zA-Z0-9çÇğĞıİöÖşŞüÜ]/g, "_");
-  const temizProje = (teklif.projeAdi || "Proje").replace(/[^a-zA-Z0-9çÇğĞıİöÖşŞüÜ]/g, "_");
+  const temizMusteri = (teklif?.musteriAdi || "Yeni").replace(/[^a-zA-Z0-9çÇğĞıİöÖşŞüÜ]/g, "_");
+  const temizProje = (teklif?.projeAdi || "Proje").replace(/[^a-zA-Z0-9çÇğĞıİöÖşŞüÜ]/g, "_");
   const dosyaAdi = `Proforma_Fatura_${temizMusteri}_${temizProje}_${belgeNo}.pdf`;
 
-  pdfMake.createPdf(docDefinition).download(dosyaAdi);
+  const pdfDoc = pdfMake.createPdf(docDefinition);
+  if (onizlemeMi) {
+    pdfDoc.open();
+  } else {
+    pdfDoc.download(dosyaAdi);
+  }
 }
