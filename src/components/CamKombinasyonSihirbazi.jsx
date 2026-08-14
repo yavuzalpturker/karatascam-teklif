@@ -32,7 +32,8 @@ const CITA_KALINLIKLARI = ["6 mm", "8 mm", "9 mm", "10 mm", "12 mm", "14 mm", "1
 const CITA_TIPLERI = [
   "Alüminyum Çıta", 
   "Alüminyum Siyah Çıta", 
-  "Warm Edge (Sıcak Kenar Çıta)"
+  "Warm Edge (Sıcak Kenar Çıta)",
+  "U Çıta"
 ];
 
 const DOLGU_TIPLERI = [
@@ -435,7 +436,15 @@ export default function CamKombinasyonSihirbazi({ onKombinasyonSec, baslangicMet
       if (!str) return;
       const kalMatch = str.match(/(\d+\s*mm)/);
       if (kalMatch) setKal(kalMatch[1]);
-      for (let ct of CITA_TIPLERI) { if (str.includes(ct)) { setTip(ct); break; } }
+      
+      // Uzundan kısaya sıralayarak tam eşleşme sağla
+      const siraliCitalar = [...CITA_TIPLERI].sort((a,b) => b.length - a.length);
+      for (let ct of siraliCitalar) { 
+        if (str.includes(ct)) { 
+          setTip(ct); 
+          break; 
+        } 
+      }
       for (let g of GAZ_TIPLERI) { if (str.includes(g)) { setGaz(g); break; } }
       let dolguBulundu = "Dolgu Yok";
       for (let dt of DOLGU_TIPLERI) { if (dt !== "Dolgu Yok" && str.includes(dt)) { dolguBulundu = dt; break; } }
