@@ -15,6 +15,7 @@ const AYNA_RENKLERI = [
 const KAPLAMA_TURLERI = [
   "Kaplamasız (Düzcam)",
   "Emaye Boyalı",
+  "Lokal Boyalı",
   "Climax T 80", "Climax T 71", "Climax T 70", "Climax T 60", "Climax T 50", "Climax T 40", "Ecotherm T",
   "Duosol T 70", "Duosol T 70 One", "Duosol T 60", "Duosol T 58", "Duosol T 58 One", "Duosol T 51", "Duosol T 51 One", "Duosol T 50", "Duosol T 43/28",
   "Ecosol T 62", "Ecosol T 62/44", "Ecosol T 50",
