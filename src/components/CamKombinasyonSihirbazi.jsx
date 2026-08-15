@@ -27,13 +27,14 @@ const KAPLAMA_TURLERI = [
 ];
 
 const KALINLIKLAR = ["2 mm", "3 mm", "4 mm", "5 mm", "6 mm", "8 mm", "10 mm", "12 mm", "15 mm", "19 mm"];
-const CITA_KALINLIKLARI = ["6 mm", "8 mm", "9 mm", "10 mm", "12 mm", "14 mm", "15 mm", "16 mm", "18 mm", "20 mm", "22 mm", "24 mm"];
+const CITA_KALINLIKLARI = ["6 mm", "8 mm", "9 mm", "10 mm", "12 mm", "14 mm", "15 mm", "16 mm", "18 mm", "20 mm", "22 mm", "24 mm", "27 mm", "30 mm"];
 
 const CITA_TIPLERI = [
   "Alüminyum Çıta", 
   "Alüminyum Siyah Çıta", 
   "Warm Edge (Sıcak Kenar Çıta)",
-  "U Çıta"
+  "U Çıta",
+  "Jaluzili"
 ];
 
 const DOLGU_TIPLERI = [
@@ -437,7 +438,6 @@ export default function CamKombinasyonSihirbazi({ onKombinasyonSec, baslangicMet
       const kalMatch = str.match(/(\d+\s*mm)/);
       if (kalMatch) setKal(kalMatch[1]);
       
-      // Uzundan kısaya sıralayarak tam eşleşme sağla
       const siraliCitalar = [...CITA_TIPLERI].sort((a,b) => b.length - a.length);
       for (let ct of siraliCitalar) { 
         if (str.includes(ct)) { 
